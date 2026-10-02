@@ -62,6 +62,20 @@ def spread_chunks(
         yield chunk
 
 
+def centroid_update_on_cpu() -> None:
+    """Run fast-plaid's `update_centroids` through its own CPU branch (plan D12): on HotpotQA
+    its GPU branch ran out of the 4090's 24 GB (F3). Only that step moves; the rest of the
+    update and the search stay on the GPU."""
+    from fast_plaid.search import update
+
+    original = update.update_centroids
+
+    def on_cpu(**kwargs: Any) -> None:
+        return original(**{**kwargs, "device": "cpu"})
+
+    update.update_centroids = on_cpu
+
+
 def build(args: argparse.Namespace) -> None:
     tag = None if args.limit_units is None else f"units{args.limit_units}"
     out = common.rankings_path(args.set, SYSTEM, tag)
@@ -73,6 +87,8 @@ def build(args: argparse.Namespace) -> None:
     questions, _answers = common.set_questions(old, checks, spec)
     if args.limit_questions is not None:
         questions = questions[: args.limit_questions]
+    if args.cpu_centroid_update:
+        centroid_update_on_cpu()
     timer = common.Timer()
     started = time.perf_counter()
     model = load_model()
@@ -131,6 +147,7 @@ def build(args: argparse.Namespace) -> None:
             "index_chunks": chunks,
             "chunk_units": args.chunk_units,
             "update_units": args.update_units,
+            "cpu_centroid_update": args.cpu_centroid_update,
             "first_chunk_stride": stride,
             "encode_batch_size": args.batch_size,
             "depth": DEPTH,
@@ -203,6 +220,9 @@ def main() -> None:
     parser.add_argument("--limit-questions", type=int, default=None)
     parser.add_argument("--chunk-units", type=int, default=500_000)
     parser.add_argument("--update-units", type=int, default=100_000)
+    parser.add_argument(
+        "--cpu-centroid-update", action="store_true", help="fast-plaid's CPU update_centroids"
+    )
     parser.add_argument("--batch-size", type=int, default=32, help="PyLate's encode default")
     parser.add_argument("--serve", action="store_true")
     parser.add_argument("--port", type=int, default=8000)

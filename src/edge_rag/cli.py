@@ -46,8 +46,8 @@ def main(argv: list[str] | None = None) -> int:
     refs.add_argument(
         "--set", dest="set_name", required=True, choices=sorted(config.OLD_REFERENCES)
     )
-    results = commands.add_parser("results", help="write the Phase 02 results table")
-    results.add_argument(
+    results_cmd = commands.add_parser("results", help="write the Phase 02 results table")
+    results_cmd.add_argument(
         "--set", dest="set_names", action="append", choices=sorted(config.OLD_REFERENCES)
     )
     args = parser.parse_args(argv)
