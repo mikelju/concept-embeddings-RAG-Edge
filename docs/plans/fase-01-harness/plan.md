@@ -35,7 +35,8 @@ Each increment leaves the product working and covers concrete criteria.
 ## Adversarial review
 | Round | Backend | Range | Lenses | Findings | Status |
 |---|---|---|---|---|---|
-| 1 | local | `iniciar..fase-01-harness` | correctness / security and data / evidence and tests | 0 blocking, 5 important, 9 minor (S1-S6, T1, T2, M5 fixed and verified here; the remaining minors were not itemised in the round brief) | fixed, pending re-review |
+| 1 | local | `iniciar..fase-01-harness` | correctness / security and data / evidence and tests | 0 blocking, 5 important, 9 minor (S1-S6, T1, T2, M5 fixed and verified here; the remaining minors were not itemised in the round brief) | fixed; round-1 minors not itemised (HotpotQA has no stored fused rankings to cross-check; dev dependency ranges pinned by `uv.lock`) accepted |
+| 2 | local | `cebfdd9..f9a833c` | correctness and tests of the fixes | 0 blocking, 0 important, 4 minor: large files hashed then reopened (local read-only, accepted); no test pins the call sites to `OldData`; symlink case skipped on this machine, hardlinks not handled; `REPO_ROOT` wrong under a non-editable install | accepted, pending: listed for a later change |
 
 Round 1 findings, all confirmed by reading the code and fixed:
 - S2 (important): token-counts.npz, nodes .npz, bm25 / embedding / fit JSON, stored rankings and HotpotQA extraction.json were parsed before any byte check. Fixed by D9; test `test_every_old_read_is_hashed_before_it_is_parsed`.
