@@ -22,20 +22,23 @@ This file is the durable state: a new session resumes from here and from Git.
 ## Adversarial review
 | Round | Backend | Range | Lenses | Findings | Status |
 |---|---|---|---|---|---|
+| 1 | local | `iniciar..fase-00-state-of-the-art` | evidence; correctness and scope; security skipped (the only code is a stdlib script reading local JSON) | 2 important + 8 important + 7 minor: E1 confirmed, H4 split by metric and k; E2 confirmed, Table 5 rows added (closed API as context, 4 records), 2,255 now read in the paper; E3 confirmed, NQ + HotpotQA wording; E4 confirmed, the 66.7 vs 67.5 source is stated; E5 confirmed, RankLLaMA-13B over the A bound; E6 confirmed, the share is flag consistency, the reviewer's 12 re-read figures recorded; E7 confirmed (Table 3 reproduced HippoRAG 90.4), record added and wording fixed; R1 confirmed (answerai-colbert-small-v1 trains on a mix with HotpotQA), H1 labelled per row, G-L kept under a stated training rule; R2 confirmed, one rule: general-purpose models may include a terrain train split, single-benchmark fits (MDR) are references; R3 plausible, G-R kept (measured on our harness) and Qwen3-Reranker-0.6B added as optional G-R2; R4 confirmed, G-R is J-strong over G-L top-100, union pool only an old reference; R5 confirmed, EM fidelity claim dropped, driver-vs-script check instead; R6 confirmed (infer.py is one-at-a-time transformers), batched driver required, G-A1 re-projected; R7 confirmed, PLAID 2-bit about 13 GB, G-L 3.9 GPU-h; R8 confirmed in part (55.5 % is published in the QASPER paper, not computed by us), test-label count removed, multi-annotator gold rule added; M1 confirmed, licence rule stated, G-A2 encoder GritLM-7B (Apache-2.0); M2 confirmed, candidates and exam core ring-fenced, LLM graph ghost last, forecast 24.6 USD | fixed (all 17; none discarded) |
 
 ## Results
 
 - C1 met: `ledger.json` has 284 records, one per (system, benchmark, setting, metric) figure, each with a `source` locator; the script finds zero required fields empty without a `why_missing` note (measured).
   Gaps: `licence` is null in 256 records (explained, mostly "not checked"); `code_url` and `weights_public` partly come from known repository names and were not opened this phase.
 - C2 met: every Scope family has at least one record (`survey.md` section 1); graph without an LLM has only LinearRAG, with answer-accuracy figures in an unknown setting.
-- C3 met: 282 of 284 records verified ledger-wide, and 81 of 81 figures cited in the maps and ghost list (100.0 percent, measured by the script); 15 records are self-reported model-card figures, labelled.
+- C3 met: 287 of 289 records verified ledger-wide, and 87 of 87 figures cited in the maps and ghost list (100.0 percent, measured by the script, after review round 1); 15 records are self-reported model-card figures, labelled.
+  The share measures the consistency of flags set by the surveyors; the round-1 evidence reviewer independently re-read 12 key figures and all matched.
 - C4 met: `survey.md` section 2 defines every metric string in the ledger with unit, setting and relation to Full Support; no table mixes metrics or settings.
+  Round 1 split H4 by metric and k and labelled every H1 row in-domain, zero-shot or not stated for HotpotQA train.
   Gap: no published system reports Full Support at any budget, and HippoRAG's recall@5 definition is assumed, not verified.
 - C5 met: maps for HotpotQA, MuSiQue, 2Wiki and MultiHop-RAG (`survey.md` section 4), one table per (setting, metric); costs reported where the sources give them, otherwise labelled projection.
   Gaps: no full-corpus retrieval figure for MuSiQue, no class-A figure on MultiHop-RAG, and leaderboards for MuSiQue and QASPER were not read.
-- C6 met: ghosts G-L answerai-colbert-small-v1, G-R bge-reranker-v2-m3 (J-strong), G-A1 Search-R1 7B and G-A2 HippoRAG 2 with an 8B model, each with figure, reason and projected cost (`survey.md` section 5).
-  Gaps: the G-L model card and licence, and the Search-R1 and HippoRAG licences, were not opened; G-A2 deviates from its published 70B recipe and is a reduced reproduction.
-- C7 met: recommendations in `survey.md` section 6, recorded as decisions in the master plan under the delegation.
-- C8 met: forecast per phase 01-06, about 21.6 USD in total (projection), inside the authorized 25 USD, with a priority and drop order (`survey.md` section 7).
+- C6 met: ghosts G-L answerai-colbert-small-v1 (Apache-2.0, in-domain on HotpotQA, PLAID 2-bit), G-R bge-reranker-v2-m3 (J-strong) over G-L's top-100, optional G-R2 Qwen3-Reranker-0.6B, G-A1 Search-R1 7B through a batched driver and G-A2 HippoRAG 2 with Llama-3.1-8B and GritLM-7B, each with figure, reason and projected cost under stated training and licence rules (`survey.md` section 5, revised in round 1).
+  Gaps: the Search-R1 and HippoRAG licences were not opened; G-A1 reproduces no published figure; G-A2 deviates from its published 70B recipe and is a reduced reproduction.
+- C7 met: recommendations in `survey.md` section 6, recorded as decisions in the master plan under the delegation; round 1 revised the metrics (EM as context), cost classes (class R wording, training rule), heavy class (ghost recipes), exam (multi-annotator gold rule, no test-label statistics) and forecast rows.
+- C8 met: forecast per phase 01-06, about 24.6 USD in total (projection, revised in round 1), inside the authorized 25 USD, with the candidates' and the exam core's money ring-fenced and a priority and drop order (`survey.md` section 7).
 
 ## Candidate learnings

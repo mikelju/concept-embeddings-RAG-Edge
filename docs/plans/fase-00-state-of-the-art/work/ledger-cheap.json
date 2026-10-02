@@ -1384,16 +1384,15 @@
   "latency": null,
   "code_url": null,
   "weights_public": null,
-  "licence": null,
-  "notes": "Figure as reported in the Jina-ColBERT-v2 paper Table 1 (column answerai-v1), not by its authors; model size not read this session.",
+  "licence": "Apache-2.0 (HF card answerdotai/answerai-colbert-small-v1, read in review round 1)",
+  "notes": "Figure as reported in the Jina-ColBERT-v2 paper Table 1 (column answerai-v1), not by its authors; model size not read this session. HF card: 33M parameters. Training (Answer.AI announcement blog, 2024-08-13): one of three averaged checkpoints used 2.5M triplets in equal parts from MS MARCO, HotpotQA, TriviaQA, FEVER and NQ, so its HotpotQA figure is in-domain, not zero-shot.",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported in the cited source",
    "online_cost": "not reported in the cited source",
    "latency": "not reported in the cited source",
    "code_url": "repository URL not read this session",
-   "weights_public": "not checked in the cited source",
-   "licence": "not read this session"
+   "weights_public": "not checked in the cited source"
   }
  },
  {
@@ -3135,7 +3134,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. ",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. ",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -3173,7 +3172,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. ",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. ",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -3211,7 +3210,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. ",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. ",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -3249,7 +3248,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. ",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. ",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -3287,7 +3286,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. Far below bge-large; instruction-prefix handling not described.",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. Far below bge-large; instruction-prefix handling not described.",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -3325,7 +3324,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. ",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. ",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -3363,7 +3362,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. ",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. ",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -3401,7 +3400,7 @@
   "code_url": "https://github.com/yixuantt/MultiHop-RAG",
   "weights_public": null,
   "licence": null,
-  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 is inferred from Table 3 (2,556 minus 301 null queries). Repository URL is the one commonly cited, not re-read this session. ",
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. ",
   "why_missing": {
    "why_unverified": "not applicable, figure was read in the source",
    "offline_cost": "not reported",
@@ -4830,6 +4829,154 @@
    "offline_cost": "none for the corpus (a reranker adds no index); not otherwise reported",
    "online_cost": "not reported",
    "latency": "not reported"
+  }
+ },
+ {
+  "id": "c-mhrag-voyage-02-h10-rr",
+  "system": "voyage-02 + bge-reranker-large",
+  "family": "dense + zero-shot cross-encoder reranker (closed API)",
+  "cost_class": "cheap",
+  "benchmark": "MultiHop-RAG",
+  "setting": "pooled",
+  "corpus_size": 609,
+  "split": "2,255 non-null queries (816+856+583)",
+  "metric": "Hits@10",
+  "k_or_budget": "10",
+  "value": 0.7467,
+  "unit": "fraction",
+  "source": {
+   "title": "MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries",
+   "url": "https://arxiv.org/abs/2401.15391",
+   "locator": "Table 5"
+  },
+  "self_reported": false,
+  "verified": true,
+  "why_unverified": null,
+  "llm_in_loop": false,
+  "offline_cost": null,
+  "online_cost": null,
+  "latency": null,
+  "code_url": "https://github.com/yixuantt/MultiHop-RAG",
+  "weights_public": false,
+  "licence": null,
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. Closed API embedding: labelled context, not a ghost candidate (Scope: closed API-only systems only as labelled context). Read in Table 5 in review round 1.",
+  "why_missing": {
+   "why_unverified": "not applicable, figure was read in the source",
+   "offline_cost": "not reported",
+   "online_cost": "not reported in the cited source",
+   "latency": "not reported",
+   "licence": "not read this session"
+  }
+ },
+ {
+  "id": "c-mhrag-voyage-02-h10",
+  "system": "voyage-02",
+  "family": "dense bi-encoder (closed API)",
+  "cost_class": "cheap",
+  "benchmark": "MultiHop-RAG",
+  "setting": "pooled",
+  "corpus_size": 609,
+  "split": "2,255 non-null queries (816+856+583)",
+  "metric": "Hits@10",
+  "k_or_budget": "10",
+  "value": 0.6506,
+  "unit": "fraction",
+  "source": {
+   "title": "MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries",
+   "url": "https://arxiv.org/abs/2401.15391",
+   "locator": "Table 5"
+  },
+  "self_reported": false,
+  "verified": true,
+  "why_unverified": null,
+  "llm_in_loop": false,
+  "offline_cost": null,
+  "online_cost": null,
+  "latency": null,
+  "code_url": "https://github.com/yixuantt/MultiHop-RAG",
+  "weights_public": false,
+  "licence": null,
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. Closed API embedding: labelled context, not a ghost candidate (Scope: closed API-only systems only as labelled context). Read in Table 5 in review round 1.",
+  "why_missing": {
+   "why_unverified": "not applicable, figure was read in the source",
+   "offline_cost": "not reported",
+   "online_cost": "not reported in the cited source",
+   "latency": "not reported",
+   "licence": "not read this session"
+  }
+ },
+ {
+  "id": "c-mhrag-ada-002-h10-rr",
+  "system": "text-embedding-ada-002 + bge-reranker-large",
+  "family": "dense + zero-shot cross-encoder reranker (closed API)",
+  "cost_class": "cheap",
+  "benchmark": "MultiHop-RAG",
+  "setting": "pooled",
+  "corpus_size": 609,
+  "split": "2,255 non-null queries (816+856+583)",
+  "metric": "Hits@10",
+  "k_or_budget": "10",
+  "value": 0.7059,
+  "unit": "fraction",
+  "source": {
+   "title": "MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries",
+   "url": "https://arxiv.org/abs/2401.15391",
+   "locator": "Table 5"
+  },
+  "self_reported": false,
+  "verified": true,
+  "why_unverified": null,
+  "llm_in_loop": false,
+  "offline_cost": null,
+  "online_cost": null,
+  "latency": null,
+  "code_url": "https://github.com/yixuantt/MultiHop-RAG",
+  "weights_public": false,
+  "licence": null,
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. Closed API embedding: labelled context, not a ghost candidate (Scope: closed API-only systems only as labelled context). Read in Table 5 in review round 1.",
+  "why_missing": {
+   "why_unverified": "not applicable, figure was read in the source",
+   "offline_cost": "not reported",
+   "online_cost": "not reported in the cited source",
+   "latency": "not reported",
+   "licence": "not read this session"
+  }
+ },
+ {
+  "id": "c-mhrag-ada-002-h10",
+  "system": "text-embedding-ada-002",
+  "family": "dense bi-encoder (closed API)",
+  "cost_class": "cheap",
+  "benchmark": "MultiHop-RAG",
+  "setting": "pooled",
+  "corpus_size": 609,
+  "split": "2,255 non-null queries (816+856+583)",
+  "metric": "Hits@10",
+  "k_or_budget": "10",
+  "value": 0.6381,
+  "unit": "fraction",
+  "source": {
+   "title": "MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries",
+   "url": "https://arxiv.org/abs/2401.15391",
+   "locator": "Table 5"
+  },
+  "self_reported": false,
+  "verified": true,
+  "why_unverified": null,
+  "llm_in_loop": false,
+  "offline_cost": null,
+  "online_cost": null,
+  "latency": null,
+  "code_url": "https://github.com/yixuantt/MultiHop-RAG",
+  "weights_public": false,
+  "licence": null,
+  "notes": "Chunks of 256 tokens; corpus size counts articles (609); 20 chunks retrieved, then optionally reranked. Query count 2,255 read in the source (Section 4: null queries are excluded from the retrieval experiment; 2,556 minus 301). Repository URL is the one commonly cited, not re-read this session. Closed API embedding: labelled context, not a ghost candidate (Scope: closed API-only systems only as labelled context). Read in Table 5 in review round 1.",
+  "why_missing": {
+   "why_unverified": "not applicable, figure was read in the source",
+   "offline_cost": "not reported",
+   "online_cost": "not reported in the cited source",
+   "latency": "not reported",
+   "licence": "not read this session"
   }
  }
 ]

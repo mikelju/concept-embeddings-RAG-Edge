@@ -132,6 +132,39 @@
   }
  },
  {
+  "id": "e-hipporag-repro-2wiki-recall5",
+  "system": "HippoRAG (reproduced in the HippoRAG 2 paper)",
+  "family": "llm-built-graph",
+  "cost_class": "expensive",
+  "benchmark": "2Wiki",
+  "setting": "pooled",
+  "corpus_size": 6119,
+  "split": "1,000 sampled dev questions",
+  "metric": "passage recall@5",
+  "k_or_budget": 5,
+  "value": 90.4,
+  "unit": "percent (0-100)",
+  "source": {
+   "title": "From RAG to Memory: Non-Parametric Continual Learning for LLMs (HippoRAG 2)",
+   "url": "https://arxiv.org/abs/2502.14802",
+   "locator": "Table 3, row HippoRAG (reproduced), column 2Wiki"
+  },
+  "self_reported": false,
+  "verified": true,
+  "why_unverified": null,
+  "llm_in_loop": true,
+  "offline_cost": "9.2M input + 3.0M output LLM tokens and 99.5 min indexing on the MuSiQue corpus (11,656 passages), 4xH100 vLLM (Table 12)",
+  "online_cost": "query-time LLM triple filtering; about 1.2 s per query on MuSiQue (Table 12)",
+  "latency": "about 1.2 s per query (MuSiQue, Table 12; 0.3 s for NV-Embed-v2)",
+  "code_url": "https://github.com/OSU-NLP-Group/HippoRAG",
+  "weights_public": true,
+  "licence": null,
+  "notes": "Reproduced by the HippoRAG 2 authors in their own setting; ties HippoRAG 2 at 90.4 on 2Wiki. Read in review round 1. | Pooled corpus of the sampled questions' passages.",
+  "why_missing": {
+   "licence": "not checked this session"
+  }
+ },
+ {
   "id": "e-hipporag2-hotpotqa-recall2",
   "system": "HippoRAG 2",
   "family": "llm-built-graph",
