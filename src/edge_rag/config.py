@@ -14,7 +14,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 
 OLD_DATA_ROOT_ENV = "OLD_DATA_ROOT"
-OLD_DATA_ROOT_DEFAULT = Path("C:/Python Projects/concept-embeddings-RAG/data")
+# The old repository sits beside this one (set OLD_DATA_ROOT when it does not, e.g. in a worktree).
+OLD_DATA_ROOT_DEFAULT = REPO_ROOT.parent / "concept-embeddings-RAG" / "data"
 
 
 def old_data_root() -> Path:
@@ -26,9 +27,6 @@ def old_data_root() -> Path:
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 EMBEDDING_REVISION = "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a"
 EMBEDDING_WEIGHTS_SHA256 = "3c9f31665447c8911517620762200d2245a2518d6e7208acc78cd9db317e21ad"
-# The budget ruler is the BGE-small tokenizer at the same revision (the Phase 9 counter).
-BUDGET_TOKENIZER_ID = EMBEDDING_MODEL
-BUDGET_TOKENIZER_REVISION = EMBEDDING_REVISION
 BM25_STOPWORDS = "en"
 BM25_VERSION = "0.3.11"
 GLINER_CONFIGURATION_DIGEST = "2f7864661b8ce7ff"
@@ -52,6 +50,14 @@ P14_ALPHA = 0.75
 FIT_DIGESTS = {
     "phase10/fit.json": "66dfcec1c2b831ac580ee2257ce346b150a9ba5d9af4fc0955b4683bd46bdd96",
     "phase14/fit.json": "7ce07a171def50d85ca480383a978a2233cfa491ae048b9314a45850dabfe224",
+}
+
+
+# Byte digests of the two fit files; the old project recorded none, so they are pinned here.
+# pinned 2026-10-02 from the file in place, no recorded digest
+FIT_FILE_SHA256 = {
+    "phase10/fit.json": "7ed67df1e02867e06cdaa04a4739f4cd16d5a0fd1890b3370327fb0a5bfb5f33",
+    "phase14/fit.json": "292e287f31250b3054aa7ea50d672f0c0912151c74181359ba8a3714e1cac421",
 }
 
 
@@ -105,6 +111,27 @@ SETS: dict[str, CorpusSet] = {
             "cache/questions/embeddings-4894aceb0406c63a.npz": (
                 "6b9b4408d5c1e3e692a6bc5174e307e62e81d884c4c120c6af5842ca41b1dc1c"
             ),
+            # pinned 2026-10-02 from the file in place, no recorded digest
+            "corpus.json": ("d6987a19baccae0a11d18dd0f2481a5d34cd3fde3465e7c66be54b90c3b85553"),
+            "questions.json": ("f3f8b4f0df32be5578588aeb079656c1a1fbe943ef6709f5d3420ae62b09ef0f"),
+            "token-counts.json": (
+                "06a0b0da46566880362449eef728456b73d06f74ddf273adbf922b4ae9968413"
+            ),
+            "token-counts.npz": (
+                "a1cee0afb461677ff5c73259e4f08fc4e0b8315051aac9e724685ede51fac277"
+            ),
+            "bm25.json": ("d93e3200c79036f091d9a73dd89bb232c1bdc68d1006047e4f374371e04bd8c5"),
+            "embedding.json": ("cd6c427c872b32ab808bf2f389660a70316edc3fcc09bec83b45ec8d920062ef"),
+            "gliner/extraction.json": (
+                "847ba4abb2684b604d43834ef39ce58f798679aa2e98a396ff655e9836f8174f"
+            ),
+            "corpus.jsonl.gz": ("d982847985bcc5d9b26a5e2ce379e2e04d59fb9ead6b81e21ab0f1c168e93b0b"),
+            "gliner/nodes-ecef84bdef739874.json": (
+                "d3ed23c73f74b1da2af4616f347cc69b958b43053350ac6ed9e74b48ef8e81a1"
+            ),
+            "gliner/nodes-ecef84bdef739874.npz": (
+                "4bd56af1082fc8813daeebd54442336df61391f7aaf79f6e88f55bcaab30bf82"
+            ),
         },
         gate={P10A: 4125, P10B: 4536, P10C: 4801, P14: 5224},
         stored_rankings={},
@@ -134,6 +161,38 @@ SETS: dict[str, CorpusSet] = {
             ),
             "nodes/extraction.json": (
                 "42052941f7a809d504ec895dac691fd69e7f3deab8dd22ea77d278ad9bb1c551"
+            ),
+            # pinned 2026-10-02 from the file in place, no recorded digest
+            "corpus.json": ("8b78ac1b72d45d7b5b960070c9df546d5311d58621d8f2f224b3bb70b2007dfc"),
+            "questions.json": ("727027edca8fa6ea7155408bfd0c2eeb85aedeaeb5abefb184b1f2bc4f7ae54b"),
+            "token-counts.json": (
+                "9d997a112683fb9d3fce49029abb9a2861e2401bb3d1a9157f4b16624c4bb4f5"
+            ),
+            "token-counts.npz": (
+                "cbd5e71bd531ca7787ecc482522c9ab9f27d784e7e9b8ca064de9d773d058847"
+            ),
+            "bm25/bm25.json": ("492296737f1add8b0a981fb1b5026c0c070ff33d82c40421e1087dc23cb79d26"),
+            "cache/embedding.json": (
+                "d5e159382d5051e857b145e1ad5fbb1555d5177d155ef2cc45ab856bd93cee40"
+            ),
+            "corpus.jsonl.gz": ("edb6c959331d314871a41571f37834a16ae5f6389d80819e5b5e3d993846bbca"),
+            "nodes/nodes-c2257a622f49a8aa.json": (
+                "600becc2079bc7f775111910a7202880a3107d6e53a1670233fd771829cf69d9"
+            ),
+            "nodes/nodes-c2257a622f49a8aa.npz": (
+                "3b91ac4f0051cf16bc7ef2417ce0a3bfd968511223a174e4da4b31b0148e0d8f"
+            ),
+            "rankings-dense.jsonl.gz": (
+                "7dc9cf9e1b4a8db4b02831a245ce617871c8474f0f367809b2dad01d82a47be7"
+            ),
+            "rankings-hybrid-bm25.jsonl.gz": (
+                "6756c2bc991ff0b34b6923266f6d830d8f4fc44971c3dd12911cf8facd1af006"
+            ),
+            "rankings-hybrid-bm25-entity-hop.jsonl.gz": (
+                "7e362cba717ac802d899063748743543fcbff9d17c8eaf78cb3b3f8df6850809"
+            ),
+            "rankings-hybrid-bm25-seeded-hop.jsonl.gz": (
+                "ff327370b3966617997e301ea3ccef9838fd28e49a0ae2f772a8dcbfe1ec412b"
             ),
         },
         gate={P10A: 436, P10B: 524, P10C: 669, P14: 761},
@@ -169,6 +228,38 @@ SETS: dict[str, CorpusSet] = {
             ),
             "nodes/extraction.json": (
                 "de940266f4d19e52d07aa091a4a61904118ac1686c7ddc6cf0fffa6c5cfd0a8e"
+            ),
+            # pinned 2026-10-02 from the file in place, no recorded digest
+            "corpus.json": ("2bcc3a1f26a9941efef8e96fe17f48cd789d1cefdb138fa646f7f2f1053b3282"),
+            "questions.json": ("7edc3fcfb8971562b9d1ceeed7ef4eb5ac6d396dd35bd0d10319375fd1f742d8"),
+            "token-counts.json": (
+                "23472538006cbc93278117ffdd9a8da18d27838bcd516c515b39ee81772e3426"
+            ),
+            "token-counts.npz": (
+                "fe0f40a0ba7ea381f1b491afac928663d6e954c9a9f0845e42fd02b6d079ca90"
+            ),
+            "bm25/bm25.json": ("6b71237b5ddc7f6f2a4ae6b3ac86bb687ff34a4914ab79996599d4f34aa32633"),
+            "cache/embedding.json": (
+                "da70c08af453a3a9ecd492af7fbea6ce3ed1aea6cabc234145bb0ab289109eb9"
+            ),
+            "corpus.jsonl.gz": ("8ec12623a16fe4e7b2d083b1989a9bb811b1f198aca775506896e55ed22ea811"),
+            "nodes/nodes-18dcb6f700ce0de5.json": (
+                "9e636fa9443879e9389bd50c958fffeec59bad32908d648e540ae200838b6a58"
+            ),
+            "nodes/nodes-18dcb6f700ce0de5.npz": (
+                "ceba92d69c2ec4c6cc452fe6de77033751eecb8e4a866385e4a005c8c5fd0dd5"
+            ),
+            "rankings-dense.jsonl.gz": (
+                "afe403e31c8500e5ce3fd24241af0bfcb910d7d84ace5fb058935fc8e149768a"
+            ),
+            "rankings-hybrid-bm25.jsonl.gz": (
+                "b2e2a79d641fc67eacdc789951ddd8d2ac7b22af2a698e0941d24f28680914d8"
+            ),
+            "rankings-hybrid-bm25-entity-hop.jsonl.gz": (
+                "dc8eb3915ad02fd45a8624421f5809d8b361ea959ab488380180939730c2d197"
+            ),
+            "rankings-hybrid-bm25-seeded-hop.jsonl.gz": (
+                "17a329d7516561619e75bc8abc6f3b0325dbdfeeb77a2b8a29ab8923bad3f9ad"
             ),
         },
         gate={P10A: 338, P10B: 587, P10C: 522, P14: 513},

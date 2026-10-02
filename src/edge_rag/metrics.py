@@ -20,21 +20,25 @@ def fill_context(ranked: Sequence[str], token_counts: Mapping[str, int], budget:
     return selected
 
 
+def _need_gold(gold: Sequence[str]) -> None:
+    if not gold:
+        raise ValueError("a question without gold units has no defined retrieval metric")
+
+
 def full_support(context: Sequence[str], gold: Sequence[str]) -> int:
+    _need_gold(gold)
     return int(set(gold) <= set(context))
 
 
 def recall_at_k(ranked: Sequence[str], gold: Sequence[str], k: int) -> float:
-    if not gold:
-        return 0.0
+    _need_gold(gold)
     return len(set(ranked[:k]) & set(gold)) / len(set(gold))
 
 
 def ndcg_at_k(ranked: Sequence[str], gold: Sequence[str], k: int) -> float:
     """Binary-relevance nDCG (the BEIR metric); a gold id counts once, at its first rank."""
+    _need_gold(gold)
     wanted = set(gold)
-    if not wanted:
-        return 0.0
     seen: set[str] = set()
     dcg = 0.0
     for position, unit_id in enumerate(ranked[:k], start=1):

@@ -11,7 +11,6 @@ dependencies = [
     "bm25s==0.3.11",
     "torch==2.13.0",
     "transformers==5.16.1",
-    "sentence-transformers==6.0.1",
     "tokenizers==0.23.1",
 ]
 

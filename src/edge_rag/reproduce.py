@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 
 from edge_rag import config, metrics
-from edge_rag.artifacts import ArtifactError, Checks, OldData, digest_of, sha256_file, write_json
+from edge_rag.artifacts import ArtifactError, Checks, OldData, digest_of, write_json
 from edge_rag.corpus import load_corpus, load_questions
 from edge_rag.embeddings import (
     QueryTable,
@@ -36,9 +36,9 @@ def _token_counts(old: OldData, checks: Checks, spec: config.CorpusSet, unit_ids
     manifest = old.json("token-counts.json")
     if manifest["unit_set_hash"] != spec.unit_set_hash:
         raise ArtifactError("the token counts belong to another corpus")
-    with old.path("token-counts.npz").open("rb") as handle, np.load(handle) as z:
-        ids = [str(unit_id) for unit_id in z["unit_ids"]]
-        counts = z["counts"].astype(np.int32)
+    raw_ids, raw_counts = old.arrays("token-counts.npz", "unit_ids", "counts")
+    ids = [str(unit_id) for unit_id in raw_ids]
+    counts = raw_counts.astype(np.int32)
     if ids != unit_ids:
         raise ArtifactError("the token counts are not keyed by the corpus units in order")
     checks.expect(
@@ -56,7 +56,7 @@ def _fits(checks: Checks) -> None:
     }
     for relative, digest in config.FIT_DIGESTS.items():
         directory, name = relative.split("/")
-        fit = OldData(directory).json(name)
+        fit = OldData(directory, {name: config.FIT_FILE_SHA256[relative]}, checks).json(name)
         checks.expect(relative, digest_of(json.dumps(dict(fit), sort_keys=True)), digest)
         hop, alpha = expected[relative]
         weights = (fit["weights"]["dense"], fit["weights"]["bm25"], fit["weights"][hop])
@@ -68,7 +68,7 @@ def _stored(old: OldData, spec: config.CorpusSet) -> dict[str, dict[str, list[st
     stored: dict[str, dict[str, list[str]]] = {}
     for system, relative in spec.stored_rankings.items():
         lists: dict[str, list[str]] = {}
-        with old.path(relative).open("rb") as raw, gzip.GzipFile(fileobj=raw) as gz:
+        with old.verified_path(relative).open("rb") as raw, gzip.GzipFile(fileobj=raw) as gz:
             for line in io.TextIOWrapper(gz, encoding="utf-8"):
                 record = json.loads(line)
                 lists[str(record["qid"])] = [str(hit[0]) for hit in record["fused"]]
@@ -78,8 +78,8 @@ def _stored(old: OldData, spec: config.CorpusSet) -> dict[str, dict[str, list[st
 
 def run(set_name: str, say: Say = print) -> dict[str, Any]:
     spec = config.SETS[set_name]
-    old = OldData(spec.directory)
     checks = Checks()
+    old = OldData(spec.directory, spec.file_sha256, checks)
     seconds: dict[str, float] = {}
     started = time.perf_counter()
 
@@ -88,8 +88,8 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         say(f"[{set_name}] {stage} done in {seconds[stage]:.1f} s")
 
     say(f"[{set_name}] reading {old.base}")
-    for relative, digest in spec.file_sha256.items():
-        checks.expect(f"sha256 {relative}", sha256_file(old.path(relative)), digest)
+    for relative in spec.file_sha256:
+        old.verified_path(relative)
     lap("sha256")
     corpus = load_corpus(
         old, checks, ordered_digest=spec.ordered_unit_digest, set_hash=spec.unit_set_hash
@@ -129,12 +129,12 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         embedding["weights_sha256"],
         config.EMBEDDING_WEIGHTS_SHA256,
     )
-    vectors, vector_ids = load_vectors(old.path(spec.vectors_file))
+    vectors, vector_ids = load_vectors(old.verified_path(spec.vectors_file))
     if vector_ids != unit_ids:
         raise ArtifactError("the passage vectors are not the corpus units in order")
     del vector_ids
     checks.expect("passage vectors digest", vectors_digest(vectors), spec.vectors_digest)
-    question_vectors, qids = load_vectors(old.path(spec.question_vectors_file))
+    question_vectors, qids = load_vectors(old.verified_path(spec.question_vectors_file))
     question_key = legacy_question_cache_key(
         config.EMBEDDING_MODEL,
         config.EMBEDDING_REVISION,

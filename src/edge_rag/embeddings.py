@@ -76,20 +76,3 @@ class QueryTable:
         if row is None:
             raise ArtifactError(f"question {qid!r} is not in the cache")
         return self._vectors[row]
-
-
-class SentenceTransformerBackend:
-    """The pinned Dense encoder, for new corpora or questions (not used by the gate)."""
-
-    def __init__(self, device: str = "cpu") -> None:
-        from sentence_transformers import SentenceTransformer
-
-        self.name = config.EMBEDDING_MODEL
-        self.revision = config.EMBEDDING_REVISION
-        self._model = SentenceTransformer(self.name, revision=self.revision, device=device)
-
-    def encode(self, texts: Sequence[str], batch_size: int = 64) -> np.ndarray:
-        encoded = self._model.encode(
-            list(texts), batch_size=batch_size, normalize_embeddings=True, convert_to_numpy=True
-        )
-        return np.asarray(encoded, dtype=np.float32)

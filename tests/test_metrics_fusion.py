@@ -48,7 +48,6 @@ def test_recall_and_ndcg():
     expected = (1 / math.log2(3) + 1 / math.log2(5)) / ideal
     assert metrics.ndcg_at_k(ranked, ["g1", "g2"], 10) == pytest.approx(expected)
     assert metrics.ndcg_at_k(["g1", "g2"], ["g1", "g2"], 10) == 1.0
-    assert metrics.ndcg_at_k(ranked, [], 10) == 0.0
 
 
 def test_min_max_absent_floor_and_constant_list():
@@ -69,3 +68,23 @@ def test_fusion_weights_and_ties_by_unit_id():
         fuse_lists([dense, bm25], (0.6, 0.6), top_k=10)
     with pytest.raises(ValueError):
         fuse_lists([[("a", 1.0), ("a", 2.0)], bm25], (0.5, 0.5), top_k=10)
+
+
+def test_a_question_without_gold_units_is_an_error():
+    for call in (
+        lambda: metrics.full_support(["a"], []),
+        lambda: metrics.recall_at_k(["a"], [], 5),
+        lambda: metrics.ndcg_at_k(["a"], [], 10),
+    ):
+        with pytest.raises(ValueError, match="gold"):
+            call()
+
+
+def test_frozen_constants_match_the_spec():
+    from edge_rag import config
+
+    assert config.WEIGHTS_P10B == (0.5, 0.5)
+    assert config.WEIGHTS_TRIPLE == (0.5, 0.3, 0.2)
+    assert config.P14_ALPHA == 0.75
+    assert config.BUDGET == 2048
+    assert config.DEPTH == 100

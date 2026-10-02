@@ -43,8 +43,7 @@ def load_node_index(old: OldData, nodes_dir: str, checks: Checks, *, recorded: s
     )
     stem = f"{nodes_dir}/nodes-{str(extraction['digest'])[:16]}"
     payload = old.json(f"{stem}.json")
-    with old.path(f"{stem}.npz").open("rb") as handle, np.load(handle, allow_pickle=False) as z:
-        indptr, indices = z["indptr"], z["indices"]
+    indptr, indices = old.arrays(f"{stem}.npz", "indptr", "indices")
     stored = payload.pop("digest", None)
     measured = digest_of(
         indptr.astype(np.int64),

@@ -1,7 +1,9 @@
 """Digests, the read-only old data root, and the only write path of the harness."""
 
 import hashlib
+import io
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -48,13 +50,18 @@ def guard_write(path: Path) -> Path:
     return target
 
 
-def write_json(path: Path, body: Any) -> Path:
+def write_bytes(path: Path, body: bytes) -> Path:
+    """The only write of the package: target and temporary file are both guarded."""
     target = guard_write(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_name(target.name + ".tmp")
-    temporary.write_text(json.dumps(body, indent=2, sort_keys=True), encoding="utf-8")
+    temporary = guard_write(target.with_name(target.name + ".tmp"))
+    temporary.write_bytes(body)
     temporary.replace(target)
     return target
+
+
+def write_json(path: Path, body: Any) -> Path:
+    return write_bytes(path, json.dumps(body, indent=2, sort_keys=True).encode("utf-8"))
 
 
 class Checks:
@@ -70,13 +77,29 @@ class Checks:
 
 
 class OldData:
-    """One old set directory, opened read-only under the configured root."""
+    """One old set directory, opened read-only under the configured root.
 
-    def __init__(self, directory: str, root: Path | None = None) -> None:
+    Every file read needs a pinned sha256 in `pins` (relative path -> digest) and is checked
+    byte for byte before any parser sees it.
+    """
+
+    # Above this size a file is hashed by streaming and then opened, not held in memory.
+    IN_MEMORY_LIMIT = 64 << 20
+
+    def __init__(
+        self,
+        directory: str,
+        pins: Mapping[str, str],
+        checks: "Checks | None" = None,
+        root: Path | None = None,
+    ) -> None:
         self.root = (root or config.old_data_root()).resolve()
         self.base = (self.root / directory).resolve()
         if not self.base.is_relative_to(self.root):
             raise ArtifactError(f"{directory} escapes the old data root")
+        self.pins = dict(pins)
+        self.checks = checks
+        self._verified: set[str] = set()
 
     def path(self, relative: str) -> Path:
         target = (self.base / relative).resolve()
@@ -86,6 +109,39 @@ class OldData:
             raise ArtifactError(f"missing old artifact: {target}")
         return target
 
+    def _expect(self, relative: str, measured: str) -> None:
+        recorded = self.pins.get(relative)
+        if recorded is None:
+            raise ArtifactError(f"no pinned sha256 for old artifact {relative}")
+        if measured != recorded:
+            raise ArtifactError(f"sha256 {relative}: measured {measured}, pinned {recorded}")
+        if relative not in self._verified:
+            self._verified.add(relative)
+            if self.checks is not None:
+                self.checks.records.append({"artifact": f"sha256 {relative}", "digest": recorded})
+
+    def verified_path(self, relative: str) -> Path:
+        """The file's path once its bytes match the pin (hashed once per run); for large files."""
+        target = self.path(relative)
+        if relative not in self._verified:
+            self._expect(relative, sha256_file(target))
+        return target
+
+    def read(self, relative: str) -> bytes:
+        """The file's bytes, checked against the pin; the caller parses these same bytes."""
+        target = self.path(relative)
+        body = target.read_bytes()
+        self._expect(relative, hashlib.sha256(body).hexdigest())
+        return body
+
     def json(self, relative: str) -> Any:
-        with self.path(relative).open("rb") as handle:
-            return json.loads(handle.read().decode("utf-8"))
+        target = self.path(relative)
+        if target.stat().st_size > self.IN_MEMORY_LIMIT:
+            with self.verified_path(relative).open("rb") as handle:
+                return json.load(handle)
+        return json.loads(self.read(relative).decode("utf-8"))
+
+    def arrays(self, relative: str, *names: str) -> list[np.ndarray]:
+        """Named arrays of an `.npz` (no pickle), read from the bytes that were checked."""
+        with np.load(io.BytesIO(self.read(relative)), allow_pickle=False) as payload:
+            return [payload[name] for name in names]

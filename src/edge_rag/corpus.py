@@ -48,7 +48,10 @@ def load_corpus(old: OldData, checks: Checks, *, ordered_digest: str, set_hash: 
     )
     unit_ids: list[str] = []
     texts: list[str] = []
-    with old.path(str(manifest["corpus_file"])).open("rb") as raw, gzip.GzipFile(fileobj=raw) as gz:
+    with (
+        old.verified_path(str(manifest["corpus_file"])).open("rb") as raw,
+        gzip.GzipFile(fileobj=raw) as gz,
+    ):
         for number, line in enumerate(io.TextIOWrapper(gz, encoding="utf-8"), start=1):
             entry = json.loads(line)
             title = str(entry["title"])
