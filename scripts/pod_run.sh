@@ -65,6 +65,8 @@ serve_and_run() {  # serve_and_run <set> <command...>: G-L retrieval server arou
   "$@" || status=$?
   kill "$server"
   wait "$server" || true
+  # `kill` reaches the `uv run` wrapper, not its python child: end the server itself.
+  pkill -f "[e]dge_rag.pod.colbert --set $set --serve" || true
   return "$status"
 }
 
