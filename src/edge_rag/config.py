@@ -271,3 +271,45 @@ SETS: dict[str, CorpusSet] = {
         },
     ),
 }
+
+# --- Phase 02: scoring of ranking files ------------------------------------------------------
+FS_BUDGETS: tuple[int, ...] = (1024, 2048, 4096)
+FS_UNIT_KS: tuple[int, ...] = (2, 5, 20)
+GOLD_SHARE_K = 5
+RANKINGS_DIR = DATA_DIR / "phase02" / "rankings"
+
+# Old Phase 17 J-strong lists: J(P10-B) and the union pool. The sha256 values are the ones
+# recorded in phase17/outcome.json (provenance.reordered_files), matched in place 2026-10-02.
+OLD_REFERENCES_DIR = "phase17"
+OLD_REFERENCES: dict[str, dict[str, tuple[str, str]]] = {
+    "hotpotqa-dev": {
+        "j-p10b": (
+            "reordered-strong-hotpotqa-hybrid-bm25.jsonl.gz",
+            "8f200803e3f9af60daa3b1988e0a608c99acdd4a85d0597af3376aad0ebf166a",
+        ),
+        "j-union": (
+            "reordered-strong-hotpotqa-union.jsonl.gz",
+            "e52ed3824497613f1b3e98ab8c5a198e03b962acf54e8938f884a0988d76e60d",
+        ),
+    },
+    "musique": {
+        "j-p10b": (
+            "reordered-strong-musique-hybrid-bm25.jsonl.gz",
+            "77bb51bc615dfde79abd259527ff878b14d4d46e8e4899326144a909b3502edb",
+        ),
+        "j-union": (
+            "reordered-strong-musique-union.jsonl.gz",
+            "ebd5b33f5dc9e7fc87c72077ac2e2443b383561c533505882dddcbec2462515c",
+        ),
+    },
+    "multihop-rag": {
+        "j-p10b": (
+            "reordered-strong-multihop-rag-hybrid-bm25.jsonl.gz",
+            "90878a8f5ff27315ae978ef8526a5a24f6e62ec346fa09c3efe8268a015c5aaa",
+        ),
+        "j-union": (
+            "reordered-strong-multihop-rag-union.jsonl.gz",
+            "ff2fdb455efed234b475af99a58c2a128dcacd530a683cf7c4f66de588303fd1",
+        ),
+    },
+}

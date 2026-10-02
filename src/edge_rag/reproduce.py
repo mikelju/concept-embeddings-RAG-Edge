@@ -10,9 +10,9 @@ from typing import Any
 
 import numpy as np
 
-from edge_rag import config, metrics
+from edge_rag import config, metrics, scoring
 from edge_rag.artifacts import ArtifactError, Checks, OldData, digest_of, write_json
-from edge_rag.corpus import load_corpus, load_questions
+from edge_rag.corpus import load_corpus
 from edge_rag.embeddings import (
     QueryTable,
     legacy_corpus_cache_key,
@@ -30,22 +30,6 @@ Say = Callable[[str], None]
 
 def _key_of(relative: str) -> str:
     return relative.rsplit("embeddings-", 1)[1].removesuffix(".npz")
-
-
-def _token_counts(old: OldData, checks: Checks, spec: config.CorpusSet, unit_ids: list[str]):
-    manifest = old.json("token-counts.json")
-    if manifest["unit_set_hash"] != spec.unit_set_hash:
-        raise ArtifactError("the token counts belong to another corpus")
-    raw_ids, raw_counts = old.arrays("token-counts.npz", "unit_ids", "counts")
-    ids = [str(unit_id) for unit_id in raw_ids]
-    counts = raw_counts.astype(np.int32)
-    if ids != unit_ids:
-        raise ArtifactError("the token counts are not keyed by the corpus units in order")
-    checks.expect(
-        "token-counts.json counts_digest", manifest["counts_digest"], spec.token_counts_digest
-    )
-    checks.expect("token counts digest", digest_of(counts), spec.token_counts_digest)
-    return dict(zip(ids, (int(c) for c in counts), strict=True))
 
 
 def _fits(checks: Checks) -> None:
@@ -95,16 +79,8 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         old, checks, ordered_digest=spec.ordered_unit_digest, set_hash=spec.unit_set_hash
     )
     unit_ids = corpus.unit_ids
-    questions, _body = load_questions(
-        old,
-        checks,
-        corpus_set_hash=spec.unit_set_hash,
-        question_digest_recorded=spec.question_digest,
-        mapping_digest_recorded=spec.mapping_digest,
-    )
-    if len(questions) != spec.questions:
-        raise ArtifactError(f"{len(questions)} questions, expected {spec.questions}")
-    token_counts = _token_counts(old, checks, spec, unit_ids)
+    questions = scoring.questions_of(old, checks, spec)
+    token_counts = scoring.token_counts(old, checks, spec)
     _fits(checks)
     lap("corpus, questions, token counts")
 
@@ -156,9 +132,7 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
 
     stored = _stored(old, spec)
     names = config.SYSTEMS
-    outcomes: dict[str, list[int]] = {name: [] for name in names}
-    recall = {name: {k: 0.0 for k in config.RECALL_KS} for name in names}
-    ndcg = dict.fromkeys(names, 0.0)
+    rankings: dict[str, dict[str, list[str]]] = {name: {} for name in names}
     agree = dict.fromkeys(stored, 0)
     depth = config.DEPTH
     for number, question in enumerate(questions, start=1):
@@ -177,23 +151,28 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
                 top_k=depth,
             ),
         }
-        gold = question.gold_unit_ids
         for name, hits in lists.items():
             ranked = [unit_id for unit_id, _ in hits]
-            context = metrics.fill_context(ranked, token_counts, config.BUDGET)
-            outcomes[name].append(metrics.full_support(context, gold))
-            for k in config.RECALL_KS:
-                recall[name][k] += metrics.recall_at_k(ranked, gold, k)
-            ndcg[name] += metrics.ndcg_at_k(ranked, gold, config.NDCG_K)
+            rankings[name][question.qid] = ranked
             if name in stored and stored[name].get(question.qid) == ranked:
                 agree[name] += 1
         if number % 500 == 0:
-            progress = " ".join(f"{n}={sum(outcomes[n])}" for n in names)
-            say(f"[{set_name}] {number}/{len(questions)} questions: {progress}")
+            say(f"[{set_name}] {number}/{len(questions)} questions")
     lap("retrieval")
 
+    scores: dict[str, dict[str, Any]] = {}
+    outcomes: dict[str, list[int]] = {}
+    ranking_sha256: dict[str, str] = {}
+    for name in names:
+        scores[name], outcomes[name] = scoring.score(questions, rankings[name], token_counts)
+        ranking_sha256[name] = scoring.write_rankings(
+            config.RANKINGS_DIR / set_name / f"{name.lower()}.jsonl.gz",
+            ((q.qid, rankings[name][q.qid]) for q in questions),
+        )
+    lap("scoring and ranking files")
+
     n = len(questions)
-    counts = {name: sum(outcomes[name]) for name in names}
+    counts = {name: scores[name]["full_support_at_budget"][str(config.BUDGET)] for name in names}
     gate = {
         name: {
             "recorded": spec.gate[name],
@@ -212,8 +191,10 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         "gate": gate,
         "gate_pass": all(entry["match"] for entry in gate.values()),
         "gliner_configuration_digest": config.GLINER_CONFIGURATION_DIGEST,
-        "recall_at_k": {name: {str(k): v / n for k, v in recall[name].items()} for name in names},
-        "ndcg_at_10": {name: ndcg[name] / n for name in names},
+        "recall_at_k": {name: scores[name]["recall_at_k"] for name in names},
+        "ndcg_at_10": {name: scores[name]["ndcg_at_10"] for name in names},
+        "scores": scores,
+        "ranking_sha256": ranking_sha256,
         "paired_full_support": {
             f"{b} vs {a}": metrics.paired(outcomes[a], outcomes[b]) for a, b in pairs
         },
