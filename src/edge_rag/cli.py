@@ -46,6 +46,10 @@ def main(argv: list[str] | None = None) -> int:
     refs.add_argument(
         "--set", dest="set_name", required=True, choices=sorted(config.OLD_REFERENCES)
     )
+    results = commands.add_parser("results", help="write the Phase 02 results table")
+    results.add_argument(
+        "--set", dest="set_names", action="append", choices=sorted(config.OLD_REFERENCES)
+    )
     args = parser.parse_args(argv)
     if args.command == "reproduce":
         from edge_rag.reproduce import run
@@ -66,6 +70,13 @@ def main(argv: list[str] | None = None) -> int:
 
         for name, digest in scoring.old_references(args.set_name).items():
             _say(f"[{args.set_name}] {name}.jsonl.gz sha256 {digest}")
+        return 0
+    if args.command == "results":
+        from edge_rag import results
+
+        table = results.run(args.set_names or sorted(config.OLD_REFERENCES))
+        for entry in table["sets"]:
+            _say(f"[{entry['set']}] systems {', '.join(entry['systems'])}")
         return 0
     return 2
 
