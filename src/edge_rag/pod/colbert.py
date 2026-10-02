@@ -50,13 +50,15 @@ def open_index(set_name: str, tag: str | None, *, override: bool) -> Any:
 
 
 def spread_chunks(
-    make_units: Callable[[], Iterator[Any]], stride: int, chunk_units: int
+    make_units: Callable[[], Iterator[Any]], stride: int, update_units: int
 ) -> Iterator[list[Any]]:
     """First chunk: every `stride`-th unit, so the centroids it sets span the whole corpus;
-    then the remaining units in corpus order. stride 1 is a single chunk, PyLate's default."""
+    then the remaining units in corpus order, `update_units` at a time (fast-plaid's update holds
+    a whole chunk's embeddings on the GPU: 500,000 HotpotQA units ran out of 24 GB, plan D9).
+    stride 1 is a single chunk, PyLate's default."""
     yield [u for i, u in enumerate(make_units()) if i % stride == 0]
     rest = (u for i, u in enumerate(make_units()) if i % stride != 0)
-    while chunk := list(islice(rest, chunk_units)):
+    while chunk := list(islice(rest, update_units)):
         yield chunk
 
 
@@ -80,7 +82,7 @@ def build(args: argparse.Namespace) -> None:
     stride = -(-n_units // args.chunk_units)
     total, chunks = 0, 0
     for chunk in spread_chunks(
-        lambda: common.iter_units(old, spec, limit=args.limit_units), stride, args.chunk_units
+        lambda: common.iter_units(old, spec, limit=args.limit_units), stride, args.update_units
     ):
         started = time.perf_counter()
         embeddings = model.encode(
@@ -128,6 +130,7 @@ def build(args: argparse.Namespace) -> None:
             "index": "pylate.indexes.PLAID, default settings",
             "index_chunks": chunks,
             "chunk_units": args.chunk_units,
+            "update_units": args.update_units,
             "first_chunk_stride": stride,
             "encode_batch_size": args.batch_size,
             "depth": DEPTH,
@@ -199,6 +202,7 @@ def main() -> None:
     parser.add_argument("--limit-units", type=int, default=None, help="probe: first N units")
     parser.add_argument("--limit-questions", type=int, default=None)
     parser.add_argument("--chunk-units", type=int, default=500_000)
+    parser.add_argument("--update-units", type=int, default=100_000)
     parser.add_argument("--batch-size", type=int, default=32, help="PyLate's encode default")
     parser.add_argument("--serve", action="store_true")
     parser.add_argument("--port", type=int, default=8000)
