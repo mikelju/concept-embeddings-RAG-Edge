@@ -120,3 +120,12 @@ def test_read_pinned_refuses_other_bytes(tmp_path):
     assert rerank.read_pinned(path, sha256_file(path), 1) == [{"a": 1}]
     with pytest.raises(ArtifactError):
         rerank.read_pinned(path, "0" * 64)
+
+
+def test_spread_chunks_first_chunk_spans_corpus() -> None:
+    from edge_rag.pod.colbert import spread_chunks
+
+    chunks = list(spread_chunks(lambda: iter(range(10)), 3, 3))
+    assert chunks[0] == [0, 3, 6, 9]
+    assert sorted(u for c in chunks for u in c) == list(range(10))
+    assert list(spread_chunks(lambda: iter(range(4)), 1, 10)) == [[0, 1, 2, 3]]

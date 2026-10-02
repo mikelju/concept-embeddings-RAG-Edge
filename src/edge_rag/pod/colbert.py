@@ -5,14 +5,16 @@ Runs in `src/edge_rag/pod/colbert_env` (PyLate pins its own torch):
 `--serve` instead answers Search-R1 retrieval requests over a built index (G-A1).
 
 The corpus is encoded and added to the index in chunks of `--chunk-units`; the first chunk
-creates the index (its k-means centroids), later chunks go through fast-plaid's `update`, which
-keeps those centroids. A corpus no larger than one chunk is indexed in one call, PyLate's
-default; the manifest records the chunking.
+creates the index (its k-means centroids) and is a spread sample of the whole corpus (every
+`stride`-th unit), later chunks go through fast-plaid's `update`, which keeps those centroids.
+A corpus no larger than one chunk is indexed in one call, PyLate's default; the manifest
+records the chunking.
 """
 
 import argparse
 import json
 import time
+from collections.abc import Callable, Iterator
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from itertools import islice
 from typing import Any
@@ -47,6 +49,17 @@ def open_index(set_name: str, tag: str | None, *, override: bool) -> Any:
     return indexes.PLAID(index_folder=str(folder), index_name=SYSTEM, override=override)
 
 
+def spread_chunks(
+    make_units: Callable[[], Iterator[Any]], stride: int, chunk_units: int
+) -> Iterator[list[Any]]:
+    """First chunk: every `stride`-th unit, so the centroids it sets span the whole corpus;
+    then the remaining units in corpus order. stride 1 is a single chunk, PyLate's default."""
+    yield [u for i, u in enumerate(make_units()) if i % stride == 0]
+    rest = (u for i, u in enumerate(make_units()) if i % stride != 0)
+    while chunk := list(islice(rest, chunk_units)):
+        yield chunk
+
+
 def build(args: argparse.Namespace) -> None:
     tag = None if args.limit_units is None else f"units{args.limit_units}"
     out = common.rankings_path(args.set, SYSTEM, tag)
@@ -63,9 +76,12 @@ def build(args: argparse.Namespace) -> None:
     model = load_model()
     timer.add("load_model", started)
     index = open_index(args.set, tag, override=True)
-    units = common.iter_units(old, spec, limit=args.limit_units)
+    n_units = sum(1 for _ in common.iter_units(old, spec, limit=args.limit_units))
+    stride = -(-n_units // args.chunk_units)
     total, chunks = 0, 0
-    while chunk := list(islice(units, args.chunk_units)):
+    for chunk in spread_chunks(
+        lambda: common.iter_units(old, spec, limit=args.limit_units), stride, args.chunk_units
+    ):
         started = time.perf_counter()
         embeddings = model.encode(
             [u.text for u in chunk],
@@ -112,6 +128,7 @@ def build(args: argparse.Namespace) -> None:
             "index": "pylate.indexes.PLAID, default settings",
             "index_chunks": chunks,
             "chunk_units": args.chunk_units,
+            "first_chunk_stride": stride,
             "encode_batch_size": args.batch_size,
             "depth": DEPTH,
             "units": total,
