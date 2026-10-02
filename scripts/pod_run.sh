@@ -55,7 +55,8 @@ cuda_check() {  # a real kernel in both environments, not only `is_available()`
 serve_and_run() {  # serve_and_run <set> <command...>: G-L retrieval server around a command
   local set=$1
   shift
-  colbert_py -m edge_rag.pod.colbert --set "$set" --serve --port 8000 &
+  # On the CPU: vLLM needs 0.8 of the GPU, and the server held about 7.5 GB of it (session 2).
+  CUDA_VISIBLE_DEVICES="" colbert_py -m edge_rag.pod.colbert --set "$set" --serve --port 8000 &
   local server=$!
   until curl -sf http://127.0.0.1:8000/ > /dev/null; do
     kill -0 "$server" 2> /dev/null || { echo "retrieval server died" >&2; return 1; }
