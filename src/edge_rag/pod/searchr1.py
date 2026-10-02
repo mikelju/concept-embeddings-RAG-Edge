@@ -278,9 +278,11 @@ def hf_engine() -> tuple[Any, Callable[[list[Trace]], list[tuple[str, bool, int]
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(MODEL, revision=REVISION)
     model: Any = transformers.AutoModelForCausalLM.from_pretrained(
-        MODEL, revision=REVISION, dtype=torch.bfloat16, device_map="auto"
+        MODEL, revision=REVISION, dtype=torch.bfloat16
     )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # infer.py's device_map="auto" needs accelerate; on one GPU it is this move.
+    model = model.to(device)
 
     class StopOnSequence(transformers.StoppingCriteria):
         def __init__(self, target_sequences: list[str], tokenizer: Any) -> None:
