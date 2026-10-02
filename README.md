@@ -25,6 +25,10 @@ Spec-driven phases with frozen criteria, autonomous implementation and adversari
 The working guide, in Spanish, is [docs/como-trabajar.md](docs/como-trabajar.md); agent rules are in [AGENTS.md](AGENTS.md).
 `npm run check` runs the repository checks; `npm ci --ignore-scripts --no-audit --no-fund` installs the tooling.
 
+## Old data
+
+The harness reads the old project's `data/` in place, read-only: default `../concept-embeddings-RAG/data` beside this repository, override with the env var `OLD_DATA_ROOT`.
+
 ## Author
 
 Mikel Ugarte-Gil, independent researcher.

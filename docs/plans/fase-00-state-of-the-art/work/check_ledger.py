@@ -17,14 +17,46 @@ HERE = Path(__file__).resolve().parent
 PHASE = HERE.parent
 INPUTS = ["ledger-cheap.json", "ledger-expensive.json"]
 REQUIRED = [
-    "id", "system", "family", "cost_class", "benchmark", "setting", "corpus_size", "split",
-    "metric", "k_or_budget", "value", "unit", "source", "self_reported", "verified",
-    "why_unverified", "llm_in_loop", "offline_cost", "online_cost", "latency", "code_url",
-    "weights_public", "licence", "notes", "why_missing",
+    "id",
+    "system",
+    "family",
+    "cost_class",
+    "benchmark",
+    "setting",
+    "corpus_size",
+    "split",
+    "metric",
+    "k_or_budget",
+    "value",
+    "unit",
+    "source",
+    "self_reported",
+    "verified",
+    "why_unverified",
+    "llm_in_loop",
+    "offline_cost",
+    "online_cost",
+    "latency",
+    "code_url",
+    "weights_public",
+    "licence",
+    "notes",
+    "why_missing",
 ]
 # Fields that must never be null, whatever why_missing says.
-NEVER_NULL = ["id", "system", "family", "cost_class", "benchmark", "setting", "metric", "value",
-              "unit", "source", "verified"]
+NEVER_NULL = [
+    "id",
+    "system",
+    "family",
+    "cost_class",
+    "benchmark",
+    "setting",
+    "metric",
+    "value",
+    "unit",
+    "source",
+    "verified",
+]
 
 
 def load():
@@ -76,7 +108,9 @@ def cited_share(records):
     if not survey.exists():
         return
     by_id = {r["id"]: r for r in records}
-    cited = sorted(set(re.findall(r"`([ce]-[a-z0-9][a-z0-9._-]*)`", survey.read_text(encoding="utf-8"))))
+    cited = sorted(
+        set(re.findall(r"`([ce]-[a-z0-9][a-z0-9._-]*)`", survey.read_text(encoding="utf-8")))
+    )
     unknown = [c for c in cited if c not in by_id]
     known = [c for c in cited if c in by_id]
     verified = [c for c in known if by_id[c]["verified"] is True]
@@ -86,7 +120,9 @@ def cited_share(records):
         print(f"  UNKNOWN id: {c}")
     if known:
         share = 100.0 * len(verified) / len(known)
-        print(f"  verified: {len(verified)} of {len(known)} = {share:.1f} percent (C3 requires >= 80)")
+        print(
+            f"  verified: {len(verified)} of {len(known)} = {share:.1f} percent (C3 requires >= 80)"
+        )
         for c in known:
             if by_id[c]["verified"] is not True:
                 print(f"  not verified: {c}")
@@ -97,7 +133,8 @@ def main():
     records = sorted(load(), key=lambda r: r.get("id") or "")
     problems = check(records)
     (PHASE / "ledger.json").write_text(
-        json.dumps(records, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        json.dumps(records, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
     print(f"Records: {len(records)}, written to ledger.json")
     print(f"Problems: {len(problems)}")
     for p in problems:
