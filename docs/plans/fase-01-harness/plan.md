@@ -1,6 +1,6 @@
 # Phase 01 - Harness and reproduction gate: plan and results
 
-Status: in progress
+Status: ready locally
 Spec: `spec.md` (frozen)
 Base: branch `iniciar`, commit `beb78d2`; work branch `fase-01-harness`
 
@@ -23,7 +23,7 @@ Each increment leaves the product working and covers concrete criteria.
 - [x] 3. Retrievers, fusion, hops, budget, metrics and exact McNemar (C4, C6) - evidence: 16 tests pass (`uv run pytest -q`), including the overflow case at n = 1,300 discordant against `scipy.stats.binomtest`.
 - [x] 4. CLI `edge-rag reproduce` and the gate on MultiHop-RAG (C1) - evidence: below.
 - [x] 5. Gate on MuSiQue (C1) - evidence: below.
-- [ ] 6. Gate on HotpotQA dev FullWiki (C1) - evidence: below.
+- [x] 6. Gate on HotpotQA dev FullWiki (C1) - evidence: below.
 - [x] 7. `npm run check` runs pytest, ruff and mypy (C5) - evidence: `npm run check` exit 0 ("Todos los casos correctos", 16 passed, "All checks passed!", "Success: no issues found in 12 source files").
 
 ## Deviations
@@ -33,6 +33,7 @@ Each increment leaves the product working and covers concrete criteria.
 ## Adversarial review
 | Round | Backend | Range | Lenses | Findings | Status |
 |---|---|---|---|---|---|
+| - | - | - | - | not run in this session (the sdd-delivery review is pending before the PR) | pending |
 
 ## Results
 Per criterion: the command or path run, the observed result, and where the evidence is.
@@ -47,11 +48,19 @@ P10-A 436, P10-B 524, P10-C 669, P14 761 of 2,417: all match; `GATE PASS`.
 Cross-check: 2,417 of 2,417 lists equal the stored ones for each system.
 23 digests checked; retrieval 19.1 s.
 
+C1, HotpotQA dev FullWiki: `uv run edge-rag reproduce --set hotpotqa-dev` (log `data/logs/reproduce-hotpotqa-dev.log`).
+P10-A 4,125, P10-B 4,536, P10-C 4,801, P14 5,224 of 7,405: all match; `GATE PASS`.
+The rebuilt BM25 index, the 5,233,329 passage vectors (file SHA-256 and float32 digest) and the entity index matched their recorded digests; 22 digests checked.
+Timings on the laptop: sha256 30.2 s, corpus and questions 40.7 s, BM25 rebuild 217.4 s, vectors 68.3 s, entity index 16.9 s, retrieval of 7,405 questions 1,888.4 s; working set about 5.4 GB during the BM25 build (peak not recorded).
+No stored-ranking cross-check here: the stored HotpotQA lists are component lists (`dev-lists.jsonl.gz`), not fused rankings, and the live counts already match.
+
 C1, GLiNER configuration digest: `2f7864661b8ce7ff` recomputed from `extraction.json` of each set and checked in every run (`GLiNER configuration digest` entry of `digests_checked`).
 
 C4: the paired p values the harness computes on MuSiQue (P10-B vs P10-A 2.06393982938988e-10; P10-C vs P10-B 1.3454696936403321e-22; P14 vs P10-C 1.741488902287888e-10) appear verbatim in the old `data/phase15/outcome.json` (grep count 3).
 
 C6: each result JSON carries `recall_at_k` (k = 2, 5, 10, 20, 100) and `ndcg_at_10` per system; for example MuSiQue P14 Recall@10 0.5564, nDCG@10 0.5276.
+
+Pending: the adversarial review and the delivery (push and PR) were not done in this session; peak memory was not instrumented.
 
 Result files: `data/results/reproduce-<set>.json` (git-ignored), with counts, digests checked, timings and outcome digests.
 
