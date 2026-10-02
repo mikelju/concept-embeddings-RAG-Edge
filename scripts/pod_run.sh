@@ -7,7 +7,7 @@
 # A stage is skipped when its output manifest exists.
 set -euo pipefail
 
-: "${POD_COST_PER_HR:?set POD_COST_PER_HR to the pod's costPerHr}"
+: "${POD_COST_PER_HR:?set POD_COST_PER_HR to the pod costPerHr}"
 : "${OLD_DATA_ROOT:?set OLD_DATA_ROOT to the uploaded old data root}"
 OLD17_DIR="${OLD17_DIR:-/workspace/old17}"
 LOG="${LOG:-/workspace/pod_run.log}"
