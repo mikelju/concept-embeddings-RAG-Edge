@@ -10,6 +10,8 @@ set -euo pipefail
 : "${POD_COST_PER_HR:?set POD_COST_PER_HR to the pod costPerHr}"
 : "${OLD_DATA_ROOT:?set OLD_DATA_ROOT to the uploaded old data root}"
 OLD17_DIR="${OLD17_DIR:-/workspace/old17}"
+# Sets for G-L and G-R; a set whose G-L stage failed twice is left out (recipe stop conditions).
+GL_SETS="${GL_SETS:-multihop-rag musique hotpotqa-dev}"
 LOG="${LOG:-/workspace/pod_run.log}"
 export POD_COST_PER_HR OLD_DATA_ROOT
 OUT=data/phase02
@@ -74,7 +76,7 @@ stage cuda "" cuda_check
 stage probe-g-l "$OUT/probe/units1000/musique/g-l.manifest.json" \
   colbert_py -m edge_rag.pod.colbert --set musique --limit-units 1000 --limit-questions 100
 
-for set in multihop-rag musique hotpotqa-dev; do
+for set in $GL_SETS; do
   stage "g-l-$set" "$OUT/rankings/$set/g-l.manifest.json" \
     colbert_py -m edge_rag.pod.colbert --set "$set"
 done
@@ -82,7 +84,7 @@ done
 stage g-r-check-old "$OUT/checks/c3-strong-rescore.json" \
   main_py -m edge_rag.pod.rerank --check-old --old17-dir "$OLD17_DIR"
 
-for set in multihop-rag musique hotpotqa-dev; do
+for set in $GL_SETS; do
   stage "g-r-$set" "$OUT/rankings/$set/g-r.manifest.json" \
     main_py -m edge_rag.pod.rerank --set "$set"
 done
