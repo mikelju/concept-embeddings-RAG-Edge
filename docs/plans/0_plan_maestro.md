@@ -1,7 +1,7 @@
 # Master plan - concept-embeddings-RAG-Edge
 
-Status: draft
-Approved by the author: pending
+Status: approved
+Approved by the author: 2026-10-02
 
 ## Vision
 
@@ -66,6 +66,8 @@ Phases 03-05 are placeholders: their number and content are decided after Phase 
 | 2026-10-02 | SDD Lite as the working framework, with the old `research-protocol` and `remote-gpu` knowledge ported as skills | one flow, one guard; keep the domain know-how | copying the old commands, guard and templates |
 | 2026-10-02 | Public repository `mikelju/concept-embeddings-RAG-Edge` | the author's choice | private |
 | 2026-10-02 | Docs and code in English; Spanish translations on request, not mirrored | a mirror doubles every edit and drifts | a Spanish mirror of every document |
+| 2026-10-02 | The author delegates every further decision, including spec approvals and the open decisions below, to the agent; the only limits are the token quota and the RunPod budget, which the author authorizes up front; merging PRs stays the author's | a test of fully autonomous execution under SDD Lite | stopping at each spec for approval |
+| 2026-10-02 | Phases 00 and 01 run in parallel | 01 depends only on the old project's code | running them in sequence |
 | 2026-10-02 | The reading budget, the cost classes, an LLM in the heavy class's online loop, offline LLM work in the light class and the exam corpus are decided after Phase 00 | results must be comparable with the state of the art first | deciding them now |
 
 ## Open decisions (after Phase 00)
