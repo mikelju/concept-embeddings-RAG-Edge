@@ -15,6 +15,9 @@ GL_SETS="${GL_SETS:-multihop-rag musique hotpotqa-dev}"
 GR_SETS="${GR_SETS-$GL_SETS}"
 LOG="${LOG:-/workspace/pod_run.log}"
 export POD_COST_PER_HR OLD_DATA_ROOT
+# FlashInfer's sampler JIT-builds with the image's nvcc 12.4, which rejects `--compress-mode`
+# (session 3); greedy decoding takes the argmax either way (plan D13).
+export VLLM_USE_FLASHINFER_SAMPLER=0
 OUT=data/phase02
 COLBERT_ENV=src/edge_rag/pod/colbert_env
 
