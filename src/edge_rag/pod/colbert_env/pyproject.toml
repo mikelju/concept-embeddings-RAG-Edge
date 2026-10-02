@@ -3,6 +3,8 @@
 # compiled wheels pin torch 2.11.0; the harness pins torch 2.13.0 and transformers 5.16.1 (the
 # versions J-strong was measured with), so the two cannot share one lock. `edge_rag` is put on
 # PYTHONPATH (`src/`), not installed, so the harness pins never enter this resolution.
+# torch comes from the cu126 index: PyPI's torch 2.11.0 is a CUDA 13 build the pod's CUDA 12.8
+# driver refuses (plan F2); fast-plaid links only libtorch/libc10, so any 2.11.0 build serves.
 [project]
 name = "edge-rag-colbert-env"
 version = "0.1.0"
@@ -17,3 +19,11 @@ dependencies = [
 [tool.uv]
 package = false
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
