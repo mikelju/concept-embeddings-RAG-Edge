@@ -1,0 +1,67 @@
+[project]
+name = "edge-rag"
+version = "0.1.0"
+description = "Tournament harness for retrieval strategies, built from concept-embeddings-RAG"
+requires-python = ">=3.12,<3.13"
+# Every library that can move a recorded number is pinned to the version the old project
+# measured with (old uv.lock): numpy 2.5.2 and scipy 1.18.1 off linux x86_64, bm25s 0.3.11.
+dependencies = [
+    "numpy==2.5.2",
+    "scipy==1.18.1",
+    "bm25s==0.3.11",
+    "torch==2.13.0",
+    "transformers==5.16.1",
+    "sentence-transformers==6.0.1",
+    "tokenizers==0.23.1",
+]
+
+[project.scripts]
+edge-rag = "edge_rag.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu126", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+    { index = "pytorch-cpu", marker = "sys_platform != 'linux' or platform_machine != 'x86_64'" },
+]
+
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [".claude", "data", ".venv", "node_modules"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+# Recorded digests, not secrets.
+"src/edge_rag/config.py" = ["S105", "S106"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
