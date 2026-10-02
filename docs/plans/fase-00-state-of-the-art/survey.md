@@ -13,20 +13,21 @@ Counts are records in `ledger.json` (derived from the script's family counts).
 
 | Scope family | Ledger families counted | Records | Strongest figure found (setting) |
 |---|---|---:|---|
-| Dense bi-encoders, several sizes | dense bi-encoder; dense bi-encoder (closed API); dense bi-encoder (multi-hop, trained) | 68 | NV-Embed-v2 7B, nDCG@10 85.48 on BEIR-HotpotQA; small: bge-small-en-v1.5 69.9 (self-reported) |
+| Dense bi-encoders, several sizes | dense bi-encoder; dense bi-encoder (closed API); dense bi-encoder (multi-hop, trained) | 70 | NV-Embed-v2 7B, nDCG@10 85.48 on BEIR-HotpotQA; small: bge-small-en-v1.5 69.9 (self-reported) |
 | Hybrid lexical + dense | hybrid lexical+dense; hybrid dense+sparse+late interaction; hybrid lexical+learned sparse | 4 | BM25 + SPLADE convex combination, nDCG@1000 75.1 on BEIR-HotpotQA |
 | Learned sparse (SPLADE family) | learned sparse; learned sparse (document expansion) | 9 | SPLADE++SD 69.3 nDCG@10 on BEIR-HotpotQA |
 | Late interaction (ColBERT family, BGE-M3) | late interaction | 7 | Jina-ColBERT-v2 76.6 and answerai-colbert-small-v1 76.1 nDCG@10 on BEIR-HotpotQA |
-| Zero-shot cross-encoder rerankers | zero-shot cross-encoder reranker; dense bi-encoder + zero-shot cross-encoder reranker; dense + zero-shot cross-encoder reranker (closed API) | 16 | Contriever + MiniLM-L6 71.5 nDCG@10 on BEIR-HotpotQA; bge-reranker-v2-m3 53.65 BEIR-17 average |
+| Zero-shot cross-encoder rerankers | zero-shot cross-encoder reranker; dense bi-encoder + zero-shot cross-encoder reranker; dense + zero-shot cross-encoder reranker (closed API) | 18 | Contriever + MiniLM-L6 71.5 nDCG@10 on BEIR-HotpotQA; bge-reranker-v2-m3 53.65 BEIR-17 average |
 | Weight-free fusion | weight-free fusion | 4 | RRF of BM25 + SPLADE, nDCG@1000 73.7 on BEIR-HotpotQA |
 | Graph methods without an LLM | graph without LLM | 3 | LinearRAG, Contain-Acc 70.2 on 2Wiki (setting unknown, end-to-end metric) |
 | Iterative retrieval with an LLM (IRCoT and successors) | iterative-retrieval; query-decomposition | 63 | IRCoT + HippoRAG, passage recall@5 93.9 on 2Wiki pooled |
 | Agentic RAG and search agents | agentic-rl | 24 | ReSearch-32B, EM 46.73 on HotpotQA full Wikipedia |
 | LLM rerankers | llm-reranker | 9 | RankLLaMA-13B 76.4 nDCG@10 on BEIR-HotpotQA |
-| LLM-built graphs (GraphRAG, HippoRAG and successors) | llm-built-graph | 60 | HippoRAG 2, passage recall@5 74.7 MuSiQue, 90.4 2Wiki, 96.3 HotpotQA (pooled) |
+| LLM-built graphs (GraphRAG, HippoRAG and successors) | llm-built-graph | 61 | HippoRAG 2, passage recall@5 74.7 MuSiQue, 90.4 2Wiki, 96.3 HotpotQA (pooled) |
+| Total in the Scope families | | 272 | |
 
 Every Scope family has at least one record.
-Outside the Scope families the ledger also holds lexical baselines (11), trained multi-hop retrievers without an LLM (MDR, Beam Retrieval: 5) and one in-domain fine-tuned cross-encoder (QASPER), kept as context.
+Outside the Scope families (272 records) the ledger also holds lexical baselines (11), trained multi-hop retrievers without an LLM (MDR, Beam Retrieval: 5) and one in-domain fine-tuned cross-encoder (QASPER), kept as context (11 + 5 + 1 = 17; 272 + 17 = 289 records, counted by script).
 Thin families, said plainly: graph without an LLM has only LinearRAG, whose figures are answer accuracy in an unknown setting; hybrid lexical + dense has no figure on MuSiQue, 2Wiki or MultiHop-RAG.
 
 ## 2. Metric definitions (C4)
@@ -243,7 +244,7 @@ The distractor figure of Beam Retrieval (99.93 retrieval EM) is saturated and un
 
 **R1. 609 articles in 256-token chunks, the 2,255 non-null queries, Hits@10 (original definition: share of evidence in the top 10).**
 The paper excludes the 301 null queries from retrieval (Section 4, read in round 1), so 2,255 is the paper's own count.
-Every Table 5 row above 0.55 is shown; the two closed API embeddings (voyage-02, text-embedding-ada-002) are labelled context under the Scope rule, not ghost candidates; llm-embedder and jina-embeddings-v2-base-en are below every row shown.
+The ledger holds ten Table 5 rows (five embedding models, each alone and with bge-reranker-large), all shown, sorted by Hits@10; other Table 5 rows (llm-embedder, jina-embeddings-v2-base-en) are not in the ledger; the two closed API embeddings (voyage-02, text-embedding-ada-002) are labelled context under the Scope rule, not ghost candidates.
 
 | System | Class | Hits@10 | Cost | Id |
 |---|---|---:|---|---|
@@ -251,9 +252,9 @@ Every Table 5 row above 0.55 is shown; the two closed API embeddings (voyage-02,
 | bge-large-en-v1.5 + bge-reranker-large (top-20) | R | 71.83 | not reported | `c-mhrag-bge-large-h10-rr` |
 | text-embedding-ada-002 + bge-reranker-large (closed API, context) | R | 70.59 | not reported | `c-mhrag-ada-002-h10-rr` |
 | bge-large-en-v1.5 | L | 67.18 | not reported | `c-mhrag-bge-large-h10` |
+| instructor-large + bge-reranker-large | R | 65.9 | not reported | `c-mhrag-instructor-large-h10-rr` |
 | voyage-02 (closed API, context) | L | 65.06 | not reported | `c-mhrag-voyage-02-h10` |
 | text-embedding-ada-002 (closed API, context) | L | 63.81 | not reported | `c-mhrag-ada-002-h10` |
-| instructor-large + bge-reranker-large | R | 65.9 | not reported | `c-mhrag-instructor-large-h10-rr` |
 | instructor-large | L | 57.17 | not reported | `c-mhrag-instructor-large-h10` |
 | e5-base-v2 + bge-reranker-large | R | 41.76 | not reported | `c-mhrag-e5-base-v2-h10-rr` |
 | e5-base-v2 | L | 35.56 | not reported | `c-mhrag-e5-base-v2-h10` |
@@ -298,7 +299,7 @@ Two rules apply to every ghost, and to the old project's systems alike:
   If the weights cannot be used, the pre-declared fallback is Jina-ColBERT-v2 (76.6), labelled non-commercial under the licence rule.
 - A BM25 fusion of this ghost has no published figure, so it is a candidate for Phases 03 to 05, not part of the ghost.
 - Index: PLAID with 2-bit residual compression (ColBERTv2's own setting).
-  About 5.23M paragraphs of roughly 75 tokens give about 392M token vectors of 96 dimensions: about 75 GB at fp16 uncompressed (150 GB at fp32), about 13 GB at 2 bits plus centroid codes (derived from the counts; byte count per vector assumed 28).
+  About 5.23M paragraphs of roughly 75 tokens give about 392M token vectors of 96 dimensions: about 75 GB at fp16 uncompressed (150 GB at fp32), about 11 GB at 2 bits (392M x 28 B = 10.98 GB, derived from the counts; 28 B per vector assumed), and about 13 GB once about 2 GB of centroids, inverted lists and metadata are added (overhead assumed, not derived).
   The pod needs a volume of at least 60 GB for the index and its temporary files (projection).
 - Projected cost: encoding under 0.5 GPU-h, k-means on a sample about 0.3 GPU-h, and compression plus inverted-list building about 2.3 h, mostly CPU-bound but billed as pod time; the two small corpora 0.3 GPU-h; setup, queries and moving 13 GB 0.5 GPU-h: about 3.9 GPU-h, about 2.9 USD (projection).
 
@@ -328,7 +329,7 @@ Two rules apply to every ghost, and to the old project's systems alike:
 - What we score: the passages the agent retrieves, in retrieval order, cut at 2,048 tokens (FS).
   Its answer EM on our corpora is recorded as context only: corpus, retriever and questions differ from the paper's, so it is no check against 43.3, 19.6 or 38.2.
   Running its own E5 retriever over its 2018 Wikipedia corpus to reproduce a published figure is not affordable inside the cap (a 21M-passage index), so no published figure is reproduced for this ghost (gap).
-- Driver: the repository's `infer.py` runs one question at a time with `transformers` `generate` (read in round 1); at about 40 output tokens per second for one 7B stream (assumed) our 5,672 questions would take about 24 GPU-h, about 17.6 USD (projection), so it is not used for the runs.
+- Driver: the repository's `infer.py` runs one question at a time with `transformers` `generate` (read in round 1); at about 40 output tokens per second for one 7B stream (assumed) our 5,672 questions would take about 23.6 GPU-h (5,672 questions x 15 s), about 17.5 USD (23.6 x 0.74, projection), so it is not used for the runs.
   Phase 02 writes a batched vLLM driver with the same prompt, stop strings, top-3 retrieval and greedy decoding; the valid fidelity check is that, on 50 questions with the same retriever, the driver and `infer.py` issue the same searches and answers (the agreement bar is set in the Phase 02 spec, since vLLM and transformers kernels can flip a greedy token).
 - Code and weights: `github.com/PeterGriffinJin/Search-R1`, checkpoints public per the repository; licence not checked (gap, to open at the Phase 02 spec).
 - Scope: MuSiQue (2,417) and MultiHop-RAG (2,255) in full, and a preregistered random subsample of 1,000 HotpotQA dev questions; the retriever inside the loop is G-L's index.
@@ -343,10 +344,18 @@ Two rules apply to every ghost, and to the old project's systems alike:
   An 8B LLM and a 7B encoder at bf16 do not fit 24 GB together, so the run is staged (graph extraction, then encoding); the Phase 02 spec fixes how.
 - Scope: MultiHop-RAG only (27,989 units); MuSiQue (101,962 units) is out of the forecast and runs only if money remains (section 7).
 - Code and weights: `github.com/OSU-NLP-Group/HippoRAG`; licence not checked (gap).
-- Projected cost: indexing tokens scale from the published 790 input and 260 output tokens per passage (derived from 9.2M + 3.0M over 11,656) to about 22M input and 7.2M output tokens; at about 1,500 output tokens per second batched with vLLM that is about 1.6 GPU-h, plus 0.3 GPU-h of passage encoding, 0.2 for model swaps, 0.6 GPU-h of queries at about 1 s each and 0.5 GPU-h setup: about 3.2 GPU-h, about 2.4 USD (projection).
+- Projected cost: indexing tokens scale from the published 790 input and 260 output tokens per passage (derived from 9.2M + 3.0M over 11,656) to about 22M input and 7.28M output tokens (27,989 x 790 and x 260); at about 1,500 output tokens per second batched with vLLM, decoding takes 1.35 GPU-h, and with about 0.25 GPU-h of prefill (assumed) indexing is about 1.6 GPU-h, plus 0.3 GPU-h of passage encoding, 0.2 for model swaps, 0.6 GPU-h of queries at about 1 s each and 0.5 GPU-h setup: about 3.2 GPU-h, about 2.4 USD (projection).
   MuSiQue would add about 8 GPU-h, about 5.9 USD (projection), above the class-A offline bound of section 6, which is why it is not in the forecast.
 
 Ghost costs together for Phase 02: about 13.4 GPU-h and 9.9 USD before contingency, of which the core ghosts (G-L, G-R, G-A1 on MuSiQue and MultiHop-RAG) are 8.5 GPU-h and 6.3 USD (derived from the projections above).
+
+### Preconditions for Phase 02 (open, from review round 2)
+
+Before any ghost runs, read and record the following in the Phase 02 spec; none was read in Phase 00.
+
+- Training data (for the in-domain label under the training rule): bge-reranker-v2-m3, Qwen3-Reranker-0.6B and GritLM-7B, whether HotpotQA or MuSiQue train data were seen or not.
+- Licences: the Search-R1 checkpoints, the HippoRAG code, and Llama-3.1-8B (Llama community licence: judge eligibility under the licence rule of this section, or swap to an Apache-2.0 or MIT 8B model such as Qwen3-8B and note the cost impact on G-A2).
+- The model card of answerai-colbert-small-v1 (training data and licence as stated there).
 
 ## 6. Recommendations for the open decisions (C7)
 
@@ -364,7 +373,7 @@ These are decided by the agent under the author's delegation and recorded in the
    - A, LLM: open models of at most 8B parameters that fit 24 GB, online or offline (a 13B reranker such as RankLLaMA-13B is over the bound); online at most 30 s per question; offline at most 5 GPU-h per corpus.
    Reason: the bounds put the measured J-strong (0.45 to 0.54 s) inside R, keep GLiNER and the old Entity Hop inside L, and keep each class-A run inside the money cap.
 4. **LLM in the heavy online loop.** Yes, in class A only, with open models of at most 8B on one RTX 4090 and no closed APIs, run on MuSiQue and MultiHop-RAG in full and on a preregistered 1,000-question HotpotQA dev subsample.
-   Reason: the agentic ghost needs it either way, and with an open 7B model and a batched driver it costs about 2.0 USD for MuSiQue and MultiHop-RAG (projection); the repository's one-question-at-a-time script would cost about 17.6 USD for the same scope plus the subsample, so the batched driver is required.
+   Reason: the agentic ghost needs it either way, and with an open 7B model and a batched driver it costs about 2.0 USD for MuSiQue and MultiHop-RAG, 4,672 questions (projection); the repository's one-question-at-a-time script would cost about 17.5 USD for 5,672 questions (those two plus the 1,000-question subsample, projection; about 14.4 USD for the 4,672 alone), so the batched driver is required.
 5. **Offline LLM work in the light class.** No: class L admits encoder models of at most 1B offline (such as GLiNER and the encoders) but no generative LLM; offline LLM work (graph building, document expansion by an LLM) belongs to class A.
    Reason: the light class must stay cheap on any corpus, and LLM graph building costs about 2 USD per 28,000 units here (projection) and grows with the corpus.
 6. **Exam corpus.** QASPER, with the pooled-across-papers setting declared as new and a within-paper control so one published setting is reachable.
@@ -386,13 +395,13 @@ Every figure in this table is a projection.
 | 03 | first candidate (class set by its spec), ring-fenced | 3.4 | 2.5 |
 | 04 | second candidate, ring-fenced | 3.4 | 2.5 |
 | 05 | third candidate, ring-fenced | 3.4 | 2.5 |
-| 06 core | exam on QASPER test (about 1,451 questions; paragraph count unknown, assumed at most 30,000): G-L, G-R, G-R2, G-A1 and the chosen candidates, plus 15 % margin, ring-fenced | 3.7 | 2.7 |
-| 06 optional | G-A2 on the exam | 3.2 | 2.4 |
-| Total | | about 33 | 24.6 |
+| 06 core | exam on QASPER test (about 1,451 questions; paragraph count unknown, assumed at most 30,000): G-L 0.4 h (encode and index 30,000 paragraphs), G-R 0.3 h (1,451 questions at 0.5 s plus setup), G-A1 0.8 h (1,451 questions at the 2.7 h per 4,672 rate of Phase 02), the chosen candidates 1.4 h (three at about 0.47 h; all assumed), 2.9 h in all, plus 15 % margin, ring-fenced | 3.3 | 2.4 |
+| 06 optional | G-R2 on the exam 0.3 h (1,451 questions at 0.7 s plus setup), G-A2 on the exam 3.2 h | 3.5 | 2.6 |
+| Total | | about 33 | 24.5 |
 
-The total is 24.6 USD, inside the 25 USD authorized, with 0.4 USD unallocated (derived from the rows).
+The total is 24.5 USD (0.5 + 7.9 + 3.6 + 7.5 + 2.4 + 2.6), inside the 25 USD authorized, with 0.5 USD unallocated; GPU-hours sum to 33.2 (0.7 + 10.6 + 4.9 + 10.2 + 3.3 + 3.5; derived from the rows).
 Recommended cap: keep the authorized 25 USD in total and 15 USD per pod session, with the per-phase figures above as soft caps that each phase's spec states.
-Ring-fence: the candidates' 7.5 USD (Phases 03 to 05) and the exam core's 2.7 USD are reserved; no ghost may spend them, and before any optional item runs, the money left inside the 25 USD must still cover the reserve still unspent.
+Ring-fence: the candidates' 7.5 USD (Phases 03 to 05) and the exam core's 2.4 USD are reserved; no ghost may spend them, and before any optional item runs, the money left inside the 25 USD must still cover the reserve still unspent.
 G-A2 therefore runs in Phase 02 only from money above the reserve; otherwise it moves after Phase 05 or is dropped.
 The 4.22 USD balance covers Phase 01 and G-L (about 3.4 USD); the account needs a top-up within the authorized 25 USD before G-R runs.
 
@@ -402,11 +411,11 @@ Priority order, spent top to bottom; LLM-built graph runs last:
 3. G-R over G-L's top-100.
 4. G-A1 on MuSiQue and MultiHop-RAG, with the 50-question driver check.
 5. Reserved, not dropped for any ghost: the three candidates (Phases 03 to 05) and the exam core.
-6. G-R2 on MuSiQue and MultiHop-RAG.
+6. G-R2 on MuSiQue and MultiHop-RAG (droppable, as is G-R2 on the exam).
 7. G-A1 on the 1,000-question HotpotQA subsample.
 8. G-A2 on MultiHop-RAG, then G-A2 on the exam.
-Dropped first if short: G-A2 on the exam, then G-A2 entirely, then the HotpotQA agent subsample, then G-R2; if the core ghosts overrun, these optional items absorb it before any reserved money is touched.
-Outside the forecast, needing the author: HippoRAG 2 on MuSiQue (about 5.9 USD), NV-Embed-v2 as an upper reference (about 1 USD on MuSiQue and MultiHop-RAG, 15 to 22 USD on FullWiki), Search-R1 with its own retriever and corpus, the repository's one-at-a-time agent script, and any model above 8B.
+Dropped first if short: G-A2 on the exam, then G-A2 entirely, then the HotpotQA agent subsample, then G-R2 (Phase 02 and exam runs); if the core ghosts overrun, these optional items absorb it before any reserved money is touched.
+Outside the forecast, needing the author (all figures are projections, each for its own question scope, so they are not comparable with one another): HippoRAG 2 on MuSiQue (about 5.9 USD, 101,962 units), NV-Embed-v2 as an upper reference (about 1 USD on MuSiQue and MultiHop-RAG, 4,672 questions; 15 to 22 USD on FullWiki), Search-R1 with its own retriever and corpus, the repository's one-at-a-time agent script (about 17.5 USD for 5,672 questions, against 2.0 USD for the batched driver on 4,672), and any model above 8B.
 
 ## 8. Gaps carried forward
 
