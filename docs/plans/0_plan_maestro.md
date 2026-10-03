@@ -26,7 +26,7 @@ Starting brief: `docs/refs/successor_project_charter.md` (decisions) and `docs/r
 |---|---|---|---|
 | 00 | Map the state of the art: which retrieval and RAG strategies are published (papers and GitHub), on which corpora, with which metrics, at which cost, and propose the ghosts | - | integrated |
 | 01 | Build the harness from the old project's code and pass the reproduction gate: every recorded figure reproduced exactly | - | integrated |
-| 02 | Reproduce the ghosts chosen in 00 on the terrain, with cost columns, beside the four old systems and the Phase 17 union pool under J-strong | 00, 01 | in progress |
+| 02 | Reproduce the ghosts chosen in 00 on the terrain, with cost columns, beside the four old systems and the Phase 17 union pool under J-strong | 00, 01 | ready locally |
 | 03 | First candidate, chosen after 02 from the charter's candidates or the pool of ideas | 02 | pending |
 | 04 | Second candidate | 02 | pending |
 | 05 | Third candidate | 02 | pending |

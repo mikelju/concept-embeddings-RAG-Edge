@@ -68,3 +68,4 @@ Frozen on approval. Changing them requires a deviation.
 
 ## Open decisions
 None.
+Deviation `02.1-money.md` (approved 2026-10-03): C7 not met, overrun accepted by the author; the optional items are not run.
