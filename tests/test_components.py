@@ -3,6 +3,7 @@ import hashlib
 import json
 
 import numpy as np
+import pytest
 
 from edge_rag import components, config
 from edge_rag.artifacts import Checks, OldData, digest_of
@@ -107,3 +108,16 @@ def test_a_rerun_keeps_the_earlier_manifest(tmp_path):
     kept = tmp_path / "components.manifest.2026-10-03T214314Z.json"
     assert json.loads(kept.read_text("utf-8"))["seconds"] == 1
     assert json.loads(path.read_text("utf-8"))["seconds"] == 2
+
+
+def test_a_kept_manifest_collision_or_unstamped_one_is_resolved_before_outputs(tmp_path):
+    from edge_rag.artifacts import ArtifactError, keep_manifest
+
+    path = tmp_path / "fuse.manifest.json"
+    path.write_text('{"seconds": 1}', "utf-8")
+    keep_manifest(path)
+    assert (tmp_path / "fuse.manifest.unstamped.json").read_text("utf-8") == '{"seconds": 1}'
+    path.write_text('{"seconds": 2}', "utf-8")
+    with pytest.raises(ArtifactError, match="exists with other content"):
+        keep_manifest(path)
+    assert path.read_text("utf-8") == '{"seconds": 2}'

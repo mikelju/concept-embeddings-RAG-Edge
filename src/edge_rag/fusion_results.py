@@ -11,7 +11,8 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from edge_rag import components, config, fuse, metrics, scoring
-from edge_rag.artifacts import ArtifactError, Checks, OldData, write_bytes, write_json
+from edge_rag.artifacts import ArtifactError, Checks, OldData, write_bytes
+from edge_rag.pod.common import git_provenance
 from edge_rag.retrieval.rrf import RULES
 
 PHASE02_RESULTS = config.DATA_DIR / "phase02" / "results.json"
@@ -37,8 +38,28 @@ LAPTOP_USD = (
 # Costs the handover records for the old references, each with its label and source (spec C4).
 COST_TABLE = "successor_project_handover.md, cost table"
 DENSE_EMBEDDING = {
-    "multihop-rag": "BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable "
-    "to GLiNER + BGE",
+    "multihop-rag": [
+        (
+            "BGE-small encoding 41.20 s on the old pod",
+            "measured (recorded time)",
+            f"{COST_TABLE} (16.results.md section 3)",
+        ),
+        (
+            "0.0404 USD attributable to GLiNER + BGE, the BGE encoding inside it",
+            "derived (time x rate)",
+            f"{COST_TABLE} (16.results.md section 3)",
+        ),
+        (
+            "the session invoiced 0.165 USD",
+            "measured (invoice)",
+            f"{COST_TABLE} (16.results.md section 3)",
+        ),
+        (
+            "the session's balance delta 0.1029 USD",
+            "measured (balance delta)",
+            "successor_project_handover.md, RunPod know-how",
+        ),
+    ],
 }
 GLINER = {
     "hotpotqa-dev": [
@@ -111,10 +132,7 @@ def verdict(
 def handover_cost(set_name: str, system: str) -> list[dict[str, str]]:
     notes: list[tuple[str, str, str]] = []
     if system in ("p10-a", "p10-b") and set_name in DENSE_EMBEDDING:
-        notes.append(
-            (DENSE_EMBEDDING[set_name], "derived (time x rate)",
-             f"{COST_TABLE} (16.results.md section 3)")
-        )  # fmt: skip
+        notes += DENSE_EMBEDDING[set_name]
     if system in ("p10-c", "p14"):
         notes += GLINER[set_name]
     if system in ("j-p10b", "j-union"):
@@ -391,9 +409,6 @@ def markdown(table: Mapping[str, Any]) -> str:
     for set_name in sorted(table["not_run"]):
         lines.append(f"- {set_name}: {NOT_RUN} ({table['not_run'][set_name]}).")
     for entry in sorted(table["sets"], key=lambda e: str(e["set"])):
-        if entry["notes"]:
-            lines.append(f"- {entry['set']}: " + " ".join(entry["notes"]))
-    for entry in sorted(table["sets"], key=lambda e: str(e["set"])):
         set_name = entry["set"]
         systems = _systems(entry)
         lines += [
@@ -521,6 +536,7 @@ def markdown(table: Mapping[str, Any]) -> str:
 
 
 def run(set_names: Sequence[str]) -> dict[str, Any]:
+    provenance = git_provenance()
     phase02 = {e["set"]: e for e in json.loads(PHASE02_RESULTS.read_text("utf-8"))["sets"]}
     tables: dict[str, dict[str, Any] | None] = {}
     not_run: dict[str, str] = {}
@@ -531,16 +547,19 @@ def run(set_names: Sequence[str]) -> dict[str, Any]:
             continue
         tables[set_name] = set_table(set_name, phase02[set_name])
     table = {
+        **provenance,
         "phase02_results_sha256": hashlib.sha256(PHASE02_RESULTS.read_bytes()).hexdigest(),
         "outcome": outcome(tables),
         "not_run": not_run,
         "sets": [t for t in tables.values() if t is not None],
     }
-    write_json(RESULTS_JSON, table)
+    body = json.dumps(table, indent=2, sort_keys=True)
     page = markdown(table)
-    # Spec C4: the page regenerates byte-equal from results.json as written.
-    if markdown(json.loads(RESULTS_JSON.read_text("utf-8"))) != page:
+    # Spec C4: the page regenerates byte-equal from results.json as written; checked before
+    # either file is written, so a failed check leaves the pair on disk as it was.
+    if markdown(json.loads(body)) != page:
         raise ArtifactError(f"{RESULTS_MD.name} does not regenerate from {RESULTS_JSON.name}")
+    write_bytes(RESULTS_JSON, body.encode("utf-8"))
     write_bytes(RESULTS_MD, page.encode("utf-8"))
     return table
 

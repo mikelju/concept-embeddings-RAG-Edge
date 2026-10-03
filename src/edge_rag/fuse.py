@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from edge_rag import components, config, metrics, scoring
-from edge_rag.artifacts import ArtifactError, Checks, OldData, write_manifest
+from edge_rag.artifacts import ArtifactError, Checks, OldData, keep_manifest, write_manifest
 from edge_rag.corpus import Question, load_corpus
 from edge_rag.pod.common import git_provenance
 from edge_rag.process import peak_rss_mb
@@ -70,9 +70,20 @@ def gold_demotions(
     return found
 
 
+def demotions_in(
+    ranked: Mapping[str, list[str]], demoted: Mapping[str, Mapping[str, str]]
+) -> dict[str, int]:
+    """Demotions per rule counted only over the units each question's list holds."""
+    return {
+        rule: sum([demoted[qid].get(u) for u in units].count(rule) for qid, units in ranked.items())
+        for rule in RULES
+    }
+
+
 def run(set_name: str, say: Say = print) -> dict[str, Any]:
     spec = config.SETS[set_name]
     provenance = git_provenance()
+    keep_manifest(config.PHASE03_RANKINGS_DIR / set_name / MANIFEST)
     started = time.perf_counter()
     inputs_sha256, lists = read_inputs(set_name)
     checks = Checks()
@@ -150,10 +161,7 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
             rule: sum(list(d.values()).count(rule) for d in demoted.values()) for rule in RULES
         },
         "demotions_per_rule_scope": "RRF3's whole union, up to 300 units per question",
-        "demotions_per_rule_in_rrf3_top_100": {
-            rule: sum([d.get(u) for u in rrf3[qid]].count(rule) for qid, d in demoted.items())
-            for rule in RULES
-        },
+        "demotions_per_rule_in_rrf3_top_100": demotions_in(rrf3, demoted),
         "exploratory_gold_diagnostics": {
             "label": "exploratory",
             "questions_with_a_gold_unit_demoted": gold_demotions(

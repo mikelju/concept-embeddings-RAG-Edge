@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 
 from edge_rag import config, scoring
-from edge_rag.artifacts import ArtifactError, write_manifest
+from edge_rag.artifacts import ArtifactError, keep_manifest, write_manifest
 from edge_rag.corpus import Question
 from edge_rag.embeddings import QueryTable
 from edge_rag.pod.common import git_provenance
@@ -149,6 +149,7 @@ def manifest(
 
 def run(set_name: str, say: Say = print) -> dict[str, Any]:
     provenance = git_provenance()
+    keep_manifest(config.PHASE03_RANKINGS_DIR / set_name / MANIFEST)
     lap = Laps(set_name, say)
     phase02 = json.loads((config.RANKINGS_DIR / set_name / scoring.MANIFEST).read_text("utf-8"))
     p10b_sha = phase02["p10-b.jsonl.gz"]

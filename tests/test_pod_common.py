@@ -129,3 +129,23 @@ def test_spread_chunks_first_chunk_spans_corpus() -> None:
     assert chunks[0] == [0, 3, 6, 9]
     assert sorted(u for c in chunks for u in c) == list(range(10))
     assert list(spread_chunks(lambda: iter(range(4)), 1, 10)) == [[0, 1, 2, 3]]
+
+
+def test_git_provenance_reports_an_uncommitted_change_under_src(tmp_path, monkeypatch):
+    import subprocess
+
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)  # noqa: S603,S607
+
+    git("init", "-q")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("x = 1\n", "utf-8")
+    (tmp_path / "other.txt").write_text("y\n", "utf-8")
+    git("add", ".")
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "c")
+    monkeypatch.setattr(config, "REPO_ROOT", tmp_path)
+    assert common.git_provenance()["git_src_changes"] == []
+    (tmp_path / "other.txt").write_text("z\n", "utf-8")
+    assert common.git_provenance()["git_src_changes"] == []
+    (tmp_path / "src" / "a.py").write_text("x = 2\n", "utf-8")
+    assert common.git_provenance()["git_src_changes"] == ["M src/a.py"]

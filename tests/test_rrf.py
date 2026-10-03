@@ -109,3 +109,11 @@ def test_gold_demotions_count_context_and_top_100_losses():
     # RRF3 reads g1 and x within 2,048 tokens; F3 reads x and g2: g1 left the context.
     assert found[SOURCE_CAP] == {"in_context_at_budget": 1, "in_top_100": 0}
     assert found[BOILERPLATE] == {"in_context_at_budget": 0, "in_top_100": 0}
+
+
+def test_demotions_are_counted_only_inside_rrf3_top_list():
+    from edge_rag.fuse import demotions_in
+
+    ranked = {"q": ["a", "b"]}
+    demoted = {"q": {"a": "source cap", "z": "boilerplate"}}
+    assert demotions_in(ranked, demoted) == {"source cap": 1, "boilerplate": 0, "near-duplicate": 0}

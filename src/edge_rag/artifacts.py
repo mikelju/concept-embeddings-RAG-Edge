@@ -64,17 +64,25 @@ def write_json(path: Path, body: Any) -> Path:
     return write_bytes(path, json.dumps(body, indent=2, sort_keys=True).encode("utf-8"))
 
 
+def keep_manifest(path: Path) -> None:
+    """Keep an existing run manifest as `<stem>.<its written_utc>.json` beside it. A run calls
+    this before it writes any output, so a collision stops the run with nothing overwritten."""
+    if not path.exists():
+        return
+    old = path.read_bytes()
+    stamp = str(json.loads(old).get("written_utc", "unstamped")).replace(":", "")
+    kept = path.with_name(f"{path.stem}.{stamp}{path.suffix}")
+    if kept.exists() and kept.read_bytes() != old:
+        raise ArtifactError(f"{kept} exists with other content")
+    write_bytes(kept, old)
+
+
 def write_manifest(path: Path, body: Mapping[str, Any]) -> Path:
-    """A run manifest is never lost: an existing one with other content is first kept as
-    `<stem>.<its written_utc>.json` beside it, then the new one is written."""
-    if path.exists():
-        old = path.read_bytes()
-        if old != json.dumps(body, indent=2, sort_keys=True).encode("utf-8"):
-            stamp = str(json.loads(old).get("written_utc", "unstamped")).replace(":", "")
-            kept = path.with_name(f"{path.stem}.{stamp}{path.suffix}")
-            if kept.exists() and kept.read_bytes() != old:
-                raise ArtifactError(f"{kept} exists with other content")
-            write_bytes(kept, old)
+    """A run manifest is never lost: an existing one with other content is first kept."""
+    if path.exists() and path.read_bytes() != json.dumps(body, indent=2, sort_keys=True).encode(
+        "utf-8"
+    ):
+        keep_manifest(path)
     return write_json(path, body)
 
 

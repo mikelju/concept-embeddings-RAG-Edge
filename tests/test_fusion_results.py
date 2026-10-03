@@ -167,3 +167,25 @@ def test_markdown_renders_the_same_from_results_json_as_written():
     assert page.index("| f3 | ") < page.index("| g-l | ") < page.index("| j-union | ")
     assert page.index("| f3 vs g-l |") < page.index("| rrf3 vs g-l |")
     assert "invoiced 0.356 USD (measured (invoice)" in page
+
+
+def test_regenerate_refuses_a_changed_results_md(tmp_path, monkeypatch):
+    import json
+
+    table = {"outcome": {"f3_verdict": "x", "exam_entrant": "y", "rrf3_context_verdict": "z",
+                         "states": {name: {} for name in fr.STATE_NAMES}},
+             "not_run": {}, "sets": []}  # fmt: skip
+    monkeypatch.setattr(fr, "RESULTS_JSON", tmp_path / "results.json")
+    monkeypatch.setattr(fr, "RESULTS_MD", tmp_path / "results.md")
+    fr.RESULTS_JSON.write_text(json.dumps(table), "utf-8")
+    fr.RESULTS_MD.write_bytes(fr.markdown(table).encode("utf-8"))
+    fr.regenerate()
+    fr.RESULTS_MD.write_bytes(fr.markdown(table).encode("utf-8") + b"edited\n")
+    with pytest.raises(fr.ArtifactError):
+        fr.regenerate()
+
+
+def test_multihop_rag_dense_reference_carries_invoice_and_balance_delta():
+    labels = [n["label"] for n in fr.handover_cost("multihop-rag", "p10-b")]
+    assert labels == ["measured (recorded time)", "derived (time x rate)",
+                      "measured (invoice)", "measured (balance delta)"]  # fmt: skip
