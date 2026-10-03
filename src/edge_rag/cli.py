@@ -55,6 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     results_cmd.add_argument(
         "--set", dest="set_names", action="append", choices=sorted(config.OLD_REFERENCES)
     )
+    commands.add_parser("fusion-results", help="write the Phase 03 results table")
     args = parser.parse_args(argv)
     if args.command == "reproduce":
         from edge_rag.reproduce import run
@@ -93,6 +94,15 @@ def main(argv: list[str] | None = None) -> int:
         table = results.run(args.set_names or sorted(config.OLD_REFERENCES))
         for entry in table["sets"]:
             _say(f"[{entry['set']}] systems {', '.join(entry['systems'])}")
+        return 0
+    if args.command == "fusion-results":
+        from edge_rag import fusion_results
+
+        table = fusion_results.run(sorted(config.SETS))
+        outcome = table["outcome"]
+        _say(f"F3 verdict: {outcome['f3_verdict']}; exam entrant: {outcome['exam_entrant']}")
+        for set_name, reason in table["not_run"].items():
+            _say(f"[{set_name}] not run ({reason})")
         return 0
     return 2
 
