@@ -154,7 +154,11 @@ def candidate_cost(
 ) -> dict[str, Any]:
     """Each component on its own hardware, the per-hardware totals and the class check."""
     laptop = comp["hardware"]
-    dense_note = DENSE_EMBEDDING.get(set_name, "not recorded")
+    dense_note = (
+        "; ".join(f"{figure} ({label})" for figure, label, _ in DENSE_EMBEDDING[set_name])
+        if set_name in DENSE_EMBEDDING
+        else "not recorded"
+    )
     measured = LAPTOP_USD
     pod = "seconds measured (Phase 02 G-L manifest); USD derived (time x rate)"
     rows: list[dict[str, Any]] = [
