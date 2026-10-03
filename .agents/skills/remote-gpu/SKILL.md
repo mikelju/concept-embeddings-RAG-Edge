@@ -40,11 +40,12 @@ The laptop is Windows 11 ARM64, 12 cores, about 32 GB RAM, no GPU. That is a dev
 3. On the pod: clone into `/workspace`, check out the frozen commit, `uv sync` with the groups the job needs.
 4. Upload only frozen inputs the repo does not contain; check their SHA-256 on the pod.
 5. Verify CUDA with a real kernel, not only `torch.cuda.is_available()`.
-6. Probe a small sample before the full pass.
+6. Probe a small sample before the full pass; for a corpus larger than any probed, project host RAM and time at its full scale before the pod opens (phase 02: HotpotQA's 5.23 M units failed on a 24 GB card and a 60 GB host in sessions 2-5, F3, F8, and fitted a 250 GB host in session 6, F9).
 7. Write `pod_setup.sh` in the scratchpad, `scp` it, run it with `nohup`, wait with a background `until grep` loop.
    Subagents hit a wall-clock limit near 1,000 s: never brief one with a long stage plus its wait.
-8. `sha256sum` every expensive artifact on both ends and **download before terminating**: `/workspace` dies with the pod.
-9. Decide on the laptop, not on the pod. Stop and ask the author if the session nears its cap.
+8. On the pod, log progress lines and cgroup `memory.current`/`memory.peak` with a UTC timestamp to files every 30-60 s, and archive them with the outputs (phase 02: session 5's untimed `[INFO]` lines gave paces only to within the laptop's sampling, F8; session 6 measured paces and the RAM peak from such files, F9).
+9. `sha256sum` every expensive artifact on both ends and **download before terminating**: `/workspace` dies with the pod.
+10. Decide on the laptop, not on the pod. Stop and ask the author if the session nears its cap.
 
 ## Traps
 
@@ -52,5 +53,5 @@ The laptop is Windows 11 ARM64, 12 cores, about 32 GB RAM, no GPU. That is a dev
 - Billing lags about an hour behind a terminated pod: record time x rate, balance delta and invoice as three labelled figures; the author copies the invoice later.
 - PyPI `vllm` 0.30.0 is a CUDA 13 build against the pinned `torch==2.13.0+cu126`: pin `torchvision==0.28.0` and `torchaudio==2.11.0`
   to `pytorch-cu126` via `tool.uv.sources`, and add `<venv>/lib/python3.12/site-packages/nvidia/cu13/lib` to `LD_LIBRARY_PATH`.
-- `pkill -f "vllm serve"` kills the SSH session whose command line holds the pattern; use `pgrep -f "[v]llm serve"`.
+- `pkill -f <pattern>` kills the SSH session whose command line holds the pattern, even a bracketed one such as `[p]rogress` when the same command line also holds `progress`; use `pgrep -f` with a pattern absent from your own command, or kill by PID (vLLM serve, and the samplers of phase 02 session 6).
 - A float32 8 B model does not fit a 24 GB card.
