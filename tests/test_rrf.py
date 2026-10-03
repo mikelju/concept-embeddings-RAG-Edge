@@ -1,0 +1,84 @@
+from edge_rag.retrieval.rrf import (
+    BOILERPLATE,
+    NEAR_DUPLICATE,
+    SOURCE_CAP,
+    boilerplate_flags,
+    diversify,
+    jaccard,
+    rrf,
+    rrf_scores,
+    shingles,
+)
+
+
+def test_rrf_scores_and_order_by_hand():
+    lists = [["a", "b", "c"], ["b", "d"], ["c", "a"]]
+    scores = rrf_scores(lists)
+    assert scores["a"] == 1 / 61 + 1 / 62
+    assert scores["c"] == 1 / 61 + 1 / 63
+    # d is in one list only: the lists without it add nothing.
+    assert scores["d"] == 1 / 62
+    # a and b both score 1/61 + 1/62: the smaller unit id goes first.
+    assert scores["a"] == scores["b"]
+    assert rrf(lists) == ["a", "b", "c", "d"]
+    assert rrf([["z"], ["y"]]) == ["y", "z"]
+
+
+def test_rrf_truncates_at_depth():
+    lists = [[f"{name}{i:03d}" for i in range(100)] for name in "xyz"]
+    assert len(rrf(lists)) == 300
+    assert len(rrf(lists, depth=100)) == 100
+
+
+def test_shingles_and_jaccard():
+    assert shingles("One two, three four five six!") == {
+        ("one", "two", "three", "four", "five"),
+        ("two", "three", "four", "five", "six"),
+    }
+    assert shingles("Hello, World") == {("hello", "world")}
+    assert shingles("  ") == frozenset()
+    a = shingles("a b c d e f g h")
+    assert jaccard(a, a) == 1.0
+    assert jaccard(a, shingles("a b c d e f g x")) == 3 / 5
+
+
+def test_boilerplate_flag():
+    bodies = ["Advertisement", "advertisement!", "unique text here", "", "same", "Same."]
+    titles = ["T1", "T2", "T3", "T4", "T5", "T5"]
+    assert boilerplate_flags(bodies, titles).tolist() == [True, True, False, True, False, False]
+
+
+def test_diversify_rule_order_kept_then_demoted_and_truncation():
+    long = "the quick brown fox jumps over the lazy dog today"
+    units = {
+        "u1": ("T1", long, False),
+        "u2": ("T9", "advertisement", True),
+        "u3": ("T2", long + ".", False),  # near-duplicate of u1
+        "u4": ("T1", "a second paragraph of the first article here", False),
+        "u5": ("T1", "a third paragraph that is not like the others", False),  # cap
+        "u6": ("T1", long, False),  # near-duplicate before the cap
+        "u7": ("T1", long, True),  # boilerplate before both
+        "u8": ("T3", "another source entirely with its own words", False),
+    }
+    order = list(units)
+    titles = {u: v[0] for u, v in units.items()}
+    bodies = {u: v[1] for u, v in units.items()}
+    flags = {u: v[2] for u, v in units.items()}
+    output, demoted = diversify(order, titles, bodies, flags)
+    assert output == ["u1", "u4", "u8", "u2", "u3", "u5", "u6", "u7"]
+    assert demoted == {
+        "u2": BOILERPLATE,
+        "u3": NEAR_DUPLICATE,
+        "u5": SOURCE_CAP,
+        "u6": NEAR_DUPLICATE,
+        "u7": BOILERPLATE,
+    }
+    assert diversify(order, titles, bodies, flags, depth=4)[0] == ["u1", "u4", "u8", "u2"]
+    many = [f"v{i:03d}" for i in range(300)]
+    output, _ = diversify(
+        many,
+        dict.fromkeys(many, "T") | {u: u for u in many},
+        {u: f"body of unit {u}" for u in many},
+        dict.fromkeys(many, False),
+    )
+    assert output == many[:100]
