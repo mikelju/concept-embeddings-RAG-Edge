@@ -82,3 +82,17 @@ def test_diversify_rule_order_kept_then_demoted_and_truncation():
         dict.fromkeys(many, False),
     )
     assert output == many[:100]
+
+
+def test_gold_demotions_count_context_and_top_100_losses():
+    from edge_rag.corpus import Question
+    from edge_rag.fuse import gold_demotions
+
+    questions = [Question("q", "?", ("g1", "g2"), "dev")]
+    rrf3 = {"q": ["g1", "x", "g2"]}
+    f3 = {"q": ["x", "g2", "g1"]}  # g1 demoted by the cap, still in the top 100
+    counts = {"g1": 1000, "x": 1000, "g2": 1000}
+    found = gold_demotions(questions, rrf3, f3, {"q": {"g1": SOURCE_CAP}}, counts)
+    # RRF3 reads g1 and x within 2,048 tokens; F3 reads x and g2: g1 left the context.
+    assert found[SOURCE_CAP] == {"in_context_at_budget": 1, "in_top_100": 0}
+    assert found[BOILERPLATE] == {"in_context_at_budget": 0, "in_top_100": 0}

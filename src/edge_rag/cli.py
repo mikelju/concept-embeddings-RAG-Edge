@@ -40,6 +40,8 @@ def main(argv: list[str] | None = None) -> int:
     reproduce.add_argument("--out", type=Path, help="write rankings and result under this folder")
     components = commands.add_parser("components", help="Phase 03 Dense and BM25 lists")
     components.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    fuse = commands.add_parser("fuse", help="Phase 03 RRF3 and F3 lists")
+    fuse.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score = commands.add_parser("score", help="score one ranking file on one set")
     score.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score.add_argument("--rankings", required=True, type=Path)
@@ -65,6 +67,11 @@ def main(argv: list[str] | None = None) -> int:
         body = components_module.run(args.set_name, say=_say)
         equal = body["equality"].values()
         return 0 if all(entry["equal"] == entry["of"] for entry in equal) else 1
+    if args.command == "fuse":
+        from edge_rag import fuse as fuse_module
+
+        fuse_module.run(args.set_name, say=_say)
+        return 0
     if args.command == "score":
         from edge_rag import scoring
         from edge_rag.artifacts import write_json

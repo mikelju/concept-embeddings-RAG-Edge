@@ -8,7 +8,7 @@ third unit of a source already kept twice; kept units come first, then the demot
 
 import hashlib
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
 import numpy as np
 
@@ -60,10 +60,10 @@ def body_hash(body: str) -> int:
     return int.from_bytes(digest[:8], "little")
 
 
-def boilerplate_flags(bodies: Sequence[str], titles: Sequence[str]) -> np.ndarray:
+def boilerplate_flags(bodies: Iterable[str], titles: Sequence[str]) -> np.ndarray:
     """True for a unit whose normalized body is empty or appears under two or more titles;
     bodies are compared by an 8-byte hash so a 5 M unit corpus fits in memory (plan D4)."""
-    hashes = np.fromiter((body_hash(body) for body in bodies), dtype=np.uint64, count=len(bodies))
+    hashes = np.fromiter((body_hash(body) for body in bodies), dtype=np.uint64, count=len(titles))
     first_title: dict[int, str] = {}
     repeated: set[int] = set()
     for value, title in zip(hashes.tolist(), titles, strict=True):
