@@ -100,3 +100,70 @@ def test_outcome_reads_states_and_marks_missing_sets_not_run():
     assert out["f3_verdict"] == "does not advance"
     assert out["rrf3_context_verdict"] == "advances"
     assert out["exam_entrant"] == "none from this phase"
+
+
+def test_markdown_renders_the_same_from_results_json_as_written():
+    # Spec C4: results.md regenerates byte-equal from results.json, whose keys are sorted.
+    import json
+
+    metrics = {
+        "full_support_at_budget": {"1024": 1, "2048": 2, "4096": 3},
+        "full_support_at_k": {"2": 1, "5": 2, "20": 3},
+        "recall_at_k": {k: 0.5 for k in ("2", "5", "10", "20", "100")},
+        "gold_share_at_5": 0.25,
+        "ndcg_at_10": 0.5,
+    }
+    ref = {"label": "measured", "offline_seconds": 1.0, "offline_usd": 0.1,
+           "online_seconds_per_question": 0.01, "online_usd_per_question": 0.0}  # fmt: skip
+    systems = {
+        "rrf3": {"metrics": metrics, "cost": _cost("rrf3", 0.025)},
+        "f3": {"metrics": metrics, "cost": _cost("f3", 0.025)},
+        "p14": {
+            "metrics": metrics,
+            "cost": {**ref, "handover": fr.handover_cost("musique", "p14")},
+        },
+        "g-l": {"metrics": metrics, "cost": ref},
+        "j-union": {"metrics": metrics, "cost": ref},
+    }
+    tests = [
+        {"system": s, "against": a, "wins": 1, "losses": 0, "ties": 0, "p": 1.0, "state": "tie"}
+        for s, a in [("rrf3", "g-l"), ("f3", "g-l"), ("f3", "rrf3"), ("f3", "p14")]
+    ]
+    rules = {"source cap": 3, "boilerplate": 1, "near-duplicate": 2}
+    entry = {
+        "set": "musique",
+        "n": 4,
+        "best_light_class_so_far": "p14",
+        "best_so_far": "j-union",
+        "systems": systems,
+        "paired_full_support_at_2048": tests,
+        "boilerplate_units": 6,
+        "demotions_per_rule": rules,
+        "demotions_per_rule_scope": "the union",
+        "demotions_per_rule_in_rrf3_top_100": rules,
+        "notes": ["a note"],
+        "exploratory_gold_diagnostics": {
+            "questions_with_a_gold_unit_demoted": {
+                r: {"in_context_at_budget": 0, "in_top_100": 1} for r in rules
+            },
+            "gold_units_flagged_boilerplate": 0,
+            "gold_units": 9,
+        },
+        "peak_rss_mb": {"components": 1.0, "fuse": 2.0},
+    }
+    states = {"musique": "tie", "hotpotqa-dev": "not run"}
+    table = {
+        "outcome": {
+            "f3_verdict": "does not advance",
+            "exam_entrant": "none from this phase",
+            "rrf3_context_verdict": "does not advance",
+            "states": {name: dict(states) for name in reversed(fr.STATE_NAMES)},
+        },
+        "not_run": {"hotpotqa-dev": "no Phase 03 fuse manifest"},
+        "sets": [entry],
+    }
+    page = fr.markdown(table)
+    assert fr.markdown(json.loads(json.dumps(table, sort_keys=True))) == page
+    assert page.index("| f3 | ") < page.index("| g-l | ") < page.index("| j-union | ")
+    assert page.index("| f3 vs g-l |") < page.index("| rrf3 vs g-l |")
+    assert "invoiced 0.356 USD (measured (invoice)" in page

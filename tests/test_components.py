@@ -85,10 +85,25 @@ def test_manifest_divides_seconds_per_question_and_pins_inputs():
         equal={"dense_equals_p10-a": 4, "fusion_equals_p10-b": 3},
         outputs={"dense.jsonl.gz": "y"},
         peak_rss=12.5,
+        provenance={"git_commit": "c", "git_src_changes": []},
     )
     assert body["retrieval_seconds_per_question"] == {"dense": 0.5, "bm25": 0.25}
     assert body["offline_seconds"] == {"bm25_build": 3.5}
     assert body["equality"]["fusion_equals_p10-b"] == {"equal": 3, "of": 4}
     assert body["inputs_sha256"] == {"p10-a.jsonl.gz": "x"}
     assert body["peak_rss_mb"] == 12.5
-    assert body["git_commit"]
+    assert body["git_commit"] == "c"
+    assert body["git_src_changes"] == []
+
+
+def test_a_rerun_keeps_the_earlier_manifest(tmp_path):
+    from edge_rag.artifacts import write_manifest
+
+    path = tmp_path / "components.manifest.json"
+    write_manifest(path, {"written_utc": "2026-10-03T21:43:14Z", "seconds": 1})
+    write_manifest(path, {"written_utc": "2026-10-03T21:43:14Z", "seconds": 1})
+    assert [p.name for p in tmp_path.iterdir()] == [path.name]
+    write_manifest(path, {"written_utc": "2026-10-04T08:00:00Z", "seconds": 2})
+    kept = tmp_path / "components.manifest.2026-10-03T214314Z.json"
+    assert json.loads(kept.read_text("utf-8"))["seconds"] == 1
+    assert json.loads(path.read_text("utf-8"))["seconds"] == 2

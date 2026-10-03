@@ -1,14 +1,17 @@
 """Weight-free fusion of Phase 03 (spec, frozen definition): RRF3 and the diversity pass of F3.
 
 RRF (Cormack, Clarke and Buettcher 2009): a unit scores the sum over the lists holding it of
-1 / (k + rank), rank from 1; ties go to the smaller unit id. F3 walks RRF3's whole order once and
-demotes a unit by the first rule that applies: boilerplate, near-duplicate of a kept unit, or a
-third unit of a source already kept twice; kept units come first, then the demoted, in order.
+1 / (k + rank), rank from 1; ties go to the smaller unit id. Scores are exact fractions, so equal
+sums are equal whatever the order of the lists (float sums can differ in the last bit). F3 walks
+RRF3's whole order once and demotes a unit by the first rule that applies: boilerplate,
+near-duplicate of a kept unit, or a third unit of a source already kept twice; kept units come
+first, then the demoted, in order.
 """
 
 import hashlib
 import re
 from collections.abc import Iterable, Mapping, Sequence
+from fractions import Fraction
 
 import numpy as np
 
@@ -19,13 +22,13 @@ BOILERPLATE, NEAR_DUPLICATE, SOURCE_CAP = "boilerplate", "near-duplicate", "sour
 RULES = (BOILERPLATE, NEAR_DUPLICATE, SOURCE_CAP)
 
 
-def rrf_scores(lists: Sequence[Sequence[str]], k: int = config.RRF_K) -> dict[str, float]:
-    scores: dict[str, float] = {}
+def rrf_scores(lists: Sequence[Sequence[str]], k: int = config.RRF_K) -> dict[str, Fraction]:
+    scores: dict[str, Fraction] = {}
     for ranked in lists:
         if len(set(ranked)) != len(ranked):
             raise ValueError("a fused list holds a unit twice")
         for rank, unit_id in enumerate(ranked, start=1):
-            scores[unit_id] = scores.get(unit_id, 0.0) + 1.0 / (k + rank)
+            scores[unit_id] = scores.get(unit_id, Fraction(0)) + Fraction(1, k + rank)
     return scores
 
 

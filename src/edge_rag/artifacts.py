@@ -64,6 +64,20 @@ def write_json(path: Path, body: Any) -> Path:
     return write_bytes(path, json.dumps(body, indent=2, sort_keys=True).encode("utf-8"))
 
 
+def write_manifest(path: Path, body: Mapping[str, Any]) -> Path:
+    """A run manifest is never lost: an existing one with other content is first kept as
+    `<stem>.<its written_utc>.json` beside it, then the new one is written."""
+    if path.exists():
+        old = path.read_bytes()
+        if old != json.dumps(body, indent=2, sort_keys=True).encode("utf-8"):
+            stamp = str(json.loads(old).get("written_utc", "unstamped")).replace(":", "")
+            kept = path.with_name(f"{path.stem}.{stamp}{path.suffix}")
+            if kept.exists() and kept.read_bytes() != old:
+                raise ArtifactError(f"{kept} exists with other content")
+            write_bytes(kept, old)
+    return write_json(path, body)
+
+
 class Checks:
     """The digests a run verified, in order, so the result says what it read."""
 

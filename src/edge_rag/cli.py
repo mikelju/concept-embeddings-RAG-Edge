@@ -55,7 +55,12 @@ def main(argv: list[str] | None = None) -> int:
     results_cmd.add_argument(
         "--set", dest="set_names", action="append", choices=sorted(config.OLD_REFERENCES)
     )
-    commands.add_parser("fusion-results", help="write the Phase 03 results table")
+    fusion_cmd = commands.add_parser("fusion-results", help="write the Phase 03 results table")
+    fusion_cmd.add_argument(
+        "--from-json",
+        action="store_true",
+        help="only check that results.md renders byte-equal from results.json as written",
+    )
     args = parser.parse_args(argv)
     if args.command == "reproduce":
         from edge_rag.reproduce import run
@@ -98,6 +103,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "fusion-results":
         from edge_rag import fusion_results
 
+        if args.from_json:
+            _say(f"results.md regenerates byte-equal, sha256 {fusion_results.regenerate()}")
+            return 0
         table = fusion_results.run(sorted(config.SETS))
         outcome = table["outcome"]
         _say(f"F3 verdict: {outcome['f3_verdict']}; exam entrant: {outcome['exam_entrant']}")

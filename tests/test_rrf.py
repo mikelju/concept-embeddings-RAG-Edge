@@ -1,3 +1,5 @@
+from fractions import Fraction
+
 from edge_rag.retrieval.rrf import (
     BOILERPLATE,
     NEAR_DUPLICATE,
@@ -14,14 +16,25 @@ from edge_rag.retrieval.rrf import (
 def test_rrf_scores_and_order_by_hand():
     lists = [["a", "b", "c"], ["b", "d"], ["c", "a"]]
     scores = rrf_scores(lists)
-    assert scores["a"] == 1 / 61 + 1 / 62
-    assert scores["c"] == 1 / 61 + 1 / 63
+    assert scores["a"] == Fraction(1, 61) + Fraction(1, 62)
+    assert scores["c"] == Fraction(1, 61) + Fraction(1, 63)
     # d is in one list only: the lists without it add nothing.
-    assert scores["d"] == 1 / 62
+    assert scores["d"] == Fraction(1, 62)
     # a and b both score 1/61 + 1/62: the smaller unit id goes first.
     assert scores["a"] == scores["b"]
     assert rrf(lists) == ["a", "b", "c", "d"]
     assert rrf([["z"], ["y"]]) == ["y", "z"]
+
+
+def test_three_list_tie_goes_to_the_smaller_unit_id():
+    # x holds ranks 1, 7, 2 and z ranks 7, 2, 1: equal exact scores, but the float sums in list
+    # order differ in the last bit and would put z first.
+    fill = [f"f{i}" for i in range(10)]
+    lists = [["x", *fill[0:5], "z"], [fill[5], "z", *fill[6:10], "x"], ["z", "x"]]
+    assert 1 / 61 + 1 / 67 + 1 / 62 < 1 / 67 + 1 / 62 + 1 / 61
+    scores = rrf_scores(lists)
+    assert scores["x"] == scores["z"]
+    assert rrf(lists)[:2] == ["x", "z"]
 
 
 def test_rrf_truncates_at_depth():

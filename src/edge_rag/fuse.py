@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Any
 
 from edge_rag import components, config, metrics, scoring
-from edge_rag.artifacts import ArtifactError, Checks, OldData, write_json
+from edge_rag.artifacts import ArtifactError, Checks, OldData, write_manifest
 from edge_rag.corpus import Question, load_corpus
-from edge_rag.pod.common import git_commit
+from edge_rag.pod.common import git_provenance
 from edge_rag.process import peak_rss_mb
 from edge_rag.reproduce import Say
 from edge_rag.retrieval.rrf import RULES, boilerplate_flags, diversify, rrf
@@ -72,6 +72,7 @@ def gold_demotions(
 
 def run(set_name: str, say: Say = print) -> dict[str, Any]:
     spec = config.SETS[set_name]
+    provenance = git_provenance()
     started = time.perf_counter()
     inputs_sha256, lists = read_inputs(set_name)
     checks = Checks()
@@ -134,7 +135,7 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
             "near_duplicate_jaccard": config.NEAR_DUPLICATE_JACCARD,
         },
         "hardware": f"laptop CPU ({platform.machine()}, {platform.system()})",
-        "git_commit": git_commit(),
+        **provenance,
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "digests_checked": checks.records,
         "corpus_units": len(corpus.unit_ids),
@@ -147,6 +148,11 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         },
         "demotions_per_rule": {
             rule: sum(list(d.values()).count(rule) for d in demoted.values()) for rule in RULES
+        },
+        "demotions_per_rule_scope": "RRF3's whole union, up to 300 units per question",
+        "demotions_per_rule_in_rrf3_top_100": {
+            rule: sum([d.get(u) for u in rrf3[qid]].count(rule) for qid, d in demoted.items())
+            for rule in RULES
         },
         "exploratory_gold_diagnostics": {
             "label": "exploratory",
@@ -161,7 +167,7 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         "outputs_sha256": outputs,
         "peak_rss_mb": peak_rss_mb(),
     }
-    path: Path = write_json(directory / MANIFEST, body)
+    path: Path = write_manifest(directory / MANIFEST, body)
     say(f"[{set_name}] rrf3 sha256 {outputs['rrf3.jsonl.gz']}")
     say(f"[{set_name}] f3 sha256 {outputs['f3.jsonl.gz']}")
     say(f"[{set_name}] demotions per rule {body['demotions_per_rule']}")

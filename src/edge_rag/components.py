@@ -16,10 +16,10 @@ from typing import Any
 import numpy as np
 
 from edge_rag import config, scoring
-from edge_rag.artifacts import ArtifactError, write_json
+from edge_rag.artifacts import ArtifactError, write_manifest
 from edge_rag.corpus import Question
 from edge_rag.embeddings import QueryTable
-from edge_rag.pod.common import git_commit
+from edge_rag.pod.common import git_provenance
 from edge_rag.process import peak_rss_mb
 from edge_rag.reproduce import Laps, Say, load_inputs
 from edge_rag.retrieval.dense_bm25 import BM25, Dense
@@ -123,13 +123,14 @@ def manifest(
     equal: Mapping[str, int],
     outputs: Mapping[str, str],
     peak_rss: float,
+    provenance: Mapping[str, Any],
 ) -> dict[str, Any]:
     return {
         "set": set_name,
         "questions": questions,
         "depth": config.DEPTH,
         "hardware": f"laptop CPU ({platform.machine()}, {platform.system()})",
-        "git_commit": git_commit(),
+        **provenance,
         "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "digests_checked": checks,
         "inputs_sha256": dict(inputs_sha256),
@@ -147,6 +148,7 @@ def manifest(
 
 
 def run(set_name: str, say: Say = print) -> dict[str, Any]:
+    provenance = git_provenance()
     lap = Laps(set_name, say)
     phase02 = json.loads((config.RANKINGS_DIR / set_name / scoring.MANIFEST).read_text("utf-8"))
     p10b_sha = phase02["p10-b.jsonl.gz"]
@@ -190,8 +192,9 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         equal=equal,
         outputs=outputs,
         peak_rss=peak_rss_mb(),
+        provenance=provenance,
     )
-    path: Path = write_json(directory / MANIFEST, body)
+    path: Path = write_manifest(directory / MANIFEST, body)
     n = len(questions)
     for name, count in equal.items():
         say(f"[{set_name}] {name}: {count} of {n}")

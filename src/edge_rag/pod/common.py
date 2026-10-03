@@ -149,6 +149,23 @@ def git_commit() -> str:
     return out.stdout.strip()
 
 
+def git_provenance() -> dict[str, Any]:
+    """HEAD and the uncommitted changes under src/, read when a run starts: a manifest whose
+    `git_src_changes` is not empty was written by code that no commit holds."""
+    try:
+        out = subprocess.run(  # noqa: S603
+            ["git", "status", "--porcelain", "--", "src"],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=config.REPO_ROOT,
+        )
+        changes: list[str] | str = [line.strip() for line in out.stdout.splitlines()]
+    except (OSError, subprocess.CalledProcessError):
+        changes = "unknown"
+    return {"git_commit": git_commit(), "git_src_changes": changes}
+
+
 def gpu_name() -> str:
     try:
         import torch
