@@ -15,9 +15,10 @@ Offline cost is G-L's encode and index, shared by every ghost that searches its 
 | j-p10b | 5046 | 5198 | 5248 | 3867 | 4788 | 5186 | 0.8120 | 0.8490 | 0.8316 | - | - | - | - |
 | j-union | 5623 | 5922 | 6143 | 4069 | 5214 | 5915 | 0.8419 | 0.9200 | 0.8556 | - | - | - | - |
 
-g-l: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
-g-r: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
-g-a1: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
+- g-l: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
+- g-r: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
+- g-a1: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
+
 ## multihop-rag (n = 2255)
 
 | System | FS@1,024 | FS@2,048 | FS@4,096 | FS@2 | FS@5 | FS@20 | R@5 | R@100 | nDCG@10 | Offline s | Offline USD | Online s/q | Online USD/q |
@@ -32,7 +33,7 @@ g-a1: not measured on this set (G-L failed on the 24 GB card (plan F3) and was s
 | g-r | 309 | 425 | 531 | 119 | 246 | 438 | 0.3928 | 0.6234 | 0.4304 | 20 | 0.004 | 0.3856 | 0.000079 |
 | g-a1 | 521 | 557 | 564 | 11 | 374 | 564 | 0.4084 | 0.5158 | 0.4001 | 58 | 0.026 | 0.2578 | 0.000114 |
 
-g-a1 searched the G-L index of `session4/s4A/rankings/multihop-rag/g-l.manifest.json`, not the reported G-L build; its offline cost is that index's.
+- g-a1 searched the G-L index of `session4/s4A/rankings/multihop-rag/g-l.manifest.json`, not the reported G-L build; its offline cost is that index's.
 
 Paired exact McNemar on FS@2048 (best old system by FS@2048: j-union):
 
@@ -68,7 +69,7 @@ G-L build-to-build spread on FS@2048 (plan F5, F7), each rebuild paired against 
 | g-r | 524 | 661 | 805 | 176 | 434 | 745 | 0.5230 | 0.7002 | 0.5781 | 75 | 0.015 | 0.4406 | 0.000091 |
 | g-a1 | 979 | 1101 | 1101 | 79 | 743 | 1101 | 0.6152 | 0.7106 | 0.6359 | 192 | 0.085 | 0.3771 | 0.000167 |
 
-g-a1 searched the G-L index of `session4/s4A/rankings/musique/g-l.manifest.json`, not the reported G-L build; its offline cost is that index's.
+- g-a1 searched the G-L index of `session4/s4A/rankings/musique/g-l.manifest.json`, not the reported G-L build; its offline cost is that index's.
 
 Paired exact McNemar on FS@2048 (best old system by FS@2048: j-union):
 

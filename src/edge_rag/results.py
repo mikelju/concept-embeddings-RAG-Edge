@@ -150,6 +150,7 @@ def set_table(set_name: str) -> dict[str, Any]:
                     "system": ghost,
                     "against": "g-l (searched index)",
                     "against_rankings": path.relative_to(PHASE_DIR).as_posix(),
+                    "against_rankings_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                     **test,
                     "label": "measured",
                 }
@@ -219,15 +220,16 @@ def markdown(table: dict[str, Any]) -> str:
             )
         lines.append("")
         for ghost, reason in entry["ghosts_not_measured"].items():
-            lines.append(f"{ghost}: not measured on this set ({reason}).")
+            lines.append(f"- {ghost}: not measured on this set ({reason}).")
         for system, row in entry["systems"].items():
             if "searched_g_l_index" in row:
                 lines.append(
-                    f"{system} searched the G-L index of "
+                    f"- {system} searched the G-L index of "
                     f"`{row['searched_g_l_index']['manifest']}`, "
                     "not the reported G-L build; its offline cost is that index's."
                 )
         if not entry[f"paired_full_support_at_{budget}"]:
+            lines.append("")
             continue
         lines += [
             "",

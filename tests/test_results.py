@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from edge_rag.results import ghost_cost, markdown, spread_entry
@@ -60,5 +62,27 @@ def test_markdown_states_unmeasured_ghosts_and_skips_an_empty_paired_table() -> 
         "g_l_build_spread_at_2048": [],
     }
     text = markdown({"sets": [entry]})
-    assert "g-l: not measured on this set (stopped (F8))." in text
+    assert "- g-l: not measured on this set (stopped (F8))." in text
     assert "McNemar" not in text
+
+
+def test_set_table_costs_and_pairs_the_agent_against_the_index_it_searched() -> None:
+    from edge_rag import config
+    from edge_rag.results import GHOST_INDEX, set_table
+
+    index = GHOST_INDEX["g-a1"] / "musique" / "g-l.manifest.json"
+    if not (config.RANKINGS_DIR / "musique" / "g-a1.jsonl.gz").exists() or not index.exists():
+        pytest.skip("phase 02 rankings are not on this machine")
+    table = set_table("musique")
+    searched = json.loads(index.read_text("utf-8"))
+    agent = table["systems"]["g-a1"]
+    assert agent["cost"]["offline_seconds"] == pytest.approx(
+        searched["seconds"]["encode"] + searched["seconds"]["index"]
+    )
+    test = next(
+        t for t in table["paired_full_support_at_2048"] if t["against"] == "g-l (searched index)"
+    )
+    spread = {b["build"]: b["full_support_at_budget"] for b in table["g_l_build_spread_at_2048"]}
+    gain = agent["metrics"]["full_support_at_budget"]["2048"] - spread["session 4"]
+    assert test["wins"] - test["losses"] == gain
+    assert table["ghosts_not_measured"] == {}
