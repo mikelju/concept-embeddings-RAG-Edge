@@ -37,6 +37,9 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     reproduce = commands.add_parser("reproduce", help="run the reproduction gate on one set")
     reproduce.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    reproduce.add_argument("--out", type=Path, help="write rankings and result under this folder")
+    components = commands.add_parser("components", help="Phase 03 Dense and BM25 lists")
+    components.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score = commands.add_parser("score", help="score one ranking file on one set")
     score.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score.add_argument("--rankings", required=True, type=Path)
@@ -54,8 +57,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "reproduce":
         from edge_rag.reproduce import run
 
-        result = run(args.set_name, say=_say)
+        result = run(args.set_name, say=_say, out=args.out)
         return 0 if result["gate_pass"] else 1
+    if args.command == "components":
+        from edge_rag import components as components_module
+
+        body = components_module.run(args.set_name, say=_say)
+        equal = body["equality"].values()
+        return 0 if all(entry["equal"] == entry["of"] for entry in equal) else 1
     if args.command == "score":
         from edge_rag import scoring
         from edge_rag.artifacts import write_json

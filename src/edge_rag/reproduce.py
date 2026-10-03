@@ -6,13 +6,15 @@ import io
 import json
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from edge_rag import config, metrics, scoring
 from edge_rag.artifacts import ArtifactError, Checks, OldData, digest_of, write_json
-from edge_rag.corpus import load_corpus
+from edge_rag.corpus import Corpus, Question, load_corpus
 from edge_rag.embeddings import (
     QueryTable,
     legacy_corpus_cache_key,
@@ -60,18 +62,42 @@ def _stored(old: OldData, spec: config.CorpusSet) -> dict[str, dict[str, list[st
     return stored
 
 
-def run(set_name: str, say: Say = print) -> dict[str, Any]:
+class Laps:
+    """Wall-clock seconds per named stage, printed as each one ends."""
+
+    def __init__(self, set_name: str, say: Say) -> None:
+        self.set_name, self.say = set_name, say
+        self.seconds: dict[str, float] = {}
+        self.started = time.perf_counter()
+
+    def __call__(self, stage: str) -> None:
+        elapsed = time.perf_counter() - self.started - sum(self.seconds.values())
+        self.seconds[stage] = round(elapsed, 3)
+        self.say(f"[{self.set_name}] {stage} done in {self.seconds[stage]:.1f} s")
+
+
+@dataclass
+class Inputs:
+    """One set's cached inputs, each checked against its recorded digest."""
+
+    spec: config.CorpusSet
+    old: OldData
+    checks: Checks
+    questions: list[Question]
+    token_counts: dict[str, int]
+    unit_ids: list[str]
+    bm25: BM25
+    vectors: np.ndarray
+    table: QueryTable
+
+
+def load_inputs(set_name: str, lap: Laps, keep: Callable[[Corpus], None] | None = None) -> Inputs:
+    """The Phase 01 loading path, shared by `reproduce` and `components`; `keep` sees the
+    corpus before it is freed for the BM25 rebuild."""
     spec = config.SETS[set_name]
     checks = Checks()
     old = OldData(spec.directory, spec.file_sha256, checks)
-    seconds: dict[str, float] = {}
-    started = time.perf_counter()
-
-    def lap(stage: str) -> None:
-        seconds[stage] = round(time.perf_counter() - started - sum(seconds.values()), 3)
-        say(f"[{set_name}] {stage} done in {seconds[stage]:.1f} s")
-
-    say(f"[{set_name}] reading {old.base}")
+    lap.say(f"[{set_name}] reading {old.base}")
     for relative in spec.file_sha256:
         old.verified_path(relative)
     lap("sha256")
@@ -82,6 +108,8 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
     questions = scoring.questions_of(old, checks, spec)
     token_counts = scoring.token_counts(old, checks, spec)
     _fits(checks)
+    if keep is not None:
+        keep(corpus)
     lap("corpus, questions, token counts")
 
     bm25 = BM25(corpus.texts, unit_ids, stopwords=config.BM25_STOPWORDS)
@@ -122,6 +150,18 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         raise ArtifactError("the question vectors do not start with the questions in order")
     table = QueryTable(question_vectors, qids)
     lap("vectors")
+    return Inputs(spec, old, checks, questions, token_counts, unit_ids, bm25, vectors, table)
+
+
+def run(set_name: str, say: Say = print, out: Path | None = None) -> dict[str, Any]:
+    """The gate; `out` redirects the ranking files and the result away from Phase 01-02's."""
+    lap = Laps(set_name, say)
+    inputs = load_inputs(set_name, lap)
+    spec, old, checks, questions = inputs.spec, inputs.old, inputs.checks, inputs.questions
+    unit_ids, bm25, vectors, table = inputs.unit_ids, inputs.bm25, inputs.vectors, inputs.table
+    token_counts, seconds = inputs.token_counts, lap.seconds
+    rankings_dir = (out / "rankings" if out else config.RANKINGS_DIR) / set_name
+    result_path = (out or config.DATA_DIR / "results") / f"reproduce-{set_name}.json"
 
     index = load_node_index(old, spec.nodes_dir, checks, recorded=spec.entity_index_digest)
     if list(index.unit_ids) != unit_ids:
@@ -166,7 +206,7 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
     for name in names:
         scores[name], outcomes[name] = scoring.score(questions, rankings[name], token_counts)
         ranking_sha256[name] = scoring.write_rankings(
-            config.RANKINGS_DIR / set_name / f"{name.lower()}.jsonl.gz",
+            rankings_dir / f"{name.lower()}.jsonl.gz",
             ((q.qid, rankings[name][q.qid]) for q in questions),
         )
     lap("scoring and ranking files")
@@ -208,7 +248,7 @@ def run(set_name: str, say: Say = print) -> dict[str, Any]:
         "old_data_root": str(old.root),
         "seconds": seconds,
     }
-    path = write_json(config.DATA_DIR / "results" / f"reproduce-{set_name}.json", result)
+    path = write_json(result_path, result)
     for name in names:
         entry = gate[name]
         verdict = "match" if entry["match"] else "MISS"
