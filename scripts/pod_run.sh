@@ -86,8 +86,11 @@ stage probe-g-l "$OUT/probe/units1000/musique/g-l.manifest.json" \
 
 for set in $GL_SETS; do
   # fast-plaid's GPU path on every set; D12's CPU centroid update was for the 24 GB card (plan D15).
+  # HotpotQA in one create call, PyLate's default: fast-plaid's update grew with the index (D17, F8).
+  chunk=()
+  [ "$set" = hotpotqa-dev ] && chunk=(--chunk-units 6000000)
   stage "g-l-$set" "$OUT/rankings/$set/g-l.manifest.json" \
-    colbert_py -m edge_rag.pod.colbert --set "$set"
+    colbert_py -m edge_rag.pod.colbert --set "$set" "${chunk[@]}"
 done
 
 stage g-r-check-old "$OUT/checks/c3-strong-rescore.json" \

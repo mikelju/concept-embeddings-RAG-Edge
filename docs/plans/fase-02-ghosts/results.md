@@ -14,10 +14,18 @@ Offline cost is G-L's encode and index, shared by every ghost that searches its 
 | p14 | 4533 | 5224 | 5711 | 2137 | 3593 | 5098 | 0.7105 | 0.9074 | 0.7350 | - | - | - | - |
 | j-p10b | 5046 | 5198 | 5248 | 3867 | 4788 | 5186 | 0.8120 | 0.8490 | 0.8316 | - | - | - | - |
 | j-union | 5623 | 5922 | 6143 | 4069 | 5214 | 5915 | 0.8419 | 0.9200 | 0.8556 | - | - | - | - |
+| g-l | 4515 | 5000 | 5377 | 2401 | 3847 | 5018 | 0.7434 | 0.8941 | 0.7697 | 4562 | 2.015 | 0.3582 | 0.000158 |
+| g-r | 5400 | 5652 | 5793 | 3979 | 5052 | 5659 | 0.8329 | 0.8941 | 0.8493 | 4562 | 2.015 | 1.0192 | 0.000450 |
 
-- g-l: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
-- g-r: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
-- g-a1: not measured on this set (G-L failed on the 24 GB card (plan F3) and was stopped on its measured projection on the A100 (plan F8); G-R and G-A1 need its index).
+- g-a1: not measured on this set (G-A1 is optional on HotpotQA (spec, optional items) and was not run).
+
+Paired exact McNemar on FS@2048 (best old system by FS@2048: j-union):
+
+| System | Against | Wins | Losses | Ties | Exact p |
+|---|---|---:|---:|---:|---:|
+| g-l | j-union (`j-union.jsonl.gz`) | 188 | 1110 | 6107 | 2.101e-159 |
+| g-r | j-union (`j-union.jsonl.gz`) | 294 | 564 | 6547 | 2.033e-20 |
+| g-r | g-l (`g-l.jsonl.gz`) | 719 | 67 | 6619 | 8.082e-139 |
 
 ## multihop-rag (n = 2255)
 
