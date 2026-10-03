@@ -27,7 +27,7 @@ Starting brief: `docs/refs/successor_project_charter.md` (decisions) and `docs/r
 | 00 | Map the state of the art: which retrieval and RAG strategies are published (papers and GitHub), on which corpora, with which metrics, at which cost, and propose the ghosts | - | integrated |
 | 01 | Build the harness from the old project's code and pass the reproduction gate: every recorded figure reproduced exactly | - | integrated |
 | 02 | Reproduce the ghosts chosen in 00 on the terrain, with cost columns, beside the four old systems and the Phase 17 union pool under J-strong | 00, 01 | ready locally |
-| 03 | First candidate: weight-free fusion with source diversity (charter candidate 3, light class), on the laptop | 02 | pending |
+| 03 | First candidate: weight-free fusion with source diversity (charter candidate 3, light class), on the laptop | 02 | in progress |
 | 04 | Second candidate: judge over a pooled bag (charter candidate 1, rerank class), G-L in the pool | 02 | pending |
 | 05 | Third candidate: multi-seed convergent hop with a refined query (charter candidate 2, light class) | 02 | pending |
 | 06 | Exam: one locked run of the chosen candidates and the ghosts on the exam corpus, under a rule frozen before it opens | 03-05 | pending |
