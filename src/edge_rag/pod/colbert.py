@@ -8,7 +8,8 @@ The corpus is encoded and added to the index in chunks of `--chunk-units`; the f
 creates the index (its k-means centroids) and is a spread sample of the whole corpus (every
 `stride`-th unit), later chunks go through fast-plaid's `update`, which keeps those centroids.
 A corpus no larger than one chunk is indexed in one call, PyLate's default; the manifest
-records the chunking.
+records the chunking. Each chunk is encoded `--encode-units` at a time and cast to float16,
+which fast-plaid stores anyway, so a whole-corpus chunk fits in host RAM (plan D17).
 """
 
 import argparse
@@ -102,12 +103,18 @@ def build(args: argparse.Namespace) -> None:
         lambda: common.iter_units(old, spec, limit=args.limit_units), stride, args.update_units
     ):
         started = time.perf_counter()
-        embeddings = model.encode(
-            [u.text for u in chunk],
-            batch_size=args.batch_size,
-            is_query=False,
-            show_progress_bar=False,
-        )
+        embeddings = []
+        for start in range(0, len(chunk), args.encode_units):
+            embeddings += [
+                e.astype("float16")
+                for e in model.encode(
+                    [u.text for u in chunk[start : start + args.encode_units]],
+                    batch_size=args.batch_size,
+                    is_query=False,
+                    show_progress_bar=False,
+                )
+            ]
+            print(f"[INFO] {args.set}: {total + len(embeddings)} units encoded", flush=True)
         timer.add("encode", started)
         started = time.perf_counter()
         index.add_documents(
@@ -147,6 +154,8 @@ def build(args: argparse.Namespace) -> None:
             "index": "pylate.indexes.PLAID, default settings",
             "index_chunks": chunks,
             "chunk_units": args.chunk_units,
+            "encode_units": args.encode_units,
+            "embeddings_dtype": "float16",
             "update_units": args.update_units,
             "cpu_centroid_update": args.cpu_centroid_update,
             "first_chunk_stride": stride,
@@ -227,6 +236,7 @@ def main() -> None:
     parser.add_argument("--limit-questions", type=int, default=None)
     parser.add_argument("--chunk-units", type=int, default=500_000)
     parser.add_argument("--update-units", type=int, default=100_000)
+    parser.add_argument("--encode-units", type=int, default=200_000)
     parser.add_argument(
         "--cpu-centroid-update", action="store_true", help="fast-plaid's CPU update_centroids"
     )
