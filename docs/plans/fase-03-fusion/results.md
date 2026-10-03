@@ -19,17 +19,20 @@ Metrics and paired tests are measured; states, verdicts and the class check are 
 | rrf3 vs best light-class so far | loss | tie | loss |
 | rrf3 vs best so far | loss | loss | loss |
 
+- hotpotqa-dev: HotpotQA dev is in-sample for the old P10-C and P14 fitted weights, so their rows here are an upper bound; BGE-small (Dense, in every fused list) was fine-tuned on HotpotQA train and answerai-colbert-small-v1 (G-L) is in-domain here (research protocol, known traps). p14 is in-sample on this set: its comparisons favour it.
 
 ## hotpotqa-dev (n = 7405)
 
-Best light-class system so far: p14; best system so far: j-union (by FS@2048, Phase 02).
+Best light-class system so far: p14 (in-sample); best system so far: j-union (by FS@2048, Phase 02).
+Note: HotpotQA dev is in-sample for the old P10-C and P14 fitted weights, so their rows here are an upper bound; BGE-small (Dense, in every fused list) was fine-tuned on HotpotQA train and answerai-colbert-small-v1 (G-L) is in-domain here (research protocol, known traps).
+Note: p14 is in-sample on this set: its comparisons favour it.
 
 | System | FS@1,024 | FS@2,048 | FS@4,096 | FS@2 | FS@5 | FS@20 | Share@5 | R@2 | R@5 | R@10 | R@20 | R@100 | nDCG@10 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | rrf3 | 4448 | 5083 | 5511 | 2052 | 3491 | 5004 | 0.7099 | 0.5860 | 0.7099 | 0.7785 | 0.8300 | 0.8914 | 0.7363 |
 | f3 | 4444 | 5080 | 5507 | 2051 | 3489 | 5000 | 0.7099 | 0.5859 | 0.7099 | 0.7786 | 0.8297 | 0.8911 | 0.7364 |
 | g-l | 4515 | 5000 | 5377 | 2401 | 3847 | 5018 | 0.7434 | 0.6291 | 0.7434 | 0.7961 | 0.8320 | 0.8941 | 0.7697 |
-| p14 | 4533 | 5224 | 5711 | 2137 | 3593 | 5098 | 0.7105 | 0.5881 | 0.7105 | 0.7775 | 0.8305 | 0.9074 | 0.7350 |
+| p14 (in-sample) | 4533 | 5224 | 5711 | 2137 | 3593 | 5098 | 0.7105 | 0.5881 | 0.7105 | 0.7775 | 0.8305 | 0.9074 | 0.7350 |
 | j-union | 5623 | 5922 | 6143 | 4069 | 5214 | 5915 | 0.8419 | 0.7562 | 0.8419 | 0.8725 | 0.8941 | 0.9200 | 0.8556 |
 
 Paired exact McNemar on FS@2048, alpha 0.05 per comparison, no correction:
@@ -39,8 +42,8 @@ Paired exact McNemar on FS@2048, alpha 0.05 per comparison, no correction:
 | f3 | g-l | 390 | 310 | 6705 | 0.002801 | win |
 | rrf3 | g-l | 387 | 304 | 6714 | 0.001792 | win |
 | f3 | rrf3 | 3 | 6 | 7396 | 0.5078 | tie |
-| f3 | p14 | 420 | 564 | 6421 | 4.962e-06 | loss |
-| rrf3 | p14 | 420 | 561 | 6424 | 7.566e-06 | loss |
+| f3 | p14 (in-sample) | 420 | 564 | 6421 | 4.962e-06 | loss |
+| rrf3 | p14 (in-sample) | 420 | 561 | 6424 | 7.566e-06 | loss |
 | f3 | j-union | 102 | 944 | 6359 | 1.867e-171 | loss |
 | rrf3 | j-union | 101 | 940 | 6364 | 3.874e-171 | loss |
 
@@ -48,47 +51,52 @@ Cost per component (seconds per question online, per corpus offline):
 
 | System | Component | Kind | Hardware | Seconds | USD | Label |
 |---|---|---|---|---:|---:|---|
-| rrf3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 212.721 | 0.000000 | measured (Phase 03 manifests) |
+| rrf3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 207.675 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | rrf3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: not recorded |
 | rrf3 | G-L encode and index | offline | NVIDIA A100-SXM4-80GB | 4561.97 | 2.014871 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| rrf3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.024038 | 0.000000 | measured on the first 200 questions |
-| rrf3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.151094 | 0.000000 | measured (Phase 03 manifests) |
-| rrf3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.05042 | 0.000000 | measured (Phase 03 manifests) |
+| rrf3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.023502 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
+| rrf3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.147475 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| rrf3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.04842 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | rrf3 | G-L search | online | NVIDIA A100-SXM4-80GB | 0.358179 | 0.000158 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| rrf3 | RRF | online | laptop CPU (ARM64, Windows) | 0.000108 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 212.721 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | Boilerplate flags | offline | laptop CPU (ARM64, Windows) | 45.575 | 0.000000 | measured (Phase 03 manifests) |
+| rrf3 | RRF | online | laptop CPU (ARM64, Windows) | 0.001265 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 207.675 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | Boilerplate flags | offline | laptop CPU (ARM64, Windows) | 45.787 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | f3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: not recorded |
 | f3 | G-L encode and index | offline | NVIDIA A100-SXM4-80GB | 4561.97 | 2.014871 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| f3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.024038 | 0.000000 | measured on the first 200 questions |
-| f3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.151094 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.05042 | 0.000000 | measured (Phase 03 manifests) |
+| f3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.023502 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
+| f3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.147475 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.04842 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | f3 | G-L search | online | NVIDIA A100-SXM4-80GB | 0.358179 | 0.000158 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| f3 | RRF | online | laptop CPU (ARM64, Windows) | 0.000108 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | Diversity pass | online | laptop CPU (ARM64, Windows) | 0.038791 | 0.000000 | measured (Phase 03 manifests) |
+| f3 | RRF | online | laptop CPU (ARM64, Windows) | 0.001265 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | Diversity pass | online | laptop CPU (ARM64, Windows) | 0.038874 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 
-Totals per hardware (derived):
+Totals per hardware, derived (sums of the components on one hardware; the Dense corpus embeddings are not in the offline totals):
 
-- rrf3, offline laptop CPU (ARM64, Windows): 212.721 s, 0.000000 USD.
 - rrf3, offline NVIDIA A100-SXM4-80GB: 4561.97 s, 2.014871 USD.
-- rrf3, online laptop CPU (ARM64, Windows): 0.22566 s, 0.000000 USD.
+- rrf3, offline laptop CPU (ARM64, Windows): 207.675 s, 0.000000 USD.
 - rrf3, online NVIDIA A100-SXM4-80GB: 0.358179 s, 0.000158 USD.
-- rrf3 class check: laptop online 0.2257 s/q (bound 2.0), NVIDIA A100-SXM4-80GB online 0.3582 s/q (bound 0.1, stated for one RTX 4090): outside the light class on this set (derived).
-- rrf3 cross-hardware online total, context only: 0.5838 s/q (derived).
-- f3, offline laptop CPU (ARM64, Windows): 258.296 s, 0.000000 USD.
+- rrf3, online laptop CPU (ARM64, Windows): 0.220662 s, 0.000000 USD.
+- rrf3, USD in total: offline 2.014871 USD, online 0.000158 USD per question (derived, lower bound: summed across hardware; the Dense corpus embeddings are not included and laptop USD is 0 by assumption).
+- rrf3 class check: laptop online 0.2207 s/q (bound 2.0), NVIDIA A100-SXM4-80GB online 0.3582 s/q (bound 0.1, stated for one RTX 4090): outside the light class on this set (derived).
+- rrf3 cross-hardware online total, context only: 0.5788 s/q (derived).
 - f3, offline NVIDIA A100-SXM4-80GB: 4561.97 s, 2.014871 USD.
-- f3, online laptop CPU (ARM64, Windows): 0.264451 s, 0.000000 USD.
+- f3, offline laptop CPU (ARM64, Windows): 253.462 s, 0.000000 USD.
 - f3, online NVIDIA A100-SXM4-80GB: 0.358179 s, 0.000158 USD.
-- f3 class check: laptop online 0.2645 s/q (bound 2.0), NVIDIA A100-SXM4-80GB online 0.3582 s/q (bound 0.1, stated for one RTX 4090): outside the light class on this set (derived).
-- f3 cross-hardware online total, context only: 0.6226 s/q (derived).
+- f3, online laptop CPU (ARM64, Windows): 0.259536 s, 0.000000 USD.
+- f3, USD in total: offline 2.014871 USD, online 0.000158 USD per question (derived, lower bound: summed across hardware; the Dense corpus embeddings are not included and laptop USD is 0 by assumption).
+- f3 class check: laptop online 0.2595 s/q (bound 2.0), NVIDIA A100-SXM4-80GB online 0.3582 s/q (bound 0.1, stated for one RTX 4090): outside the light class on this set (derived).
+- f3 cross-hardware online total, context only: 0.6177 s/q (derived).
 
 Cost of the reference rows (inherited labels):
 
 - g-l: offline 4562 s, 2.015 USD; online 0.3582 s/q, 0.000158 USD/q on NVIDIA A100-SXM4-80GB (seconds measured (pod manifests); USD derived (time x rate)).
-- p14: not measured in this phase (old project); handover: GLiNER 6.18 h, 4.57 USD attributable (derived; research_summary.md point 2).
-- j-union: not measured in this phase (old project); handover: J-strong 1.1576 USD attributable over the three sets (derived; 17.results.md section 4).
+- p14 (in-sample): not measured in this phase (old project).
+  - GLiNER over all 5,233,329 FullWiki paragraphs 6.18 h, 4.57 USD attributable (derived (time x rate); successor_project_handover.md, cost table (research_summary.md point 2)).
+  - the whole old Phase 9 session invoiced 12.71 USD, GLiNER and other work (measured (invoice); successor_project_handover.md, cost table (research_summary.md point 2)).
+- j-union: not measured in this phase (old project).
+  - J-strong 1.1576 USD attributable over the three sets; the judge share only, without the pool it reranks (derived (time x rate); successor_project_handover.md, judge proposal row (17.results.md section 4)).
 
-Diversity pass: 15925 boilerplate units in the corpus; demotions over all questions: boilerplate 3346, near-duplicate 4541, source cap 0 (measured).
+Diversity pass: 15925 boilerplate units in the corpus; demotions over RRF3's whole union, up to 300 units per question, all questions: boilerplate 3346, near-duplicate 4541, source cap 0; of these, inside RRF3's top 100: boilerplate 1336, near-duplicate 1497, source cap 0 (measured).
 
 Gold-informed diagnostics (exploratory, decide nothing): questions where a gold unit demoted by the rule was in RRF3's FS@2048 context but not in F3's, and in RRF3's top 100 but not in F3's:
 
@@ -99,7 +107,7 @@ Gold-informed diagnostics (exploratory, decide nothing): questions where a gold 
 | source cap | 0 | 0 |
 
 Gold units flagged boilerplate: 6 of 13783 (exploratory).
-Peak RSS: components 13478.7 MB, fuse 4347.3 MB (measured).
+Peak RSS: components 13486.5 MB, fuse 4344.7 MB (measured).
 
 ## multihop-rag (n = 2255)
 
@@ -129,47 +137,51 @@ Cost per component (seconds per question online, per corpus offline):
 
 | System | Component | Kind | Hardware | Seconds | USD | Label |
 |---|---|---|---|---:|---:|---|
-| rrf3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 1.148 | 0.000000 | measured (Phase 03 manifests) |
-| rrf3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE (16.results.md section 3) |
+| rrf3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 1.051 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| rrf3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE |
 | rrf3 | G-L encode and index | offline | NVIDIA GeForce RTX 4090 | 20.0554 | 0.004123 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| rrf3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.040829 | 0.000000 | measured on the first 200 questions |
-| rrf3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.001251 | 0.000000 | measured (Phase 03 manifests) |
-| rrf3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.000473 | 0.000000 | measured (Phase 03 manifests) |
+| rrf3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.040273 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
+| rrf3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.001207 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| rrf3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.00043 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | rrf3 | G-L search | online | NVIDIA GeForce RTX 4090 | 0.0118252 | 0.000002 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| rrf3 | RRF | online | laptop CPU (ARM64, Windows) | 9.9e-05 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 1.148 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | Boilerplate flags | offline | laptop CPU (ARM64, Windows) | 0.211 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE (16.results.md section 3) |
+| rrf3 | RRF | online | laptop CPU (ARM64, Windows) | 0.001195 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 1.051 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | Boilerplate flags | offline | laptop CPU (ARM64, Windows) | 0.226 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE |
 | f3 | G-L encode and index | offline | NVIDIA GeForce RTX 4090 | 20.0554 | 0.004123 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| f3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.040829 | 0.000000 | measured on the first 200 questions |
-| f3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.001251 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.000473 | 0.000000 | measured (Phase 03 manifests) |
+| f3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.040273 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
+| f3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.001207 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.00043 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | f3 | G-L search | online | NVIDIA GeForce RTX 4090 | 0.0118252 | 0.000002 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| f3 | RRF | online | laptop CPU (ARM64, Windows) | 9.9e-05 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | Diversity pass | online | laptop CPU (ARM64, Windows) | 0.011325 | 0.000000 | measured (Phase 03 manifests) |
+| f3 | RRF | online | laptop CPU (ARM64, Windows) | 0.001195 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | Diversity pass | online | laptop CPU (ARM64, Windows) | 0.011401 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 
-Totals per hardware (derived):
+Totals per hardware, derived (sums of the components on one hardware; the Dense corpus embeddings are not in the offline totals):
 
-- rrf3, offline laptop CPU (ARM64, Windows): 1.148 s, 0.000000 USD.
 - rrf3, offline NVIDIA GeForce RTX 4090: 20.0554 s, 0.004123 USD.
-- rrf3, online laptop CPU (ARM64, Windows): 0.042652 s, 0.000000 USD.
+- rrf3, offline laptop CPU (ARM64, Windows): 1.051 s, 0.000000 USD.
 - rrf3, online NVIDIA GeForce RTX 4090: 0.0118252 s, 0.000002 USD.
-- rrf3 class check: laptop online 0.04265 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.01183 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
-- rrf3 cross-hardware online total, context only: 0.05448 s/q (derived).
-- f3, offline laptop CPU (ARM64, Windows): 1.359 s, 0.000000 USD.
+- rrf3, online laptop CPU (ARM64, Windows): 0.043105 s, 0.000000 USD.
+- rrf3, USD in total: offline 0.004123 USD, online 0.000002 USD per question (derived, lower bound: summed across hardware; the Dense corpus embeddings are not included and laptop USD is 0 by assumption).
+- rrf3 class check: laptop online 0.04311 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.01183 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
+- rrf3 cross-hardware online total, context only: 0.05493 s/q (derived).
 - f3, offline NVIDIA GeForce RTX 4090: 20.0554 s, 0.004123 USD.
-- f3, online laptop CPU (ARM64, Windows): 0.053977 s, 0.000000 USD.
+- f3, offline laptop CPU (ARM64, Windows): 1.277 s, 0.000000 USD.
 - f3, online NVIDIA GeForce RTX 4090: 0.0118252 s, 0.000002 USD.
-- f3 class check: laptop online 0.05398 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.01183 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
-- f3 cross-hardware online total, context only: 0.0658 s/q (derived).
+- f3, online laptop CPU (ARM64, Windows): 0.054506 s, 0.000000 USD.
+- f3, USD in total: offline 0.004123 USD, online 0.000002 USD per question (derived, lower bound: summed across hardware; the Dense corpus embeddings are not included and laptop USD is 0 by assumption).
+- f3 class check: laptop online 0.05451 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.01183 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
+- f3 cross-hardware online total, context only: 0.06633 s/q (derived).
 
 Cost of the reference rows (inherited labels):
 
 - g-l: offline 20 s, 0.004 USD; online 0.0118 s/q, 0.000002 USD/q on NVIDIA GeForce RTX 4090 (seconds measured (pod manifests); USD derived (time x rate)).
-- p10-b: not measured in this phase (old project); handover: BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE (16.results.md section 3).
-- j-union: not measured in this phase (old project); handover: J-strong 1.1576 USD attributable over the three sets (derived; 17.results.md section 4).
+- p10-b: not measured in this phase (old project).
+  - BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE (derived (time x rate); successor_project_handover.md, cost table (16.results.md section 3)).
+- j-union: not measured in this phase (old project).
+  - J-strong 1.1576 USD attributable over the three sets; the judge share only, without the pool it reranks (derived (time x rate); successor_project_handover.md, judge proposal row (17.results.md section 4)).
 
-Diversity pass: 1241 boilerplate units in the corpus; demotions over all questions: boilerplate 23734, near-duplicate 139, source cap 301521 (measured).
+Diversity pass: 1241 boilerplate units in the corpus; demotions over RRF3's whole union, up to 300 units per question, all questions: boilerplate 23734, near-duplicate 139, source cap 301521; of these, inside RRF3's top 100: boilerplate 10341, near-duplicate 68, source cap 138575 (measured).
 
 Gold-informed diagnostics (exploratory, decide nothing): questions where a gold unit demoted by the rule was in RRF3's FS@2048 context but not in F3's, and in RRF3's top 100 but not in F3's:
 
@@ -180,7 +192,7 @@ Gold-informed diagnostics (exploratory, decide nothing): questions where a gold 
 | source cap | 622 | 449 |
 
 Gold units flagged boilerplate: 1 of 962 (exploratory).
-Peak RSS: components 547.5 MB, fuse 170.2 MB (measured).
+Peak RSS: components 548.5 MB, fuse 170.4 MB (measured).
 
 ## musique (n = 2417)
 
@@ -210,47 +222,51 @@ Cost per component (seconds per question online, per corpus offline):
 
 | System | Component | Kind | Hardware | Seconds | USD | Label |
 |---|---|---|---|---:|---:|---|
-| rrf3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 5.9 | 0.000000 | measured (Phase 03 manifests) |
+| rrf3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 5.726 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | rrf3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: not recorded |
 | rrf3 | G-L encode and index | offline | NVIDIA GeForce RTX 4090 | 74.6065 | 0.015336 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| rrf3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.018252 | 0.000000 | measured on the first 200 questions |
-| rrf3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.004307 | 0.000000 | measured (Phase 03 manifests) |
-| rrf3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.00092 | 0.000000 | measured (Phase 03 manifests) |
+| rrf3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.018511 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
+| rrf3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.004279 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| rrf3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.000915 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | rrf3 | G-L search | online | NVIDIA GeForce RTX 4090 | 0.0246952 | 0.000005 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| rrf3 | RRF | online | laptop CPU (ARM64, Windows) | 0.000107 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 5.9 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | Boilerplate flags | offline | laptop CPU (ARM64, Windows) | 1.247 | 0.000000 | measured (Phase 03 manifests) |
+| rrf3 | RRF | online | laptop CPU (ARM64, Windows) | 0.001278 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 5.726 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | Boilerplate flags | offline | laptop CPU (ARM64, Windows) | 1.244 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | f3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: not recorded |
 | f3 | G-L encode and index | offline | NVIDIA GeForce RTX 4090 | 74.6065 | 0.015336 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| f3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.018252 | 0.000000 | measured on the first 200 questions |
-| f3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.004307 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.00092 | 0.000000 | measured (Phase 03 manifests) |
+| f3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.018511 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
+| f3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.004279 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | BM25 retrieval | online | laptop CPU (ARM64, Windows) | 0.000915 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | f3 | G-L search | online | NVIDIA GeForce RTX 4090 | 0.0246952 | 0.000005 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
-| f3 | RRF | online | laptop CPU (ARM64, Windows) | 0.000107 | 0.000000 | measured (Phase 03 manifests) |
-| f3 | Diversity pass | online | laptop CPU (ARM64, Windows) | 0.046813 | 0.000000 | measured (Phase 03 manifests) |
+| f3 | RRF | online | laptop CPU (ARM64, Windows) | 0.001278 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
+| f3 | Diversity pass | online | laptop CPU (ARM64, Windows) | 0.046294 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 
-Totals per hardware (derived):
+Totals per hardware, derived (sums of the components on one hardware; the Dense corpus embeddings are not in the offline totals):
 
-- rrf3, offline laptop CPU (ARM64, Windows): 5.9 s, 0.000000 USD.
 - rrf3, offline NVIDIA GeForce RTX 4090: 74.6065 s, 0.015336 USD.
-- rrf3, online laptop CPU (ARM64, Windows): 0.023586 s, 0.000000 USD.
+- rrf3, offline laptop CPU (ARM64, Windows): 5.726 s, 0.000000 USD.
 - rrf3, online NVIDIA GeForce RTX 4090: 0.0246952 s, 0.000005 USD.
-- rrf3 class check: laptop online 0.02359 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.0247 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
-- rrf3 cross-hardware online total, context only: 0.04828 s/q (derived).
-- f3, offline laptop CPU (ARM64, Windows): 7.147 s, 0.000000 USD.
+- rrf3, online laptop CPU (ARM64, Windows): 0.024983 s, 0.000000 USD.
+- rrf3, USD in total: offline 0.015336 USD, online 0.000005 USD per question (derived, lower bound: summed across hardware; the Dense corpus embeddings are not included and laptop USD is 0 by assumption).
+- rrf3 class check: laptop online 0.02498 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.0247 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
+- rrf3 cross-hardware online total, context only: 0.04968 s/q (derived).
 - f3, offline NVIDIA GeForce RTX 4090: 74.6065 s, 0.015336 USD.
-- f3, online laptop CPU (ARM64, Windows): 0.070399 s, 0.000000 USD.
+- f3, offline laptop CPU (ARM64, Windows): 6.97 s, 0.000000 USD.
 - f3, online NVIDIA GeForce RTX 4090: 0.0246952 s, 0.000005 USD.
-- f3 class check: laptop online 0.0704 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.0247 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
-- f3 cross-hardware online total, context only: 0.09509 s/q (derived).
+- f3, online laptop CPU (ARM64, Windows): 0.071277 s, 0.000000 USD.
+- f3, USD in total: offline 0.015336 USD, online 0.000005 USD per question (derived, lower bound: summed across hardware; the Dense corpus embeddings are not included and laptop USD is 0 by assumption).
+- f3 class check: laptop online 0.07128 s/q (bound 2.0), NVIDIA GeForce RTX 4090 online 0.0247 s/q (bound 0.1, stated for one RTX 4090): inside the light class on this set (derived).
+- f3 cross-hardware online total, context only: 0.09597 s/q (derived).
 
 Cost of the reference rows (inherited labels):
 
 - g-l: offline 75 s, 0.015 USD; online 0.0247 s/q, 0.000005 USD/q on NVIDIA GeForce RTX 4090 (seconds measured (pod manifests); USD derived (time x rate)).
-- p14: not measured in this phase (old project); handover: GLiNER 10.3 min, 0.13 USD attributable (research_summary.md point 7).
-- g-a1: offline 192 s, 0.085 USD; online 0.3771 s/q, 0.000167 USD/q on pod (seconds measured (pod manifests); USD derived (time x rate)).
+- p14: not measured in this phase (old project).
+  - GLiNER 10.3 min, 0.13 USD attributable (derived (time x rate); successor_project_handover.md, cost table (research_summary.md point 7)).
+  - the session invoiced 0.356 USD (measured (invoice); successor_project_handover.md, cost table (research_summary.md point 7)).
+- g-a1: offline 192 s, 0.085 USD; online 0.3771 s/q, 0.000167 USD/q on NVIDIA A100-SXM4-80GB (seconds measured (pod manifests); USD derived (time x rate)).
 
-Diversity pass: 6 boilerplate units in the corpus; demotions over all questions: boilerplate 36, near-duplicate 9547, source cap 41579 (measured).
+Diversity pass: 6 boilerplate units in the corpus; demotions over RRF3's whole union, up to 300 units per question, all questions: boilerplate 36, near-duplicate 9547, source cap 41579; of these, inside RRF3's top 100: boilerplate 8, near-duplicate 4216, source cap 19940 (measured).
 
 Gold-informed diagnostics (exploratory, decide nothing): questions where a gold unit demoted by the rule was in RRF3's FS@2048 context but not in F3's, and in RRF3's top 100 but not in F3's:
 
@@ -261,4 +277,4 @@ Gold-informed diagnostics (exploratory, decide nothing): questions where a gold 
 | source cap | 157 | 299 |
 
 Gold units flagged boilerplate: 0 of 2629 (exploratory).
-Peak RSS: components 719.0 MB, fuse 238.1 MB (measured).
+Peak RSS: components 725.5 MB, fuse 235.7 MB (measured).
