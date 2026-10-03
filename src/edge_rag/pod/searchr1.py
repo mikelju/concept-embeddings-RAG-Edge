@@ -204,6 +204,7 @@ def run_turns(
     """The batched loop: every active question generates once per turn, then all their
     searches go to the retriever in one request."""
     started = time.perf_counter()
+    turn = 0
     while active := [t for t in traces if t.status == "active"]:
         for trace in active:
             if prompt_tokens(trace.prompt) + MAX_NEW_TOKENS > MAX_MODEL_LEN:
@@ -212,8 +213,12 @@ def run_turns(
         active = [t for t in active if t.status == "active"]
         if not active:
             break
+        turn += 1
+        turn_started = time.perf_counter()
+        outputs = generate(active)
+        generated = time.perf_counter()
         searching: list[tuple[Trace, str]] = []
-        for trace, (text, finished, n_tokens) in zip(active, generate(active), strict=True):
+        for trace, (text, finished, n_tokens) in zip(active, outputs, strict=True):
             query = step(trace, text, finished, n_tokens)
             if query is None:
                 trace.seconds = time.perf_counter() - started
@@ -224,6 +229,14 @@ def run_turns(
         by_trace = {id(t): h for (t, _q), h in zip(with_query, hits, strict=True)}
         for trace, query in searching:
             absorb(trace, query, by_trace.get(id(trace)))
+        # Progress, so the pace is measured before the hours are committed (plan D15).
+        print(
+            f"[TURN] {turn} active {len(active)} searches {len(with_query)}"
+            f" generate_s {generated - turn_started:.1f}"
+            f" retrieve_s {time.perf_counter() - generated:.1f}"
+            f" elapsed_s {time.perf_counter() - started:.1f}",
+            flush=True,
+        )
 
 
 # --- Engines --------------------------------------------------------------------------------

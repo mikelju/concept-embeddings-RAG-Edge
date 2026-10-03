@@ -13,6 +13,7 @@ OLD17_DIR="${OLD17_DIR:-/workspace/old17}"
 # Sets for G-L and G-R; a set whose G-L stage failed twice is left out (recipe stop conditions).
 GL_SETS="${GL_SETS:-multihop-rag musique hotpotqa-dev}"
 GR_SETS="${GR_SETS-$GL_SETS}"
+GA1_SETS="${GA1_SETS-multihop-rag musique}"
 LOG="${LOG:-/workspace/pod_run.log}"
 export POD_COST_PER_HR OLD_DATA_ROOT
 # FlashInfer's sampler JIT-builds with the image's nvcc 12.4, which rejects `--compress-mode`
@@ -59,8 +60,8 @@ cuda_check() {  # a real kernel in both environments, not only `is_available()`
 serve_and_run() {  # serve_and_run <set> <command...>: G-L retrieval server around a command
   local set=$1
   shift
-  # On the CPU: vLLM needs 0.8 of the GPU, and the server held about 7.5 GB of it (session 2).
-  CUDA_VISIBLE_DEVICES="" colbert_py -m edge_rag.pod.colbert --set "$set" --serve --port 8000 &
+  # On the GPU beside vLLM's 0.8 of an 80 GB card; the CPU server was too slow for G-A1 (plan D15, F6).
+  colbert_py -m edge_rag.pod.colbert --set "$set" --serve --port 8000 &
   local server=$!
   until curl -sf http://127.0.0.1:8000/ > /dev/null; do
     kill -0 "$server" 2> /dev/null || { echo "retrieval server died" >&2; return 1; }
@@ -84,10 +85,9 @@ stage probe-g-l "$OUT/probe/units1000/musique/g-l.manifest.json" \
   colbert_py -m edge_rag.pod.colbert --set musique --limit-units 1000 --limit-questions 100
 
 for set in $GL_SETS; do
-  # HotpotQA's centroid update runs on the CPU (plan D12, F3).
-  extra=""; [ "$set" = hotpotqa-dev ] && extra="--cpu-centroid-update"
+  # fast-plaid's GPU path on every set; D12's CPU centroid update was for the 24 GB card (plan D15).
   stage "g-l-$set" "$OUT/rankings/$set/g-l.manifest.json" \
-    colbert_py -m edge_rag.pod.colbert --set "$set" $extra
+    colbert_py -m edge_rag.pod.colbert --set "$set"
 done
 
 stage g-r-check-old "$OUT/checks/c3-strong-rescore.json" \
@@ -101,7 +101,7 @@ done
 stage c4-compare "$OUT/checks/c4-infer-vs-vllm-musique.json" \
   serve_and_run musique main_py -m edge_rag.pod.searchr1 --set musique --compare-infer 50
 
-for set in multihop-rag musique; do
+for set in $GA1_SETS; do
   stage "g-a1-$set" "$OUT/rankings/$set/g-a1.manifest.json" \
     serve_and_run "$set" main_py -m edge_rag.pod.searchr1 --set "$set"
 done
