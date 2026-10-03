@@ -28,6 +28,7 @@ DOCUMENT_LENGTH = 512
 QUERY_LENGTH = 32
 DEPTH = 100
 SYSTEM = "g-l"
+SERVE_BATCH = 32
 
 
 def load_model() -> Any:
@@ -181,8 +182,14 @@ def serve(args: argparse.Namespace) -> None:
         def do_POST(self) -> None:  # noqa: N802 - http.server API
             request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             queries = [str(q) for q in request["queries"]]
-            embeddings = model.encode(queries, is_query=True, show_progress_bar=False)
-            hits = retriever.retrieve(queries_embeddings=embeddings, k=int(request["topk"]))
+            hits = []
+            # A G-A1 turn sends every active question's search at once; PLAID on the CPU over
+            # 2,255 queries outgrew the pod's 62 GB and the server was killed (plan D14).
+            for start in range(0, len(queries), SERVE_BATCH):
+                embeddings = model.encode(
+                    queries[start : start + SERVE_BATCH], is_query=True, show_progress_bar=False
+                )
+                hits += retriever.retrieve(queries_embeddings=embeddings, k=int(request["topk"]))
             result = [
                 [
                     {
