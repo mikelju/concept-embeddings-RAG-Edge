@@ -35,6 +35,17 @@ def recall_at_k(ranked: Sequence[str], gold: Sequence[str], k: int) -> float:
     return len(set(ranked[:k]) & set(gold)) / len(set(gold))
 
 
+def full_support_at_k(ranked: Sequence[str], gold: Sequence[str], k: int) -> int:
+    """All gold units among the first `k` units of the ranking (the MDR family's FS@k)."""
+    return full_support(ranked[:k], gold)
+
+
+def gold_share_at_k(ranked: Sequence[str], gold: Sequence[str], k: int) -> float:
+    """Share of the question's gold units in the first `k` (HippoRAG's recall@k); equals
+    `recall_at_k` by definition, named apart because the tables report it as its own column."""
+    return recall_at_k(ranked, gold, k)
+
+
 def ndcg_at_k(ranked: Sequence[str], gold: Sequence[str], k: int) -> float:
     """Binary-relevance nDCG (the BEIR metric); a gold id counts once, at its first rank."""
     _need_gold(gold)
