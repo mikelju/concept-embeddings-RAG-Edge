@@ -10,11 +10,17 @@ from edge_rag.artifacts import Checks, OldData, write_bytes, write_json
 
 OLD_SYSTEMS = ("p10-a", "p10-b", "p10-c", "p14", "j-p10b", "j-union")
 GHOSTS = ("g-l", "g-r", "g-a1", "g-r2")
+REQUIRED_GHOSTS = ("g-l", "g-r", "g-a1")  # G-R2 is optional (increment 6)
 OLD_COST = "not measured in this phase (old project)"
 PHASE_DIR = config.RANKINGS_DIR.parent
 # G-A1 searched the session 4 G-L index, not the reported session 2 build (plan F7):
 # its offline cost and provenance come from that index's G-L manifest.
 GHOST_INDEX = {"g-a1": PHASE_DIR / "session4" / "s4A" / "rankings"}
+# Why a required ghost has no ranking on a set; a ghost missing without a reason is "not run".
+NOT_MEASURED = {
+    "hotpotqa-dev": "G-L failed on the 24 GB card (plan F3) and was stopped on its measured "
+    "projection on the A100 (plan F8); G-R and G-A1 need its index",
+}
 # G-L rebuilds kept beside the reported build (plan F5, F7): build label -> ranking file.
 G_L_REBUILDS = {
     "multihop-rag": {
@@ -56,6 +62,19 @@ def ghost_cost(system: str, manifests: dict[str, dict[str, Any]]) -> dict[str, A
         "online_usd_per_question": _usd(online, rate),
         "cost_per_hr_usd": rate,
         "label": "seconds measured (pod manifests); USD derived (time x rate)",
+    }
+
+
+def spread_entry(
+    build: str, relative: str, sha256: str, fs: int, reported: list[int], rebuild: list[int]
+) -> dict[str, Any]:
+    """One G-L rebuild against the reported build: wins are questions only the rebuild supports."""
+    return {
+        "build": build,
+        "rankings": relative,
+        "rankings_sha256": sha256,
+        "full_support_at_budget": fs,
+        "against_reported_g_l": {**metrics.paired(reported, rebuild), "label": "measured"},
     }
 
 
@@ -105,34 +124,61 @@ def set_table(set_name: str) -> dict[str, Any]:
             rows[system]["cost"] = {"label": OLD_COST}
     budget = str(config.BUDGET)
     old_present = [s for s in OLD_SYSTEMS if s in rows]
-    best_old = max(
-        old_present, key=lambda s: rows[s]["metrics"]["full_support_at_budget"][budget]
-    )
+    best_old = max(old_present, key=lambda s: rows[s]["metrics"]["full_support_at_budget"][budget])
     ghosts = [s for s in GHOSTS if s in rows]
     paired = []
     for i, ghost in enumerate(ghosts):
         for base in [best_old, *ghosts[:i]]:
             test = metrics.paired(records[base], records[ghost])
-            paired.append({"system": ghost, "against": base, **test, "label": "measured"})
+            against = f"{base}.jsonl.gz"
+            paired.append(
+                {
+                    "system": ghost,
+                    "against": base,
+                    "against_rankings": against,
+                    **test,
+                    "label": "measured",
+                }
+            )
+        if ghost in GHOST_INDEX:
+            # Also against the G-L build this ghost actually searched (plan F5: builds differ).
+            path = GHOST_INDEX[ghost] / set_name / "g-l.jsonl.gz"
+            _, searched = scoring.score(questions, scoring.read_rankings(path), counts)
+            test = metrics.paired(searched, records[ghost])
+            paired.append(
+                {
+                    "system": ghost,
+                    "against": "g-l (searched index)",
+                    "against_rankings": path.relative_to(PHASE_DIR).as_posix(),
+                    **test,
+                    "label": "measured",
+                }
+            )
+    not_measured = {
+        ghost: NOT_MEASURED.get(set_name, "not run")
+        for ghost in REQUIRED_GHOSTS
+        if ghost not in rows
+    }
     spread = []
     for build, relative in G_L_REBUILDS.get(set_name, {}).items():
         path = PHASE_DIR / relative
         summary, record = scoring.score(questions, scoring.read_rankings(path), counts)
-        test = metrics.paired(records["g-l"], record)
         spread.append(
-            {
-                "build": build,
-                "rankings": relative,
-                "rankings_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                "full_support_at_budget": summary["full_support_at_budget"][budget],
-                "against_reported_g_l": {**test, "label": "measured"},
-            }
+            spread_entry(
+                build,
+                relative,
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+                summary["full_support_at_budget"][budget],
+                records["g-l"],
+                record,
+            )
         )
     return {
         "set": set_name,
         "n": len(questions),
         "best_old_by_fs_at_budget": best_old,
         "systems": rows,
+        "ghosts_not_measured": not_measured,
         f"paired_full_support_at_{budget}": paired,
         f"g_l_build_spread_at_{budget}": spread,
         "digests_checked": checks.records,
@@ -147,8 +193,6 @@ def markdown(table: dict[str, Any]) -> str:
         "Generated by `uv run edge-rag results` from `results.json`; do not edit by hand.",
         "Metrics are measured; seconds are measured on the pod; USD is time x rate (derived).",
         "Offline cost is G-L's encode and index, shared by every ghost that searches its index.",
-        "G-L and G-R are the session 2 builds; G-A1 searched the session 4 G-L index (plan F7),",
-        "and its offline cost is that index's.",
         "",
     ]
     for entry in table["sets"]:
@@ -173,6 +217,18 @@ def markdown(table: dict[str, Any]) -> str:
                 f"| {at_k['5']} | {at_k['20']} | {m['recall_at_k']['5']:.4f} "
                 f"| {m['recall_at_k']['100']:.4f} | {m['ndcg_at_10']:.4f} | {cost} |"
             )
+        lines.append("")
+        for ghost, reason in entry["ghosts_not_measured"].items():
+            lines.append(f"{ghost}: not measured on this set ({reason}).")
+        for system, row in entry["systems"].items():
+            if "searched_g_l_index" in row:
+                lines.append(
+                    f"{system} searched the G-L index of "
+                    f"`{row['searched_g_l_index']['manifest']}`, "
+                    "not the reported G-L build; its offline cost is that index's."
+                )
+        if not entry[f"paired_full_support_at_{budget}"]:
+            continue
         lines += [
             "",
             f"Paired exact McNemar on FS@{budget} (best old system by FS@{budget}: "
@@ -183,7 +239,8 @@ def markdown(table: dict[str, Any]) -> str:
         ]
         for test in entry[f"paired_full_support_at_{budget}"]:
             lines.append(
-                f"| {test['system']} | {test['against']} | {test['wins']} | {test['losses']} "
+                f"| {test['system']} | {test['against']} (`{test['against_rankings']}`) "
+                f"| {test['wins']} | {test['losses']} "
                 f"| {test['ties']} | {test['p']:.4g} |"
             )
         spread = entry[f"g_l_build_spread_at_{budget}"]
@@ -209,8 +266,7 @@ def markdown(table: dict[str, Any]) -> str:
 
 def run(set_names: list[str]) -> dict[str, Any]:
     table = {"phase": "02", "sets": [set_table(name) for name in set_names]}
-    out = config.RANKINGS_DIR.parent
-    write_json(out / "results.json", table)
+    write_json(PHASE_DIR / "results.json", table)
     write_bytes(
         config.REPO_ROOT / "docs" / "plans" / "fase-02-ghosts" / "results.md",
         markdown(table).encode("utf-8"),
