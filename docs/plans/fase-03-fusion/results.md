@@ -19,7 +19,6 @@ Metrics and paired tests are measured; states, verdicts and the class check are 
 | rrf3 vs best light-class so far | loss | tie | loss |
 | rrf3 vs best so far | loss | loss | loss |
 
-- hotpotqa-dev: HotpotQA dev is in-sample for the old P10-C and P14 fitted weights, so their rows here are an upper bound; BGE-small (Dense, in every fused list) was fine-tuned on HotpotQA train and answerai-colbert-small-v1 (G-L) is in-domain here (research protocol, known traps). p14 is in-sample on this set: its comparisons favour it.
 
 ## hotpotqa-dev (n = 7405)
 
@@ -138,7 +137,7 @@ Cost per component (seconds per question online, per corpus offline):
 | System | Component | Kind | Hardware | Seconds | USD | Label |
 |---|---|---|---|---:|---:|---|
 | rrf3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 1.051 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
-| rrf3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE |
+| rrf3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod (measured (recorded time)); 0.0404 USD attributable to GLiNER + BGE, the BGE encoding inside it (derived (time x rate)); the session invoiced 0.165 USD (measured (invoice)); the session's balance delta 0.1029 USD (measured (balance delta)) |
 | rrf3 | G-L encode and index | offline | NVIDIA GeForce RTX 4090 | 20.0554 | 0.004123 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
 | rrf3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.040273 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
 | rrf3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.001207 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
@@ -147,7 +146,7 @@ Cost per component (seconds per question online, per corpus offline):
 | rrf3 | RRF | online | laptop CPU (ARM64, Windows) | 0.001195 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | f3 | BM25 build | offline | laptop CPU (ARM64, Windows) | 1.051 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
 | f3 | Boilerplate flags | offline | laptop CPU (ARM64, Windows) | 0.226 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
-| f3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE |
+| f3 | Dense corpus embeddings | offline | old pod | - | - | not measured in this phase; handover: BGE-small encoding 41.20 s on the old pod (measured (recorded time)); 0.0404 USD attributable to GLiNER + BGE, the BGE encoding inside it (derived (time x rate)); the session invoiced 0.165 USD (measured (invoice)); the session's balance delta 0.1029 USD (measured (balance delta)) |
 | f3 | G-L encode and index | offline | NVIDIA GeForce RTX 4090 | 20.0554 | 0.004123 | seconds measured (Phase 02 G-L manifest); USD derived (time x rate) |
 | f3 | BGE-small question encoding | online | laptop CPU (ARM64, Windows) | 0.040273 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted); seconds on the first 200 questions |
 | f3 | Dense retrieval | online | laptop CPU (ARM64, Windows) | 0.001207 | 0.000000 | seconds measured (Phase 03 manifests); USD 0 by assumption (owned laptop, energy not counted) |
@@ -177,7 +176,10 @@ Cost of the reference rows (inherited labels):
 
 - g-l: offline 20 s, 0.004 USD; online 0.0118 s/q, 0.000002 USD/q on NVIDIA GeForce RTX 4090 (seconds measured (pod manifests); USD derived (time x rate)).
 - p10-b: not measured in this phase (old project).
-  - BGE-small encoding 41.20 s on the old pod, inside 0.0404 USD attributable to GLiNER + BGE (derived (time x rate); successor_project_handover.md, cost table (16.results.md section 3)).
+  - BGE-small encoding 41.20 s on the old pod (measured (recorded time); successor_project_handover.md, cost table (16.results.md section 3)).
+  - 0.0404 USD attributable to GLiNER + BGE, the BGE encoding inside it (derived (time x rate); successor_project_handover.md, cost table (16.results.md section 3)).
+  - the session invoiced 0.165 USD (measured (invoice); successor_project_handover.md, cost table (16.results.md section 3)).
+  - the session's balance delta 0.1029 USD (measured (balance delta); successor_project_handover.md, RunPod know-how).
 - j-union: not measured in this phase (old project).
   - J-strong 1.1576 USD attributable over the three sets; the judge share only, without the pool it reranks (derived (time x rate); successor_project_handover.md, judge proposal row (17.results.md section 4)).
 
