@@ -18,8 +18,7 @@ PHASE_DIR = config.RANKINGS_DIR.parent
 GHOST_INDEX = {"g-a1": PHASE_DIR / "session4" / "s4A" / "rankings"}
 # Why a required ghost has no ranking on a set; a ghost missing without a reason is "not run".
 NOT_MEASURED = {
-    "hotpotqa-dev": "G-L failed on the 24 GB card (plan F3) and was stopped on its measured "
-    "projection on the A100 (plan F8); G-R and G-A1 need its index",
+    "hotpotqa-dev": "G-A1 is optional on HotpotQA (spec, optional items) and was not run",
 }
 # G-L rebuilds kept beside the reported build (plan F5, F7): build label -> ranking file.
 G_L_REBUILDS = {
