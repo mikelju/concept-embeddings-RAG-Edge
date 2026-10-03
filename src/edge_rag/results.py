@@ -17,7 +17,9 @@ PHASE_DIR = config.RANKINGS_DIR.parent
 # its offline cost and provenance come from that index's G-L manifest.
 GHOST_INDEX = {"g-a1": PHASE_DIR / "session4" / "s4A" / "rankings"}
 # Why a required ghost has no ranking on a set; a ghost missing without a reason is "not run".
-NOT_MEASURED: dict[str, str] = {}
+NOT_MEASURED = {
+    "hotpotqa-dev": "G-A1 is optional on HotpotQA (spec, optional items) and was not run",
+}
 # G-L rebuilds kept beside the reported build (plan F5, F7): build label -> ranking file.
 G_L_REBUILDS = {
     "multihop-rag": {

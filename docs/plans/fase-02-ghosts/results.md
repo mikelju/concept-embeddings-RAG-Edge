@@ -17,7 +17,7 @@ Offline cost is G-L's encode and index, shared by every ghost that searches its 
 | g-l | 4515 | 5000 | 5377 | 2401 | 3847 | 5018 | 0.7434 | 0.8941 | 0.7697 | 4562 | 2.015 | 0.3582 | 0.000158 |
 | g-r | 5400 | 5652 | 5793 | 3979 | 5052 | 5659 | 0.8329 | 0.8941 | 0.8493 | 4562 | 2.015 | 1.0192 | 0.000450 |
 
-- g-a1: not measured on this set (not run).
+- g-a1: not measured on this set (G-A1 is optional on HotpotQA (spec, optional items) and was not run).
 
 Paired exact McNemar on FS@2048 (best old system by FS@2048: j-union):
 
