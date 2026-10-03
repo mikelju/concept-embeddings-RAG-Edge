@@ -1,6 +1,6 @@
 # Phase 03 - Weight-free fusion with source diversity: plan
 
-Status: in progress
+Status: ready locally (C7 open on the author's billing-explorer reading, deviation 03.1)
 Spec: `spec.md` (approved by delegation, 2026-10-03)
 Base: branch `fase-03-fusion` from `main` at 010cb33
 
@@ -21,6 +21,7 @@ Taken by the agent under the author's delegation; the design decisions are DS1-D
 - D12. Review round 1: `components` and `fuse` read the commit and `git status --porcelain -- src` when they start (`git_commit`, `git_src_changes` in the manifest; a non-empty list flags code no commit holds), and a rerun keeps the earlier run manifest as `<name>.<its written_utc>.json` beside the new one. All six runs were repeated on commit 7e49d7b with a clean `src/`, one process at a time and nothing else running, so the costs of record no longer overlap other work. Reason: the first HotpotQA `components` run (about 21:12-21:43Z) overlapped the MultiHop-RAG `fuse` run (21:15Z) and two commits with their test runs, and its manifest recorded a commit made after it started.
 - D13. Review round 1: laptop USD is labelled 0 by assumption (owned laptop, energy not counted), not measured; the per-hardware totals print their exclusion of the Dense corpus embeddings, and a per-system USD total across hardware is given as a lower bound; each reference-row cost note carries its own label and source, with the invoices and the balance delta the handover records; the J-strong note says it is the judge share only; HotpotQA rows carry the in-sample (P10-C, P14) and in-domain (BGE-small, answerai-colbert-small-v1) notes; each reference row names the hardware from its Phase 02 manifest. Reason: research protocol (labels, three money figures, known traps) and C4 (hardware of each cost).
 - D14. C7's balance branch fails as written (14.4439 USD read, 14.49 expected); deviation 03.1. Reason: a failed check is reported, not reinterpreted.
+- D15. At the close, results by criterion and the candidate learnings go in this plan, not in `results.md`, as in Phase 02. Reason: `results.md` is written entirely by `fusion-results` and C4 asks that it regenerate byte-equal from `results.json`; a hand-written section in it would break that check.
 
 ## Increments
 | # | Increment | Criteria | Where | Status | Evidence |
@@ -30,7 +31,7 @@ Taken by the agent under the author's delegation; the design decisions are DS1-D
 | 3 | `edge-rag fuse --set <set>`: reads `p10-a` and `g-l` (phase 02, against the spec's sha256) and `bm25` (phase 03, against its manifest's sha256), writes `rrf3` and `f3` with a manifest (input sha256, constants, commit, boilerplate count, seconds offline and per question), and the exploratory per-rule gold demotion counts at the FS@2,048 budget and at depth 100 (spec C6) | C3, C6 | laptop | done | Code 081f974 (one extra test pins the C6 counting on a toy question). `uv run edge-rag fuse --set multihop-rag`: rrf3 and f3 written, manifest with the three input sha256, constants (60, 2, 5, 0.8), commit, peak RSS, boilerplate count and seconds. `uv run edge-rag score --set multihop-rag --rankings .../f3.jsonl.gz --against .../g-l.jsonl.gz`: FS@2,048 490 against 187, wins 355, losses 52, ties 1,848, exact p 1.458e-56, the same figures as the table (measured). |
 | 4 | Results: `edge-rag fusion-results` writes `data/phase03/results.json` and `results.md`: metrics, labels, cost columns per component and total, the seven paired tests per set, states, advance verdicts and exam entrant by the spec's rule; class check per component and hardware; tests of the state, verdict and `not run` code | C4, C5, C6, C8 | laptop | done | Code 29fbed0; `tests/test_fusion_results.py` pins the state code, every bar of the verdict, the spec's `not run` case (`does not advance`), the per-hardware class check and the outcome with a set not run; `uv run pytest -q` all pass. C4 regeneration (D11), after review round 1: `uv run edge-rag fusion-results` (code 7e49d7b) re-rendered the page from the written `results.json` before writing it, and `uv run edge-rag fusion-results --from-json` printed "results.md regenerates byte-equal", sha256 299c1b90b60f20dc2862408e69444ba491bdbe9e702d3513c22a9660371a7d12; `results.json` 69c74dd49514598ba0c2555c2490c91e069264ab2052eb02b6910c3fd8fdfc52; `tests/test_fusion_results.py` renders a toy table and its sorted-key JSON round trip to the same page. The earlier evidence (two runs, same sha256) showed only that the run is deterministic; on that page the round trip failed, as the review found. The table rescoring of every Phase 02 row is checked equal to Phase 02's metrics, and each read ranking file against its recorded sha256. |
 | 5 | Runs: components and fuse on MultiHop-RAG, MuSiQue, HotpotQA, peak RSS recorded; results table; one fused list checked by hand per set (RRF score of the top unit recomputed from the three inputs; one demotion explained) | C1, C3-C6 | laptop | done | See "Runs (increment 5)" below. |
-| 6 | Validation: RunPod balance reading (C7), `npm run check`, adversarial review, results by criterion, master plan status, delivery on the branch with a PR | C7, C8 | laptop | pending | |
+| 6 | Validation: RunPod balance reading (C7), `npm run check`, adversarial review, results by criterion, master plan status, delivery on the branch with a PR | C7, C8 | laptop | done (C7 open, deviation 03.1) | Balance read again at the close, 2026-10-03T23:01:58Z: 14.4439064171 USD, no pods, no network volumes, spend per hour 0 (measured), unchanged since 22:12:58Z. `npm run check` exit 0 at 0c077c0 (pytest 1 skipped: symlinks need privileges on this machine; ruff and mypy clean; log `data/phase03/logs/close-check.log`). `uv run edge-rag fusion-results --from-json`: results.md regenerates byte-equal, sha256 299c1b90b60f20dc2862408e69444ba491bdbe9e702d3513c22a9660371a7d12. Review round 1 on 010cb33..4072ad4; the fix range 4072ad4..0c077c0 has had no separate review round. |
 
 How each increment is checked:
 - 1: `uv run edge-rag components --set multihop-rag` prints both equality counts 2,255 of 2,255; `uv run pytest -q`; `uv run edge-rag reproduce --set multihop-rag --out data/phase03/gate` and `--set musique` print GATE PASS, and the sha256 of `data/results/reproduce-<set>.json` and of the Phase 02 ranking files are the same before and after.
@@ -76,6 +77,7 @@ Money left inside the project's 25 USD authorization at the start of the phase: 
 Check at the close (C7): the RunPod balance equals 14.49 USD (measured in deviation 02.1), or the billing explorer shows no charge dated inside the phase; the reading goes here.
 Reading, 2026-10-03T22:12:58Z (GraphQL `myself`, read-only): balance 14.4439064171 USD, spend per hour 0, no pods, no network volumes (measured).
 The balance branch fails as written (0.046 USD below 14.49); the billing-explorer branch is open for the author (deviation 03.1).
+Reading at the close, 2026-10-03T23:01:58Z (same query): balance 14.4439064171 USD, spend per hour 0, no pods, no network volumes (measured); no change during the phase's last runs.
 
 ## Deviations
 | ID | Summary | Affected criteria | Status |
@@ -83,10 +85,25 @@ The balance branch fails as written (0.046 USD below 14.49); the billing-explore
 | 03.1 | Balance read at 14.4439 USD, not 14.49; billing explorer reading pending from the author | C7 | proposed |
 
 ## Results by criterion
-Filled at the close from the run files.
+- C1 met: `dense` equals `p10-a` and the Dense + BM25 fusion equals `p10-b` in 7,405 of 7,405 (HotpotQA), 2,417 of 2,417 (MuSiQue) and 2,255 of 2,255 (MultiHop-RAG) questions, written by `components` into its manifests (measured, commit 7e49d7b); Phase 01 gate rerun GATE PASS on MultiHop-RAG and MuSiQue (increment 1).
+- C2 met: `uv run pytest -q tests/test_rrf.py` 7 passed at 7e49d7b (increment 2).
+- C3 met: `rrf3` and `f3` on the three sets with manifests (input sha256, constants 60 / 2 / 5 / 0.8, commit, peak RSS, boilerplate count, seconds); digests listed under Runs.
+- C4 met: `results.json` and `results.md` written by `fusion-results`; `fusion-results --from-json` reports byte-equal regeneration, sha256 299c1b90...7d12 (increment 4, D11).
+- C5 met: the seven paired exact McNemar tests per set with wins, losses, ties, p and state; F3's verdict, RRF3's context verdict and the exam entrant written by code; `tests/test_fusion_results.py` pins each bar and the `not run` case.
+- C6 met: per-rule gold demotion counts at the FS@2,048 budget and at depth 100 and the gold units flagged boilerplate, per set, labelled exploratory, in `results.json` and `results.md`.
+- C7 not met as written, open: no pod and no paid API in this phase (every manifest's hardware is the laptop), but the balance reads 14.4439 USD against 14.49 USD; the billing-explorer branch waits on the author (deviation 03.1).
+- C8 met: `npm run check` exit 0 at 0c077c0.
+
+Outcome written by code (`results.md`): F3 **advances, no entrant**; exam entrant: none from this phase; RRF3 against G-L (context): advances.
+FS@2,048 (measured; state against G-L by exact McNemar, alpha 0.05):
+- hotpotqa-dev (n 7,405): F3 5,080, RRF3 5,083, G-L 5,000, best light-class p14 5,224 (in-sample); F3 vs G-L win (390 / 310, p 0.0028), F3 vs RRF3 tie (3 / 6), F3 vs p14 loss (420 / 564).
+- multihop-rag (n 2,255): F3 490, RRF3 556, G-L 187, best light-class p10-b 587; F3 vs G-L win (355 / 52, p 1.5e-56), F3 vs RRF3 loss (144 / 210, p 0.00053), F3 vs p10-b loss (140 / 237).
+- musique (n 2,417): F3 537, RRF3 594, G-L 533, best light-class p14 761; F3 vs G-L tie (121 / 117, p 0.85), F3 vs RRF3 loss (21 / 78, p 6.9e-9), F3 vs p14 loss (90 / 314).
+Reading (interpretation, not tested): the diversity pass costs recall at the budget against plain RRF3 on the two sets where it demotes most (source cap 301,521 demotions on MultiHop-RAG, 41,579 on MuSiQue), and the three-way RRF of Dense, BM25 and G-L beats G-L on every set without any rule.
+The class check puts both fused systems outside the light class on HotpotQA (G-L's A100 search, 0.358 s per question, against the 0.1 s bound stated for one RTX 4090) and inside it on the other two sets (derived).
 
 ## Findings
-None yet.
+- F1. On HotpotQA the G-L component's online search (0.358 s per question on the Phase 02 A100) is above the light-class GPU bound, so RRF3 and F3 are outside the light class there (derived, class check in `results.md`); a later light-class candidate that fuses G-L inherits this.
 
 ## Adversarial review
 | Round | Backend | Range | Lenses | Findings | Status |
@@ -94,4 +111,9 @@ None yet.
 | 1 | subagents | 010cb33..4072ad4 | correctness, protocol, spec fidelity | 14 (5 major, 9 minor; 3 duplicates of the C4 finding); 13 fixed (D10-D13, plan wording), C7 recorded as deviation 03.1 | fixed in 7e49d7b and the evidence commit |
 
 ## Candidate learnings
-Only reusable lessons with a quote from the session; consolidated at the close.
+Proposals for the author; none is applied (AGENTS.md and the skills are not edited in this phase).
+1. A page that must regenerate byte-equal from a JSON file needs a round-trip test through that JSON as written (sorted keys), not two identical runs. Quote, review round 1: "The earlier evidence (two runs, same sha256) showed only that the run is deterministic; on that page the round trip failed". Target: research-protocol, artifact integrity.
+2. Score sums that carry a tie rule use exact arithmetic: "float sums in list order broke it by one ulp in 3 MultiHop-RAG and 1 HotpotQA questions" (D10). Target: research-protocol, known traps.
+3. A run manifest reads its commit and the dirty state of `src/` when the run starts, not when it writes: "its manifest recorded a commit made after it started" (D12). Target: research-protocol, artifact integrity.
+4. Costs of record come from runs made alone on the machine: "the first HotpotQA `components` run (about 21:12-21:43Z) overlapped the MultiHop-RAG `fuse` run" (D12). Target: research-protocol, cost.
+5. A money criterion after a pod phase checks invoice line items by date, not an exact balance, because billing lands late: "Phase 02 at 14.73 USD balance delta against 14.78 USD invoiced" (deviation 02.1) and "The balance is 0.046 USD below 14.49" (deviation 03.1). Target: remote-gpu.
