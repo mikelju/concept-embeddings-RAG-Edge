@@ -1,0 +1,76 @@
+# Phase 04 - Judge over a pooled bag with the hop: plan
+
+Status: in progress
+Spec: `spec.md` (approved by delegation, 2026-10-04; frozen)
+Base: branch `fase-04-judge` from `main`, spec commit 29d2bbf
+
+## Decisions
+Taken by the agent under the author's delegation; the design decisions are DJ1-DJ14 in the spec.
+- D1. Phase 04 outputs live in `data/phase04/` (`rankings/<set>/`, `pairs/`, `scores/`, `logs/`, `results.json`); `results.md` is generated into this folder. `config` gains `PHASE04_DIR`, `PHASE04_RANKINGS_DIR` and the per-set G-R pair rates the gate uses (151 / 240 / 268 pairs/s, Phase 02 manifests). Reason: same layout as Phase 03 (D5 there); closed phases' folders are read only.
+- D2. `pool` (new `src/edge_rag/pool.py`) reuses `reproduce.load_inputs`, `load_node_index`, `Hops.entity_hop`, `Dense`, `fuse_lists` and `components.phase02_list` / `fuse.read_inputs` for the pinned `p10-a`, `bm25` and `g-l` files; it adds no retrieval code. RRF4 fuses the stored `p10-a` and `bm25` lists (the lists the spec names) with `g-l` and the new `hop`; the recomputed Dense and BM25 hits serve only the hop and the `p10-c` equality count. Reason: one loading path, gated since Phase 01.
+- D3. The judge's pure functions (cache split, order with the pool-rank tie, assembly, one score per pair) go in new `src/edge_rag/judge.py`; `judge-pairs` and `judge` are two `run` functions there. Reason: one module, the code both commands share, testable without a model.
+- D4. The cache is read with `pod/rerank.py`'s `OLD17` digests and `read_pinned` (lazy model imports, so the laptop can import it), streamed so HotpotQA's about 1.3 M old pairs keep only `(qid, unit_id) -> score` and the question text per qid. Reason: no second copy of the digests.
+- D5. The pod mode is `python -m edge_rag.pod.rerank --pairs <set>` in the existing module, reusing `load_strong`, `strong_scores`, `common.Timer`, `common.git_provenance`, `common.gpu_name`, `common.cost_per_hr` and `common.write_manifest`; it reads texts from the uploaded pairs file and never opens a corpus, so `OLD_DATA_ROOT` is not needed; it adds a small reader of cgroup v2 `memory.current` / `memory.peak` for the manifest (C5). Reason: the existing modes need the corpus on the pod; this one must not (spec Cost accounting).
+- D6. The pod driver is a new short `scripts/pod_judge.sh` with the same `stage` pattern as `scripts/pod_run.sh` (sync, CUDA kernel check, then per set C4 check and scoring, skipped when the output manifest exists), plus a 30 s sampler of progress and cgroup memory with UTC time; `pod_run.sh` is not edited. Reason: `pod_run.sh` is the record of the Phase 02 session and requires the old corpus.
+- D7. Results reuse `fusion_results.py` instead of a copy: its state, advance, class-check, cost and page code is parameterized by a small phase description (output paths, candidate and control rows, bar names, cost rows), Phase 03 becomes one description and Phase 04 another, and a new `edge-rag judge-results [--from-json]` command runs the Phase 04 one. The refactor is accepted only if `uv run edge-rag fusion-results --from-json` still prints the Phase 03 sha256 e50c85a9ca1e201dd30cbc50bde426c5fddeab638e2c4f53e3c04d3227e0a9a9 and the existing `tests/test_fusion_results.py` pass unchanged. Reason: spec Scope item 5 and the protocol's "one generic tournament runner"; the byte-equal Phase 03 page proves the refactor changed nothing.
+- D8. The HotpotQA 1,000-question fallback (spec gate) is coded only if the gate fails: `judge-pairs` writes, in the manifest, the projection for the full set and for the preregistered subsample (`random.Random(20261002).sample` over the sorted qids), so the decision needs no rerun. Reason: the protocol's "no branches for failures that have not occurred".
+- D9. The timing sample scores the union of both pools for the first 200 questions (spec C3), up to 200 pairs per question; the online J-strong row is reported per 100 pairs (seconds of the sample over its pairs, times 100; derived). Reason: the spec's online row is "J-strong over 100 units"; the union is wider than one system's pool.
+- D10. Order of laptop runs: MultiHop-RAG, MuSiQue, then HotpotQA alone in the background with timed logs; nothing else runs while a timed command runs (Phase 03 D12).
+- D11. At the close, results by criterion and candidate learnings go in this plan, not in `results.md` (Phase 03 D15).
+
+## Increments
+| # | Increment | Criteria | Where | Status | Evidence |
+|---|---|---|---|---|---|
+| 1 | Phase start: `clientBalance` and `myself { pods }` read and recorded under Money (UTC time). `config` constants (D1); `src/edge_rag/pool.py` and `edge-rag pool --set <set>`: `hop` and `rrf4` depth-100 rankings into `data/phase04/rankings/<set>/`, write-once, manifest (input sha256 incl. entity index, commit and `git_src_changes`, offline and per-question laptop seconds for the hop and RRF4, peak RSS, the `p10-c` equality count, and the count of RRF4 top-100 units found only in `hop`); test of RRF4 on a hand-computed four-list example with a short hop list in `tests/test_rrf.py`; runs on MultiHop-RAG and MuSiQue | C1, C2, C7 (hop-only count) | laptop | pending | |
+| 2 | `src/edge_rag/judge.py` pure functions and `tests/test_judge.py`: cache split (stored pair never sent, unstored always sent), judge order with ties by pool rank, assembly from mixed cached and new scores, one score per pair shared by both systems, pairs-file text equal to the corpus `title. sentences` text on a toy corpus | C2 | laptop | pending | |
+| 3 | `edge-rag judge-pairs --set <set>`: reads `rrf3` (Phase 03 manifest sha256) and `rrf4` (Phase 04 manifest), streams the old Phase 17 pairs and scores (D4), checks the old question text equals the harness text for every question with a stored score, writes `data/phase04/pairs/<set>.jsonl.gz` (uncached pairs with texts from `common.units_by_id`) and `<set>.timing.jsonl.gz` (first 200 questions, every unit of both pools, stored score where one exists), once, with a manifest (cached and uncached counts per system and in total, every input sha256, projected pod cost by the spec formula, full and subsample, D8); runs on MultiHop-RAG and MuSiQue | C3 | laptop | pending | |
+| 4 | HotpotQA laptop runs: `pool` then `judge-pairs`, each alone in the background with timed logs and peak RSS; if the laptop cannot run them, HotpotQA is `not run` and a deviation is opened (spec A3), never moved to a pod | C1, C3 | laptop | pending | |
+| | **Session boundary A**: the rankings, pairs files and manifests are on disk; the next session starts from this table. | | | | |
+| 5 | Pod mode `--pairs` in `src/edge_rag/pod/rerank.py` (D5): reads a pairs and a timing file pinned by sha256, scores the timing sample fresh, writes `data/phase04/scores/<set>.check.json` (pairs compared, max abs diff, pass at 1e-3) and stops on a failure, then scores the uncached pairs into `data/phase04/scores/<set>.jsonl.gz` (qid, unit ids, scores), once, with a manifest (model, revision, weights sha256, settings, commit, GPU, `costPerHr`, seconds for load, read, score and timing per question and per 100 pairs, cgroup memory); `tests/test_pod_rerank_pairs.py` with a stub scorer (check pass and fail, file layout, write-once); `scripts/pod_judge.sh` (D6) | C4, C5 | laptop | pending | |
+| 6 | `edge-rag judge --set <set>`: one score table per set from the cache and the pod scores, `j-rrf3` and `j-rrf4` depth-100 rankings, once, manifest pinning the pools, old score files and pod score files, with the permutation count and the one-score-per-pair count; checked here on a toy set with a fabricated scores file in the tests only | C6, C2 | laptop | pending | |
+| 7 | Results code (D7): parameterize `fusion_results.py`, Phase 03 regeneration byte-equal, `edge-rag judge-results [--from-json]` for Phase 04 rows (`j-rrf4`, `j-rrf3`, RRF4, G-R, best in-bound rerank-class by Phase 02 FS@2,048 between `g-r` and `j-p10b`, `j-union`, best so far, `f3`), FS@100 pool ceiling, labels, class check per component and hardware against 100 units / 1 s GPU / 2 s laptop, cost rows (spec Cost accounting, inherited rows with source labels), the hop-only count (measured) and gold-through-hop-only questions (exploratory), the eight McNemar tests per set, states, verdict, `j-rrf3` context verdict and entrant; tests in `tests/test_judge_results.py` pinning each bar and the spec's `not run` case (HotpotQA not run, `j-rrf4` wins MuSiQue, ties MultiHop-RAG: `does not advance`) | C7, C8 | laptop | pending | |
+| 8 | Freeze for the pod: `npm run check`, commit, push the branch, note the hash the pod runs | C10 | laptop | pending | |
+| | **Session boundary B**: the pod session runs alone; its agent watches the cost clock, not the code. | | | | |
+| 9 | Pod (one RTX 4090, Secure Cloud): read `clientBalance` before creation; gate from the `judge-pairs` manifests (exact count at the per-set G-R rates plus 0.75 h at the recorded rate; open if at most 2.0 USD, else record the HotpotQA subsample decision here first, D8); create, record `costPerHr` and UTC start; clone the frozen commit, upload pairs and timing files, check their sha256 on the pod; run `pod_judge.sh` in the order MuSiQue, MultiHop-RAG, HotpotQA; C4 check per set before its scoring; hard stop at 2.5 USD time x rate (3.4 h at 0.74 USD/h) or a failed C4; `sha256sum` scores and check files on pod and laptop, download logs and manifests, then terminate and confirm `myself { pods }` empty | C4, C5, C9 | pod | pending | |
+| | **Session boundary C**: downloaded scores verified; the closing balance cannot be read before 2 h after termination. | | | | |
+| 10 | Runs: `judge` on each set run; `judge-results`; one judged list checked by hand per set (one top unit's score traced to the cache or the pod file; one tie broken by pool rank if any) | C6, C7, C8 | laptop | pending | |
+| 11 | Close: closing `clientBalance` at least 2 h after termination, money figures (time x rate, balance delta, invoice when the author copies it, money left = 10.22 USD minus the spend); `npm run check`; adversarial review; results by criterion; master plan status; delivery on the branch with a PR | C9, C10 | laptop | pending | |
+
+How each increment is checked:
+- 1: `uv run edge-rag pool --set multihop-rag` prints the `p10-c` equality 2,255 of 2,255 (MuSiQue 2,417 of 2,417); `uv run pytest -q tests/test_rrf.py`.
+- 2: `uv run pytest -q tests/test_judge.py`.
+- 3: `uv run edge-rag judge-pairs --set multihop-rag` prints cached and uncached counts per system, the question-text check (equal for every question with a stored score) and the projection; the counts of uncached `rrf3` units per question agree with the spec's 15.4 / 16.6 (measured while writing the spec).
+- 4: as 1 and 3 on `hotpotqa-dev` (7,405 of 7,405); peak RSS in both manifests.
+- 5: `uv run pytest -q tests/test_pod_rerank_pairs.py`; `bash -n scripts/pod_judge.sh`.
+- 6: `uv run pytest -q tests/test_judge.py`.
+- 7: `uv run pytest -q`; `uv run edge-rag fusion-results --from-json` prints the Phase 03 sha256 of D7.
+- 8: `npm run check` exit 0; `git rev-parse HEAD` recorded.
+- 9: the gate figures and decision written here before `podFindAndDeployOnDemand`; `data/phase04/scores/<set>.check.json` with pass true; both `sha256sum` outputs written under Pod run; `myself { pods }` empty.
+- 10: `uv run edge-rag judge --set <set>` prints the permutation and one-score counts equal to the questions run; `uv run edge-rag judge-results --from-json` prints that `results.md` regenerates byte-equal.
+- 11: readings under Money; `npm run check` exit 0.
+
+## Memory and time risks
+- HotpotQA `pool` loads the Phase 01 inputs (Phase 03 `components` peaked at 13.5 GB RSS of about 32 GB, measured) plus the old GLiNER entity index and `Hops`; Phase 01's `reproduce` ran the same path on this laptop (1,851.6 s for the four old systems, measured), so it is expected to fit, but it runs alone, in the background, with peak RSS logged. Fallback: spec A3, HotpotQA `not run` as a deviation, never a pod.
+- HotpotQA `judge-pairs` streams the old pairs file (about 175 pairs per question with texts) and keeps only scores and question texts; uncached unit texts come from `common.units_by_id` over the needed ids only.
+- Pod: no corpus is uploaded; the judge at batch 32 and max length 8,192 fitted an RTX 4090 in Phase 02 (G-R on MuSiQue and MultiHop-RAG, measured); HotpotQA's G-R rate was measured on an A100, so the gate uses 151 pairs/s there as the slowest rate (spec A2).
+- Pod wall clock: subagents stop near 1,000 s; the scoring runs under `nohup` and is watched with a background `until grep` loop, never inside one subagent call.
+
+## Pod run (increment 9)
+Gate figures, decision, `costPerHr`, start and end UTC, per-set seconds and both `sha256sum` outputs go here.
+
+## Money
+Phase start reading (increment 1), pre-pod reading, closing reading (at least 2 h after termination), time x rate (derived), balance delta (measured), invoice (when the author copies it), money left in the 25 USD authorization (derived).
+
+## Deviations
+| ID | Summary | Affects criteria | Status |
+|---|---|---|---|
+
+## Adversarial review
+| Round | Backend | Range | Lenses | Findings | Status |
+|---|---|---|---|---|---|
+
+## Results by criterion
+Per criterion: command or walk-through run, observed result and evidence reference; pending items, limitations and what could not be checked, stated plainly.
+
+## Candidate learnings
+Only reusable lessons with a verbatim quote from the session; consolidated at the close.
