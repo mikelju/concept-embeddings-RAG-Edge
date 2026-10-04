@@ -344,3 +344,9 @@ PHASE04_SCORES_DIR = PHASE04_DIR / "scores"
 GR_PAIRS_PER_SECOND = {"hotpotqa-dev": 151.0, "musique": 240.0, "multihop-rag": 268.0}
 # The RTX 4090 Secure Cloud rate the pod gate projects with (USD per hour).
 POD_USD_PER_HOUR = 0.74
+
+# --- Phase 05: multi-seed convergent hop with a refined query (spec, frozen 2026-10-04) -------
+PHASE05_DIR = DATA_DIR / "phase05"
+PHASE05_RANKINGS_DIR = PHASE05_DIR / "rankings"
+# Seeds per question: the top SEEDS_PER_LIST units of Dense, then of BM25, deduplicated.
+SEEDS_PER_LIST = 5

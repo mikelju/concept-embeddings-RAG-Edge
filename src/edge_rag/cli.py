@@ -45,6 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     fuse.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     pool = commands.add_parser("pool", help="Phase 04 entity hop and RRF4 lists")
     pool.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    converge = commands.add_parser("converge", help="Phase 05 multi-seed hop and its fusions")
+    converge.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     pairs = commands.add_parser("judge-pairs", help="Phase 04 uncached judge pairs per set")
     pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
@@ -95,6 +97,12 @@ def main(argv: list[str] | None = None) -> int:
         body = pool_module.run(args.set_name, say=_say)
         entry = body["equality"]["fusion_equals_p10-c"]
         return 0 if entry["equal"] == entry["of"] else 1
+    if args.command == "converge":
+        from edge_rag import converge as converge_module
+
+        body = converge_module.run(args.set_name, say=_say)
+        equal = body["equality"].values()
+        return 0 if all(entry["equal"] == entry["of"] for entry in equal) else 1
     if args.command == "judge-pairs":
         from edge_rag import judge
 
