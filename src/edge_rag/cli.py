@@ -37,6 +37,11 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     reproduce = commands.add_parser("reproduce", help="run the reproduction gate on one set")
     reproduce.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    reproduce.add_argument("--out", type=Path, help="write rankings and result under this folder")
+    components = commands.add_parser("components", help="Phase 03 Dense and BM25 lists")
+    components.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    fuse = commands.add_parser("fuse", help="Phase 03 RRF3 and F3 lists")
+    fuse.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score = commands.add_parser("score", help="score one ranking file on one set")
     score.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score.add_argument("--rankings", required=True, type=Path)
@@ -50,12 +55,29 @@ def main(argv: list[str] | None = None) -> int:
     results_cmd.add_argument(
         "--set", dest="set_names", action="append", choices=sorted(config.OLD_REFERENCES)
     )
+    fusion_cmd = commands.add_parser("fusion-results", help="write the Phase 03 results table")
+    fusion_cmd.add_argument(
+        "--from-json",
+        action="store_true",
+        help="only check that results.md renders byte-equal from results.json as written",
+    )
     args = parser.parse_args(argv)
     if args.command == "reproduce":
         from edge_rag.reproduce import run
 
-        result = run(args.set_name, say=_say)
+        result = run(args.set_name, say=_say, out=args.out)
         return 0 if result["gate_pass"] else 1
+    if args.command == "components":
+        from edge_rag import components as components_module
+
+        body = components_module.run(args.set_name, say=_say)
+        equal = body["equality"].values()
+        return 0 if all(entry["equal"] == entry["of"] for entry in equal) else 1
+    if args.command == "fuse":
+        from edge_rag import fuse as fuse_module
+
+        fuse_module.run(args.set_name, say=_say)
+        return 0
     if args.command == "score":
         from edge_rag import scoring
         from edge_rag.artifacts import write_json
@@ -77,6 +99,18 @@ def main(argv: list[str] | None = None) -> int:
         table = results.run(args.set_names or sorted(config.OLD_REFERENCES))
         for entry in table["sets"]:
             _say(f"[{entry['set']}] systems {', '.join(entry['systems'])}")
+        return 0
+    if args.command == "fusion-results":
+        from edge_rag import fusion_results
+
+        if args.from_json:
+            _say(f"results.md regenerates byte-equal, sha256 {fusion_results.regenerate()}")
+            return 0
+        table = fusion_results.run(sorted(config.SETS))
+        outcome = table["outcome"]
+        _say(f"F3 verdict: {outcome['f3_verdict']}; exam entrant: {outcome['exam_entrant']}")
+        for set_name, reason in table["not_run"].items():
+            _say(f"[{set_name}] not run ({reason})")
         return 0
     return 2
 

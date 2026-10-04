@@ -21,6 +21,11 @@ class Corpus:
     unit_ids: list[str]
     # `indexable_text = f"{title}. {' '.join(sentences)}"`, what Dense and BM25 index.
     texts: list[str]
+    titles: list[str]
+
+    def body(self, row: int) -> str:
+        """The unit's sentences joined by spaces: its text after the `title + ". "` prefix."""
+        return self.texts[row][len(self.titles[row]) + 2 :]
 
 
 @dataclass(frozen=True)
@@ -48,6 +53,7 @@ def load_corpus(old: OldData, checks: Checks, *, ordered_digest: str, set_hash: 
     )
     unit_ids: list[str] = []
     texts: list[str] = []
+    titles: list[str] = []
     with (
         old.verified_path(str(manifest["corpus_file"])).open("rb") as raw,
         gzip.GzipFile(fileobj=raw) as gz,
@@ -61,9 +67,10 @@ def load_corpus(old: OldData, checks: Checks, *, ordered_digest: str, set_hash: 
                 raise ArtifactError(f"corpus line {number}: {entry['unit_id']} != {unit_id}")
             unit_ids.append(unit_id)
             texts.append(f"{title}. {' '.join(sentences)}")
+            titles.append(title)
     checks.expect("corpus ordered unit digest", digest_of(*unit_ids), ordered_digest)
     checks.expect("corpus unit set hash", unit_set_hash(unit_ids), set_hash)
-    return Corpus(unit_ids=unit_ids, texts=texts)
+    return Corpus(unit_ids=unit_ids, texts=texts, titles=titles)
 
 
 def question_digest(questions: Sequence[Question]) -> str:

@@ -313,3 +313,24 @@ OLD_REFERENCES: dict[str, dict[str, tuple[str, str]]] = {
         ),
     },
 }
+
+# --- Phase 03: weight-free fusion with source diversity (spec, frozen 2026-10-03) ------------
+PHASE03_DIR = DATA_DIR / "phase03"
+PHASE03_RANKINGS_DIR = PHASE03_DIR / "rankings"
+# The Phase 02 input lists the fusion reads, by the sha256 the spec froze.
+P10A_SHA256 = {
+    "hotpotqa-dev": "0b498fd1ec26359a4bb1f18eede3e3ecad4babaa8ecfffafffaa830aa657a330",
+    "musique": "4810eb4e62e95233df523cf35f289e92df2f9276e01fc3e001ac2f2e29db7ad0",
+    "multihop-rag": "bffefb1cb8bea53ee44c3b0acb22ffdec0f123f2ecd7d0cbbc863f145c9a2b0b",
+}
+GL_SHA256 = {
+    "hotpotqa-dev": "b5b348ee15dba2017bfde6ae6c25e06047ab1f2b1ffd8feb038c16561795a68b",
+    "musique": "8d7807345acf1eea111c943460c6a53c0e6dd167525c3cb53ebb3e8778f3b150",
+    "multihop-rag": "791ed3653e1f90aa49d240df7c51767f7e846dbf5996930dbe6e1f6a72201c52",
+}
+# BGE-small question encoding is timed on the first questions of each set, one at a time.
+ENCODING_SAMPLE = 200
+RRF_K = 60
+SOURCE_CAP = 2
+SHINGLE_SIZE = 5
+NEAR_DUPLICATE_JACCARD = 0.8
