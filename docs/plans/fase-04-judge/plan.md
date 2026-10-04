@@ -69,7 +69,7 @@ Phase start reading (increment 1), pre-pod reading, closing reading (at least 2 
 ## Deviations
 | ID | Summary | Affects criteria | Status |
 |---|---|---|---|
-| 04.1 | D7 asked for the class-check, cost and page code to be parameterized inside `fusion_results.py` by a phase description; increment 7 shares only the selection rule, inherited cost labels and the byte-equal write, and keeps Phase 04's set table, cost rows, class check and page in `judge_results.py`, because the rows, bounds and components differ (judged units, 1 s GPU bound, hop rows). Phase 03 still regenerates byte-equal. `set_table` is untested until real judged rankings exist (increment 10). | C7 | pending (author) |
+| 04.1 | D7 asked for the class-check, cost and page code to be parameterized inside `fusion_results.py` by a phase description; increment 7 shares only the selection rule, inherited cost labels and the byte-equal write, and keeps Phase 04's set table, cost rows, class check and page in `judge_results.py`, because the rows, bounds and components differ (judged units, 1 s GPU bound, hop rows). Phase 03 still regenerates byte-equal. `set_table` is untested until real judged rankings exist (increment 10). | C7 | accepted 2026-10-04 by the agent under delegation: a plan-level split, no criterion changes, C7 is checked on the real outputs in increment 10 |
 
 ## Adversarial review
 | Round | Backend | Range | Lenses | Findings | Status |
