@@ -94,6 +94,7 @@ Cost per component (seconds per question online, per corpus offline):
 - j-rrf4, online NVIDIA GeForce RTX 4090: 0.274473 s, 0.000056 USD (derived).
 - j-rrf4, online laptop CPU (ARM64, Windows): 0.245738 s, 0.000000 USD (derived).
 - j-rrf4 class check: 100 judged units (bound 100); laptop online 0.2457 s/q (bound 2.0); GPU online NVIDIA A100-SXM4-80GB 0.3582 s/q, NVIDIA GeForce RTX 4090 0.2745 s/q (bound 1.0, stated for one RTX 4090): inside the rerank class on this set (derived).
+  - j-rrf4: G-L search time was measured on NVIDIA A100-SXM4-80GB, not the RTX 4090 the GPU bound names, so the margin may be overstated.
 - j-rrf3, offline NVIDIA A100-SXM4-80GB: 4561.97 s, 2.014871 USD (derived).
 - j-rrf3, offline NVIDIA GeForce RTX 4090: 10.5437 s, 0.002167 USD (derived).
 - j-rrf3, offline laptop CPU (ARM64, Windows): 207.675 s, 0.000000 USD (derived).
@@ -101,11 +102,13 @@ Cost per component (seconds per question online, per corpus offline):
 - j-rrf3, online NVIDIA GeForce RTX 4090: 0.274473 s, 0.000056 USD (derived).
 - j-rrf3, online laptop CPU (ARM64, Windows): 0.220662 s, 0.000000 USD (derived).
 - j-rrf3 class check: 100 judged units (bound 100); laptop online 0.2207 s/q (bound 2.0); GPU online NVIDIA A100-SXM4-80GB 0.3582 s/q, NVIDIA GeForce RTX 4090 0.2745 s/q (bound 1.0, stated for one RTX 4090): inside the rerank class on this set (derived).
+  - j-rrf3: G-L search time was measured on NVIDIA A100-SXM4-80GB, not the RTX 4090 the GPU bound names, so the margin may be overstated.
 - rrf4, offline NVIDIA A100-SXM4-80GB: 4561.97 s, 2.014871 USD (derived).
 - rrf4, offline laptop CPU (ARM64, Windows): 229.329 s, 0.000000 USD (derived).
 - rrf4, online NVIDIA A100-SXM4-80GB: 0.358179 s, 0.000158 USD (derived).
 - rrf4, online laptop CPU (ARM64, Windows): 0.245738 s, 0.000000 USD (derived).
 - rrf4 class check: 0 judged units (bound 100); laptop online 0.2457 s/q (bound 2.0); GPU online NVIDIA A100-SXM4-80GB 0.3582 s/q (bound 1.0, stated for one RTX 4090): inside the rerank class on this set (derived).
+  - rrf4: G-L search time was measured on NVIDIA A100-SXM4-80GB, not the RTX 4090 the GPU bound names, so the margin may be overstated.
 
 Cost of the reference rows (inherited labels):
 
