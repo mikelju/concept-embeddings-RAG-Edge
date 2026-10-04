@@ -122,7 +122,8 @@ def system_cost(
             _row("J-strong model load (setup, per session)", "offline", pod["gpu"], load,
                  load * rate / 3600, POD),
             _row("J-strong over 100 units", "online", pod["gpu"], per_100, per_100 * rate / 3600,
-                 f"{POD}; timing sample, every pair scored fresh, per 100 pairs"),
+                 "seconds derived (timing sample seconds over its pairs x 100, every pair scored "
+                 "fresh, Phase 04 pod manifest; plan D9); USD derived (time x rate)"),
         ]  # fmt: skip
     totals: dict[str, dict[str, float]] = {}
     for r in rows:

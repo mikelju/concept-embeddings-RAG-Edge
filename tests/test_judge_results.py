@@ -70,3 +70,22 @@ def test_page_renders_with_every_set_not_run():
     page = jr.markdown({"outcome": out, "not_run": dict.fromkeys(SETS, "no judge"), "sets": []})
     assert "j-rrf4 verdict: **does not advance**" in page
     assert page.count("not run (no judge)") == 3
+
+
+def test_judge_online_row_is_labelled_derived():
+    """Plan D9: the per-100-pairs J-strong row is arithmetic on the timing sample, not measured."""
+    laptop = {
+        "offline_seconds": {"bm25_build": 1.0},
+        "question_encoding": {"seconds_per_question": 0.1},
+        "retrieval_seconds_per_question": {"dense": 0.1, "bm25": 0.1},
+        "hardware": "laptop",
+    }
+    pod = {"cost_per_hr_usd": 0.74, "gpu": "RTX 4090", "seconds": {"load_model": 10.0},
+           "timing_sample": {"seconds_per_100_pairs": 0.3}}
+    g_l = {"offline_seconds": 1.0, "offline_usd": 0.0, "online_seconds_per_question": 0.02,
+           "online_usd_per_question": 0.0}
+    fused = {"online_seconds_per_question": {"rrf": 0.001}}
+    cost = jr.system_cost(jr.CONTROL, "musique", laptop, fused, {}, g_l, "RTX 4090", pod)
+    row = next(r for r in cost["components"] if r["component"] == "J-strong over 100 units")
+    assert row["label"].startswith("seconds derived")
+    assert cost["class_check"]["gpu_online_seconds_per_question"] == {"RTX 4090": 0.32}
