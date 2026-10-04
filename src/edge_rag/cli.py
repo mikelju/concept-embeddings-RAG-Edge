@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     components.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     fuse = commands.add_parser("fuse", help="Phase 03 RRF3 and F3 lists")
     fuse.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    pool = commands.add_parser("pool", help="Phase 04 entity hop and RRF4 lists")
+    pool.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score = commands.add_parser("score", help="score one ranking file on one set")
     score.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score.add_argument("--rankings", required=True, type=Path)
@@ -78,6 +80,12 @@ def main(argv: list[str] | None = None) -> int:
 
         fuse_module.run(args.set_name, say=_say)
         return 0
+    if args.command == "pool":
+        from edge_rag import pool as pool_module
+
+        body = pool_module.run(args.set_name, say=_say)
+        entry = body["equality"]["fusion_equals_p10-c"]
+        return 0 if entry["equal"] == entry["of"] else 1
     if args.command == "score":
         from edge_rag import scoring
         from edge_rag.artifacts import write_json
