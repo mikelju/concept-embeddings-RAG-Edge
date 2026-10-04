@@ -280,3 +280,113 @@ def run_pairs(set_name: str, say: Say = print) -> dict[str, Any]:
     say(f"[{set_name}] projection {projected}")
     say(f"[{set_name}] outputs {outputs}; {seconds:.1f} s; peak RSS {body['peak_rss_mb']} MB")
     return body
+
+
+# --- `edge-rag judge` (spec C6, plan increment 6) ---------------------------------------------
+SCORES_DIR = config.PHASE04_DIR / "scores"
+JUDGE_MANIFEST = "judge.manifest.json"
+JUDGED = {"rrf3": "j-rrf3", "rrf4": "j-rrf4"}
+
+
+def pod_scores(
+    set_name: str, scores_dir: Path = SCORES_DIR, pairs_dir: Path = PAIRS_DIR
+) -> tuple[dict[Pair, float], dict[str, str]]:
+    """The pod's scores of one set, read only when its manifest says C4 passed, it scored the
+    pairs file this laptop wrote, and the scores file matches the sha256 it recorded."""
+    name = f"{set_name}.jsonl.gz"
+    manifest = json.loads((scores_dir / f"{set_name}.manifest.json").read_text("utf-8"))
+    pairs = json.loads((pairs_dir / f"{set_name}.manifest.json").read_text("utf-8"))
+    if not manifest["check"]["pass"]:
+        raise ArtifactError(f"{set_name}: the pod's C4 check did not pass")
+    if manifest["inputs_sha256"] != pairs["outputs_sha256"]:
+        raise ArtifactError(f"{set_name}: the pod scored other pairs files")
+    sha256 = manifest["outputs"][name]
+    measured = sha256_file(scores_dir / name)
+    if measured != sha256:
+        raise ArtifactError(f"{scores_dir / name}: sha256 {measured}, recorded {sha256}")
+    fresh: dict[Pair, float] = {}
+    with gzip.open(scores_dir / name, "rt", encoding="utf-8") as handle:
+        for line in handle:
+            row = json.loads(line)
+            for unit_id, score in zip(row["unit_ids"], row["scores"], strict=True):
+                pair = (str(row["qid"]), str(unit_id))
+                if pair in fresh:
+                    raise ArtifactError(f"{pair} has two pod scores")
+                fresh[pair] = float(score)
+    return fresh, {
+        name: sha256,
+        f"{set_name}.manifest.json": sha256_file(scores_dir / f"{set_name}.manifest.json"),
+    }
+
+
+def assemble(
+    pools: Mapping[str, Mapping[str, Sequence[str]]],
+    stored: Mapping[Pair, float],
+    fresh: Mapping[Pair, float],
+) -> tuple[dict[str, dict[str, list[str]]], dict[str, Any]]:
+    """Both judged systems from one score table over the union of the pools, with the
+    permutation and one-score counts; a pod score no pool pair uses refuses."""
+    qids = list(pools["rrf3"])
+    pairs = [(qid, unit_id) for qid in qids for unit_id in union(*(p[qid] for p in pools.values()))]
+    table = score_table(pairs, stored, fresh)
+    unused = set(fresh) - set(table)
+    if unused:
+        raise ArtifactError(f"{len(unused)} pod scores belong to no pool pair")
+    out = {name: {qid: judged(qid, p[qid], table) for qid in qids} for name, p in pools.items()}
+    counts = {
+        "questions": len(qids),
+        "permutation_of_pool": {
+            name: sum(sorted(out[name][qid]) == sorted(p[qid]) for qid in qids)
+            for name, p in pools.items()
+        },
+        "pairs": len(pairs),
+        "pairs_with_one_score": len(table),
+        "from_cache": sum(pair in stored for pair in table),
+        "from_pod": sum(pair in fresh for pair in table),
+    }
+    return out, counts
+
+
+def run_judge(set_name: str, say: Say = print) -> dict[str, Any]:
+    provenance = git_provenance()
+    directory = config.PHASE04_RANKINGS_DIR / set_name
+    keep_manifest(directory / JUDGE_MANIFEST)
+    started = time.perf_counter()
+    pool_sha256, pools = pools_of(set_name)
+    spec, old, checks = open_set(set_name)
+    order = [q.qid for q in scoring.questions_of(old, checks, spec)]
+    if sorted(order) != sorted(pools["rrf3"]) or sorted(order) != sorted(pools["rrf4"]):
+        raise ArtifactError(f"{set_name}: the pools do not cover the set's questions")
+    pools = {name: {qid: p[qid] for qid in order} for name, p in pools.items()}
+    wanted = {qid: set(pools["rrf3"][qid]) | set(pools["rrf4"][qid]) for qid in order}
+    fresh, scores_sha256 = pod_scores(set_name)
+    stored, _texts = read_cache(set_name, wanted)
+    rankings, counts = assemble(pools, stored, fresh)
+    outputs = {
+        f"{JUDGED[name]}.jsonl.gz": scoring.write_rankings(
+            directory / f"{JUDGED[name]}.jsonl.gz", ((qid, ranked[qid]) for qid in order)
+        )
+        for name, ranked in rankings.items()
+    }
+    body: dict[str, Any] = {
+        "set": set_name,
+        "questions": len(order),
+        "depth": config.DEPTH,
+        "order": "J-strong score descending, ties by the pool's rank",
+        **provenance,
+        "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "inputs_sha256": {
+            **pool_sha256,
+            **{path.name: sha256 for path, sha256 in old17_files(set_name).values()},
+            **scores_sha256,
+        },
+        "digests_checked": checks.records,
+        "counts": counts,
+        "seconds": round(time.perf_counter() - started, 3),
+        "outputs_sha256": outputs,
+        "peak_rss_mb": peak_rss_mb(),
+    }
+    write_manifest(directory / JUDGE_MANIFEST, body)
+    say(f"[{set_name}] {counts}")
+    say(f"[{set_name}] outputs {outputs}")
+    return body

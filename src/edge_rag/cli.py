@@ -46,6 +46,8 @@ def main(argv: list[str] | None = None) -> int:
     pool.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     pairs = commands.add_parser("judge-pairs", help="Phase 04 uncached judge pairs per set")
     pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
+    judge_cmd.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score = commands.add_parser("score", help="score one ranking file on one set")
     score.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score.add_argument("--rankings", required=True, type=Path)
@@ -94,6 +96,12 @@ def main(argv: list[str] | None = None) -> int:
         body = judge.run_pairs(args.set_name, say=_say)
         check = body["question_text_check"]
         return 0 if check["equal"] == check["of"] else 1
+    if args.command == "judge":
+        from edge_rag import judge
+
+        counts = judge.run_judge(args.set_name, say=_say)["counts"]
+        whole = all(n == counts["questions"] for n in counts["permutation_of_pool"].values())
+        return 0 if whole else 1
     if args.command == "score":
         from edge_rag import scoring
         from edge_rag.artifacts import write_json

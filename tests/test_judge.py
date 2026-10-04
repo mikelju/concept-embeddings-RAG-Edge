@@ -1,7 +1,10 @@
+import gzip
+import json
+
 import pytest
 
-from edge_rag.artifacts import ArtifactError
-from edge_rag.judge import judged, pair_row, score_table, uncached, union
+from edge_rag.artifacts import ArtifactError, sha256_file
+from edge_rag.judge import assemble, judged, pair_row, pod_scores, score_table, uncached, union
 from edge_rag.pod.common import Unit
 
 
@@ -55,3 +58,67 @@ def test_pairs_file_text_is_the_corpus_title_and_sentences():
         "unit_ids": ["u1"],
         "texts": [f"A Title. {' '.join(sentences)}"],
     }
+
+
+def test_assemble_on_a_toy_set_with_both_pools():
+    pools = {
+        "rrf3": {"q1": ["a", "b", "c"], "q2": ["x", "y"]},
+        "rrf4": {"q1": ["c", "d", "a"], "q2": ["y", "z"]},
+    }
+    stored = {("q1", "a"): 0.1, ("q1", "c"): 0.7, ("q2", "y"): 0.0}
+    fresh = {("q1", "b"): 0.9, ("q1", "d"): 0.7, ("q2", "x"): 0.0, ("q2", "z"): 0.5}
+    rankings, counts = assemble(pools, stored, fresh)
+    assert rankings["rrf3"] == {"q1": ["b", "c", "a"], "q2": ["x", "y"]}
+    # c and d tie at 0.7: RRF4's rank keeps c first.
+    assert rankings["rrf4"] == {"q1": ["c", "d", "a"], "q2": ["z", "y"]}
+    assert counts == {
+        "questions": 2,
+        "permutation_of_pool": {"rrf3": 2, "rrf4": 2},
+        "pairs": 7,
+        "pairs_with_one_score": 7,
+        "from_cache": 3,
+        "from_pod": 4,
+    }
+    with pytest.raises(ArtifactError, match="belong to no pool pair"):
+        assemble(pools, stored, {**fresh, ("q2", "w"): 1.0})
+    with pytest.raises(ArtifactError, match="no score"):
+        assemble(pools, stored, {k: v for k, v in fresh.items() if k != ("q2", "z")})
+
+
+def _write(path, body):
+    path.write_bytes(body)
+    return sha256_file(path)
+
+
+def test_pod_scores_read_from_a_fabricated_scores_file(tmp_path):
+    scores_dir, pairs_dir = tmp_path / "scores", tmp_path / "pairs"
+    scores_dir.mkdir()
+    pairs_dir.mkdir()
+    pins = {"toy.jsonl.gz": "p" * 64, "toy.timing.jsonl.gz": "t" * 64}
+    (pairs_dir / "toy.manifest.json").write_text(json.dumps({"outputs_sha256": pins}))
+    rows = [{"qid": "q1", "unit_ids": ["b", "d"], "scores": [0.9, 0.7]}]
+    body = gzip.compress("".join(json.dumps(r) + "\n" for r in rows).encode("utf-8"))
+    digest = _write(scores_dir / "toy.jsonl.gz", body)
+
+    def manifest(**changes):
+        entry = {
+            "check": {"pass": True},
+            "inputs_sha256": pins,
+            "outputs": {"toy.jsonl.gz": digest},
+        }
+        entry.update(changes)
+        (scores_dir / "toy.manifest.json").write_text(json.dumps(entry))
+
+    manifest()
+    fresh, sha = pod_scores("toy", scores_dir, pairs_dir)
+    assert fresh == {("q1", "b"): 0.9, ("q1", "d"): 0.7}
+    assert sha["toy.jsonl.gz"] == digest
+    manifest(check={"pass": False})
+    with pytest.raises(ArtifactError, match="C4"):
+        pod_scores("toy", scores_dir, pairs_dir)
+    manifest(inputs_sha256={**pins, "toy.jsonl.gz": "0" * 64})
+    with pytest.raises(ArtifactError, match="other pairs"):
+        pod_scores("toy", scores_dir, pairs_dir)
+    manifest(outputs={"toy.jsonl.gz": "0" * 64})
+    with pytest.raises(ArtifactError, match="recorded"):
+        pod_scores("toy", scores_dir, pairs_dir)
