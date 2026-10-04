@@ -334,3 +334,13 @@ RRF_K = 60
 SOURCE_CAP = 2
 SHINGLE_SIZE = 5
 NEAR_DUPLICATE_JACCARD = 0.8
+
+# --- Phase 04: judge over a pooled bag with the hop (spec, frozen 2026-10-04) -----------------
+PHASE04_DIR = DATA_DIR / "phase04"
+PHASE04_RANKINGS_DIR = PHASE04_DIR / "rankings"
+PHASE04_PAIRS_DIR = PHASE04_DIR / "pairs"
+PHASE04_SCORES_DIR = PHASE04_DIR / "scores"
+# G-R's measured J-strong pair rates (Phase 02 manifests), the pod gate's rate per set.
+GR_PAIRS_PER_SECOND = {"hotpotqa-dev": 151.0, "musique": 240.0, "multihop-rag": 268.0}
+# The RTX 4090 Secure Cloud rate the pod gate projects with (USD per hour).
+POD_USD_PER_HOUR = 0.74

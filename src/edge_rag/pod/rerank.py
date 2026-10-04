@@ -10,8 +10,11 @@ G-L's rank (old `phase17.reorder`).
 `--check-old` is criterion C3: the first 100 pairs in file order of each old Phase 17 pairs
 file, rescored and compared with the stored J-strong scores.
 `--qwen` is G-R2 (optional): Qwen3-Reranker-0.6B with its model card's yes/no-logit prompt.
+`--pairs <set>` is Phase 04's pod mode (spec C4, C5; plan D5): it reads the uploaded pairs and
+timing files of `edge-rag judge-pairs` and never opens a corpus.
 
     uv run --group pod python -m edge_rag.pod.rerank --set musique
+    uv run --group pod python -m edge_rag.pod.rerank --pairs musique
 """
 
 import argparse
@@ -25,7 +28,7 @@ from typing import Any
 
 import numpy as np
 
-from edge_rag.artifacts import ArtifactError, sha256_file, write_json
+from edge_rag.artifacts import ArtifactError, sha256_file, write_bytes, write_json
 from edge_rag.pod import common
 
 MODEL = "BAAI/bge-reranker-v2-m3"
@@ -310,14 +313,179 @@ def check_old(args: argparse.Namespace) -> None:
     print(f"[INFO] C3 max abs diff {worst:.3g}, pass {report['pass']}; wrote {out}", flush=True)
 
 
+# --- Phase 04 `--pairs` mode (spec C4, C5; plan increment 5) ---------------------------------
+PAIRS_DIR = common.config.PHASE04_PAIRS_DIR
+SCORES_DIR = common.config.PHASE04_SCORES_DIR
+CGROUP_DIR = Path("/sys/fs/cgroup")
+
+
+def cgroup_memory(directory: Path = CGROUP_DIR) -> dict[str, int | None]:
+    """cgroup v2 `memory.current` and `memory.peak` in bytes; None where the file is absent."""
+    out: dict[str, int | None] = {}
+    for name in ("memory.current", "memory.peak"):
+        try:
+            out[name] = int((directory / name).read_text("utf-8").split()[0])
+        except (OSError, ValueError, IndexError):
+            out[name] = None
+    return out
+
+
+def pinned_pairs(set_name: str, pairs_dir: Path) -> tuple[dict[str, str], list[dict], list[dict]]:
+    """The pairs and timing rows, each read only after its sha256 equals the one the laptop's
+    `judge-pairs` manifest recorded."""
+    manifest = json.loads((pairs_dir / f"{set_name}.manifest.json").read_text("utf-8"))
+    pins = {
+        name: manifest["outputs_sha256"][name]
+        for name in (f"{set_name}.jsonl.gz", f"{set_name}.timing.jsonl.gz")
+    }
+    rows = [read_pinned(pairs_dir / name, sha256) for name, sha256 in pins.items()]
+    return pins, rows[0], rows[1]
+
+
+def timing_check(model: Any, rows: Sequence[dict]) -> dict[str, Any]:
+    """Every pair of the timing sample scored fresh in one call (timed, as G-R was), then
+    compared with the stored score wherever one exists (C4)."""
+    pairs = [(row["question"], text) for row in rows for text in row["texts"]]
+    started = time.perf_counter()
+    fresh = strong_scores(model, pairs)
+    seconds = time.perf_counter() - started
+    stored = [s for row in rows for s in row["stored"]]
+    if len(stored) != len(pairs):
+        raise ArtifactError("timing rows: stored scores and texts disagree in length")
+    kept = [(float(f), float(s)) for f, s in zip(fresh, stored, strict=True) if s is not None]
+    diffs = [abs(f - s) for f, s in kept]
+    worst = max(diffs, default=0.0)
+    return {
+        "tolerance": CHECK_TOLERANCE,
+        "pairs_compared": len(kept),
+        "max_abs_diff": worst,
+        "mean_abs_diff": sum(diffs) / len(diffs) if diffs else 0.0,
+        "pass": bool(kept) and worst <= CHECK_TOLERANCE,
+        "timing": {
+            "questions": len(rows),
+            "pairs": len(pairs),
+            "seconds": seconds,
+            "seconds_per_question": seconds / max(len(rows), 1),
+            "seconds_per_100_pairs": seconds / max(len(pairs), 1) * 100,
+        },
+    }
+
+
+def score_rows(model: Any, rows: Sequence[dict], say: Any = print) -> list[dict]:
+    """`{"qid", "unit_ids", "scores"}` per pairs row, scored in shards of questions."""
+    out: list[dict] = []
+    stream = iter(rows)
+    while shard := list(islice(stream, SHARD_QUESTIONS)):
+        for row in shard:
+            if len(row["texts"]) != len(row["unit_ids"]):
+                raise ArtifactError(f"{row['qid']}: unit ids and texts disagree in length")
+        scores = strong_scores(model, [(r["question"], t) for r in shard for t in r["texts"]])
+        offset = 0
+        for row in shard:
+            size = len(row["unit_ids"])
+            values = [float(v) for v in scores[offset : offset + size]]
+            out.append({"qid": row["qid"], "unit_ids": list(row["unit_ids"]), "scores": values})
+            offset += size
+        say(f"[INFO] {len(out)} of {len(rows)} questions scored")
+    return out
+
+
+def score_pairs(
+    set_name: str,
+    *,
+    load: Any = load_strong,
+    pairs_dir: Path = PAIRS_DIR,
+    scores_dir: Path = SCORES_DIR,
+    say: Any = print,
+) -> bool:
+    """C4 then C5 for one set; False, with nothing scored, when the check fails. Write-once:
+    an existing scores manifest means nothing to do; an existing check file is reused only when
+    its inputs, model revision and weights, tolerance and commit match this run and no source
+    change is uncommitted."""
+    out = scores_dir / f"{set_name}.jsonl.gz"
+    manifest = common.manifest_path(out)
+    check_path = scores_dir / f"{set_name}.check.json"
+    if manifest.exists():
+        say(f"[INFO] {manifest} exists, nothing to do")
+        return True
+    if out.exists():
+        raise ArtifactError(f"{out} exists without its manifest")
+    provenance = common.git_provenance()
+    timer = common.Timer()
+    started = time.perf_counter()
+    pins, rows, timing_rows = pinned_pairs(set_name, pairs_dir)
+    timer.add("read", started)
+    started = time.perf_counter()
+    model = load()
+    timer.add("load_model", started)
+    same = {
+        "inputs_sha256": pins,
+        "model": MODEL,
+        "revision": REVISION,
+        "weights_sha256": WEIGHTS_SHA256,
+        "tolerance": CHECK_TOLERANCE,
+        "git_commit": provenance["git_commit"],
+        "git_src_changes": provenance["git_src_changes"],
+    }
+    check = json.loads(check_path.read_text("utf-8")) if check_path.exists() else {}
+    if provenance["git_src_changes"] or any(check.get(k) != v for k, v in same.items()):
+        check = {"set": set_name, **timing_check(model, timing_rows), **same}
+        check.update({**provenance, "gpu": common.gpu_name()})
+        write_json(check_path, check)
+    say(
+        f"[INFO] {set_name} C4: {check['pairs_compared']} pairs, max abs diff "
+        f"{check['max_abs_diff']:.3g}, pass {check['pass']}; {check_path}"
+    )
+    if not check["pass"]:
+        return False
+    started = time.perf_counter()
+    scored = score_rows(model, rows, say)
+    timer.add("score", started)
+    write_bytes(out, common.gz_jsonl(scored))
+    pairs = sum(len(r["unit_ids"]) for r in scored)
+    common.write_manifest(
+        manifest,
+        {
+            "set": set_name,
+            "model": MODEL,
+            "revision": REVISION,
+            "settings": {
+                "max_length": MAX_LENGTH,
+                "dtype": DTYPE,
+                "batch_size": BATCH_SIZE,
+                "matmul_precision": MATMUL_PRECISION,
+                "weights_sha256": WEIGHTS_SHA256,
+                "score": "raw logit",
+                "shard_questions": SHARD_QUESTIONS,
+            },
+            "git_src_changes": provenance["git_src_changes"],
+            "inputs_sha256": pins,
+            "check": {k: check[k] for k in ("pairs_compared", "max_abs_diff", "pass")},
+            "questions": len(scored),
+            "pairs": pairs,
+            "seconds": timer.seconds,
+            "score_seconds_per_100_pairs": timer.seconds["score"] / max(pairs, 1) * 100,
+            "timing_sample": check["timing"],
+            "cgroup_memory": cgroup_memory(),
+        },
+        [out, check_path],
+    )
+    say(f"[INFO] wrote {out} and {manifest}")
+    return True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--set", choices=sorted(common.config.SETS))
     parser.add_argument("--qwen", action="store_true", help="G-R2: Qwen3-Reranker-0.6B")
     parser.add_argument("--check-old", action="store_true", help="criterion C3")
     parser.add_argument("--old17-dir", default="/workspace/old17")
+    parser.add_argument("--pairs", choices=sorted(common.config.SETS), help="Phase 04 pod mode")
     args = parser.parse_args()
-    if args.check_old:
+    if args.pairs is not None:
+        if not score_pairs(args.pairs, say=lambda line: print(line, flush=True)):
+            raise SystemExit(f"{args.pairs}: the C4 check failed; nothing scored")
+    elif args.check_old:
         check_old(args)
     elif args.set is None:
         parser.error("--set is required")

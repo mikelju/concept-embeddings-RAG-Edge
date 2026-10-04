@@ -117,3 +117,17 @@ def test_demotions_are_counted_only_inside_rrf3_top_list():
     ranked = {"q": ["a", "b"]}
     demoted = {"q": {"a": "source cap", "z": "boilerplate"}}
     assert demotions_in(ranked, demoted) == {"source cap": 1, "boilerplate": 0, "near-duplicate": 0}
+
+
+def test_rrf4_four_lists_with_a_short_hop_list_by_hand():
+    from edge_rag.pool import hop_only, rrf4
+
+    dense, bm25, gl = ["a", "b", "c"], ["b", "c", "d"], ["c", "e"]
+    hop = ["f"]  # a short hop list adds only what it holds
+    # a 1/61; b 1/62 + 1/61; c 1/63 + 1/62 + 1/61; d 1/63; e 1/62; f 1/61.
+    scores = rrf_scores([dense, bm25, gl, hop])
+    assert scores["c"] == Fraction(1, 63) + Fraction(1, 62) + Fraction(1, 61)
+    assert scores["f"] == scores["a"] == Fraction(1, 61)
+    assert rrf4([dense, bm25, gl], hop) == ["c", "b", "a", "f", "e", "d"]
+    assert rrf4([dense, bm25, gl], []) == ["c", "b", "a", "e", "d"]
+    assert hop_only(["c", "f", "a"], [dense, bm25, gl], hop + ["a"]) == 1
