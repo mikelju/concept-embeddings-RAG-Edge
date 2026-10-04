@@ -1,6 +1,7 @@
 """`uv run edge-rag <command>`: one generic runner, ASCII-only output."""
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -48,6 +49,10 @@ def main(argv: list[str] | None = None) -> int:
     pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
     judge_cmd.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    judge_results_cmd = commands.add_parser("judge-results", help="write the Phase 04 results")
+    judge_results_cmd.add_argument(
+        "--from-json", action="store_true", help="only check results.md regenerates byte-equal"
+    )
     score = commands.add_parser("score", help="score one ranking file on one set")
     score.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     score.add_argument("--rankings", required=True, type=Path)
@@ -96,6 +101,14 @@ def main(argv: list[str] | None = None) -> int:
         body = judge.run_pairs(args.set_name, say=_say)
         check = body["question_text_check"]
         return 0 if check["equal"] == check["of"] else 1
+    if args.command == "judge-results":
+        from edge_rag import judge_results
+
+        if args.from_json:
+            _say(f"results.md regenerates byte-equal, sha256 {judge_results.regenerate()}")
+            return 0
+        _say(json.dumps(judge_results.run(sorted(config.SETS))["outcome"], indent=2))
+        return 0
     if args.command == "judge":
         from edge_rag import judge
 

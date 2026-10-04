@@ -7,7 +7,8 @@ and the class check are written here by code under the spec's frozen selection r
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 from edge_rag import components, config, fuse, metrics, scoring
@@ -114,18 +115,23 @@ def advances(against_g_l: Sequence[str]) -> bool:
 
 
 def verdict(
-    against_g_l: Sequence[str], against_rrf3: Sequence[str], against_best_light: Sequence[str]
+    against_g_l: Sequence[str],
+    against_rrf3: Sequence[str],
+    against_best_light: Sequence[str],
+    control: str = "RRF3",
+    in_class: str = "light-class",
 ) -> str:
-    """The selection rule: states per set (`not run` counts as neither a win nor a loss)."""
+    """The selection rule: states per set (`not run` counts as neither a win nor a loss) against
+    the gate, the control and the best in-class system so far; Phase 04 names its own."""
     if not advances(against_g_l):
         return "does not advance"
     failed = []
     if "win" not in against_rrf3:
-        failed.append("no win against RRF3")
+        failed.append(f"no win against {control}")
     if "loss" in against_rrf3:
-        failed.append("a loss to RRF3")
+        failed.append(f"a loss to {control}")
     if "loss" in against_best_light:
-        failed.append("a loss to the best light-class system so far")
+        failed.append(f"a loss to the best {in_class} system so far")
     return "entrant" if not failed else f"advances, no entrant ({'; '.join(failed)})"
 
 
@@ -557,20 +563,31 @@ def run(set_names: Sequence[str]) -> dict[str, Any]:
         "not_run": not_run,
         "sets": [t for t in tables.values() if t is not None],
     }
-    body = json.dumps(table, indent=2, sort_keys=True)
-    page = markdown(table)
-    # Spec C4: the page regenerates byte-equal from results.json as written; checked before
-    # either file is written, so a failed check leaves the pair on disk as it was.
-    if markdown(json.loads(body)) != page:
-        raise ArtifactError(f"{RESULTS_MD.name} does not regenerate from {RESULTS_JSON.name}")
-    write_bytes(RESULTS_JSON, body.encode("utf-8"))
-    write_bytes(RESULTS_MD, page.encode("utf-8"))
+    write_pair(table, markdown, RESULTS_JSON, RESULTS_MD)
     return table
 
 
-def regenerate() -> str:
-    """Spec C4 check: render the page from results.json as written; equal to the file on disk."""
-    page = markdown(json.loads(RESULTS_JSON.read_text("utf-8")))
-    if page.encode("utf-8") != RESULTS_MD.read_bytes():
-        raise ArtifactError(f"{RESULTS_MD.name} differs from the page rendered from results.json")
+Page = Callable[[Mapping[str, Any]], str]
+
+
+def write_pair(table: Mapping[str, Any], page_of: Page, json_path: Path, md_path: Path) -> None:
+    """Write `results.json` and its page, after checking the page regenerates byte-equal from
+    the JSON as written (Phase 03 C4, Phase 04 C7), so a failed check writes nothing."""
+    body = json.dumps(table, indent=2, sort_keys=True)
+    page = page_of(table)
+    if page_of(json.loads(body)) != page:
+        raise ArtifactError(f"{md_path.name} does not regenerate from {json_path.name}")
+    write_bytes(json_path, body.encode("utf-8"))
+    write_bytes(md_path, page.encode("utf-8"))
+
+
+def regenerate(
+    page_of: Page | None = None, json_path: Path | None = None, md_path: Path | None = None
+) -> str:
+    """Render the page from results.json as written; equal to the file on disk (Phase 03's
+    pair unless another is named)."""
+    json_path, md_path = json_path or RESULTS_JSON, md_path or RESULTS_MD
+    page = (page_of or markdown)(json.loads(json_path.read_text("utf-8")))
+    if page.encode("utf-8") != md_path.read_bytes():
+        raise ArtifactError(f"{md_path.name} differs from the page rendered from results.json")
     return hashlib.sha256(page.encode("utf-8")).hexdigest()
