@@ -61,6 +61,13 @@ def make_inputs(tmp_path, *, offset=0.0):
     return pairs_dir, tmp_path / "scores"
 
 
+@pytest.fixture(autouse=True)
+def clean_tree(monkeypatch):
+    monkeypatch.setattr(
+        common, "git_provenance", lambda: {"git_commit": "c", "git_src_changes": []}
+    )
+
+
 def run(pairs_dir, scores_dir, stub):
     return rerank.score_pairs(
         "toy", load=lambda: stub, pairs_dir=pairs_dir, scores_dir=scores_dir, say=lambda _: None
@@ -110,7 +117,16 @@ def test_failed_check_stops_before_scoring(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "key", ["inputs_sha256", "revision", "weights_sha256", "tolerance", "git_commit"]
+    "key",
+    [
+        "inputs_sha256",
+        "model",
+        "revision",
+        "weights_sha256",
+        "tolerance",
+        "git_commit",
+        "git_src_changes",
+    ],
 )
 def test_check_is_recomputed_when_its_run_differs(tmp_path, key):
     pairs_dir, scores_dir = make_inputs(tmp_path, offset=0.01)
@@ -128,6 +144,16 @@ def test_check_is_recomputed_when_its_run_differs(tmp_path, key):
     again = Stub()
     assert run(pairs_dir, scores_dir, again) is False
     assert again.calls == 0
+
+
+def test_check_is_recomputed_while_src_has_uncommitted_changes(tmp_path, monkeypatch):
+    pairs_dir, scores_dir = make_inputs(tmp_path, offset=0.01)
+    dirty = {"git_commit": "c", "git_src_changes": ["M src/edge_rag/pod/rerank.py"]}
+    monkeypatch.setattr(common, "git_provenance", lambda: dirty)
+    assert run(pairs_dir, scores_dir, Stub()) is False
+    again = Stub()
+    assert run(pairs_dir, scores_dir, again) is False
+    assert again.calls == 1
 
 
 def test_scores_are_written_once(tmp_path):

@@ -400,7 +400,8 @@ def score_pairs(
 ) -> bool:
     """C4 then C5 for one set; False, with nothing scored, when the check fails. Write-once:
     an existing scores manifest means nothing to do; an existing check file is reused only when
-    its inputs, model revision and weights, tolerance and commit match this run."""
+    its inputs, model revision and weights, tolerance and commit match this run and no source
+    change is uncommitted."""
     out = scores_dir / f"{set_name}.jsonl.gz"
     manifest = common.manifest_path(out)
     check_path = scores_dir / f"{set_name}.check.json"
@@ -424,9 +425,10 @@ def score_pairs(
         "weights_sha256": WEIGHTS_SHA256,
         "tolerance": CHECK_TOLERANCE,
         "git_commit": provenance["git_commit"],
+        "git_src_changes": provenance["git_src_changes"],
     }
     check = json.loads(check_path.read_text("utf-8")) if check_path.exists() else {}
-    if any(check.get(key) != value for key, value in same.items()):
+    if provenance["git_src_changes"] or any(check.get(k) != v for k, v in same.items()):
         check = {"set": set_name, **timing_check(model, timing_rows), **same}
         check.update({**provenance, "gpu": common.gpu_name()})
         write_json(check_path, check)

@@ -121,5 +121,7 @@ def test_missing_pod_rate_raises():
 
 
 def test_judged_units_come_from_the_judged_lists():
+    assert jr.judged_units({"q1": ["u"] * 37, "q2": ["u"] * 5}) == 37
+    assert jr.judged_units({}) == 0
     assert cost(units=37)["class_check"]["judged_units_per_question"] == 37
     assert cost(units=101)["class_check"]["inside_rerank_class"] is False

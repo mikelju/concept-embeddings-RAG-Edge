@@ -69,6 +69,11 @@ def _row(name: str, kind: str, hardware: str, seconds: Any, usd: Any, label: str
             "usd": usd, "label": label}  # fmt: skip
 
 
+def judged_units(rankings: dict[str, list[str]]) -> int:
+    """Units the judge scores per question: the longest judged list."""
+    return max((len(r) for r in rankings.values()), default=0)
+
+
 def system_cost(
     system: str, set_name: str, comp: Mapping, fused: Mapping, pooled: Mapping,
     g_l: Mapping, gpu: str, pod: Mapping | None, units: int = 0,
@@ -209,7 +214,7 @@ def set_table(set_name: str, phase02: Mapping[str, Any]) -> dict[str, Any]:
         }
     gpu = json.loads((p02 / "g-l.manifest.json").read_text("utf-8"))["gpu"]
     for system in (CANDIDATE, CONTROL, "rrf4"):
-        units = max((len(r) for r in ranked[system].values()), default=0) if system in JUDGED else 0
+        units = judged_units(ranked[system]) if system in JUDGED else 0
         rows[system]["cost"] = system_cost(
             system, set_name, comp, fused, pooled, old_rows["g-l"]["cost"], gpu, pod, units
         )
