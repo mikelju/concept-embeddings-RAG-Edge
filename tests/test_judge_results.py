@@ -1,6 +1,9 @@
 """Phase 04 states, verdict and entrant (spec C8): each bar and the `not run` case."""
 
+import pytest
+
 from edge_rag import judge_results as jr
+from edge_rag.artifacts import ArtifactError
 
 SETS = ("hotpotqa-dev", "multihop-rag", "musique")
 WIN = {"wins": 30, "losses": 5, "ties": 0, "p": 0.001}
@@ -16,6 +19,8 @@ def table(**states):
     for system, against in jr.COMPARISONS:
         target = {"best_in_bound": "j-p10b", "best_so_far": "j-union"}.get(against, against)
         test = by.get(target, TIE) if system == jr.CANDIDATE else TIE
+        if (system, against) == (jr.CONTROL, "g-r"):
+            test = states.get("rrf3_g_r", TIE)
         tests.append({"system": system, "against": target, **test})
     return {
         "best_in_bound": "j-p10b",
@@ -65,6 +70,16 @@ def test_spec_not_run_case_does_not_advance():
     assert out["j-rrf3_context_verdict"] == "does not advance"
 
 
+def test_context_verdict_reads_the_j_rrf3_row():
+    # j-rrf4 ties G-R everywhere while j-rrf3 wins two sets against it, and the reverse.
+    out = verdict(*(table(rrf3_g_r=s) for s in (WIN, WIN, TIE)))
+    assert out["verdict"] == "does not advance"
+    assert out["j-rrf3_context_verdict"] == "advances"
+    out = verdict(*(table(g_r=s, j_rrf3=WIN) for s in (WIN, WIN, TIE)))
+    assert out["verdict"] == "entrant"
+    assert out["j-rrf3_context_verdict"] == "does not advance"
+
+
 def test_page_renders_with_every_set_not_run():
     out = jr.outcome(dict.fromkeys(SETS))
     page = jr.markdown({"outcome": out, "not_run": dict.fromkeys(SETS, "no judge"), "sets": []})
@@ -72,20 +87,39 @@ def test_page_renders_with_every_set_not_run():
     assert page.count("not run (no judge)") == 3
 
 
+LAPTOP = {
+    "offline_seconds": {"bm25_build": 1.0},
+    "question_encoding": {"seconds_per_question": 0.1},
+    "retrieval_seconds_per_question": {"dense": 0.1, "bm25": 0.1},
+    "hardware": "laptop",
+}
+G_L = {"offline_seconds": 1.0, "offline_usd": 0.0, "online_seconds_per_question": 0.02,
+       "online_usd_per_question": 0.0}  # fmt: skip
+FUSED = {"online_seconds_per_question": {"rrf": 0.001}}
+
+
+def pod(rate=0.74):
+    return {"cost_per_hr_usd": rate, "gpu": "RTX 4090", "seconds": {"load_model": 10.0},
+            "timing_sample": {"seconds_per_100_pairs": 0.3}}  # fmt: skip
+
+
+def cost(units=100, rate=0.74, gpu="RTX 4090"):
+    return jr.system_cost(jr.CONTROL, "musique", LAPTOP, FUSED, {}, G_L, gpu, pod(rate), units)
+
+
 def test_judge_online_row_is_labelled_derived():
     """Plan D9: the per-100-pairs J-strong row is arithmetic on the timing sample, not measured."""
-    laptop = {
-        "offline_seconds": {"bm25_build": 1.0},
-        "question_encoding": {"seconds_per_question": 0.1},
-        "retrieval_seconds_per_question": {"dense": 0.1, "bm25": 0.1},
-        "hardware": "laptop",
-    }
-    pod = {"cost_per_hr_usd": 0.74, "gpu": "RTX 4090", "seconds": {"load_model": 10.0},
-           "timing_sample": {"seconds_per_100_pairs": 0.3}}
-    g_l = {"offline_seconds": 1.0, "offline_usd": 0.0, "online_seconds_per_question": 0.02,
-           "online_usd_per_question": 0.0}
-    fused = {"online_seconds_per_question": {"rrf": 0.001}}
-    cost = jr.system_cost(jr.CONTROL, "musique", laptop, fused, {}, g_l, "RTX 4090", pod)
-    row = next(r for r in cost["components"] if r["component"] == "J-strong over 100 units")
+    found = cost()
+    row = next(r for r in found["components"] if r["component"] == "J-strong over 100 units")
     assert row["label"].startswith("seconds derived")
-    assert cost["class_check"]["gpu_online_seconds_per_question"] == {"RTX 4090": 0.32}
+    assert found["class_check"]["gpu_online_seconds_per_question"] == {"RTX 4090": 0.32}
+
+
+def test_missing_pod_rate_raises():
+    with pytest.raises(ArtifactError, match="cost_per_hr_usd"):
+        cost(rate=None)
+
+
+def test_judged_units_come_from_the_judged_lists():
+    assert cost(units=37)["class_check"]["judged_units_per_question"] == 37
+    assert cost(units=101)["class_check"]["inside_rerank_class"] is False

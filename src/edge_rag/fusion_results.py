@@ -239,7 +239,7 @@ def candidate_cost(
     }
 
 
-def _fs(row: Mapping[str, Any]) -> int:
+def fs(row: Mapping[str, Any]) -> int:
     return int(row["metrics"]["full_support_at_budget"][str(config.BUDGET)])
 
 
@@ -254,8 +254,8 @@ def set_table(set_name: str, phase02: Mapping[str, Any]) -> dict[str, Any]:
     comp = json.loads((here / components.MANIFEST).read_text("utf-8"))
     fused = json.loads((here / fuse.MANIFEST).read_text("utf-8"))
     old_rows = phase02["systems"]
-    best_light = max(LIGHT, key=lambda s: _fs(old_rows[s]))
-    best = max(old_rows, key=lambda s: _fs(old_rows[s]))
+    best_light = max(LIGHT, key=lambda s: fs(old_rows[s]))
+    best = max(old_rows, key=lambda s: fs(old_rows[s]))
     if old_rows["g-l"]["rankings_sha256"] != config.GL_SHA256[set_name]:
         raise ArtifactError(f"{set_name}: Phase 02 results name another G-L ranking file")
     rows: dict[str, Any] = {}
@@ -379,7 +379,7 @@ def outcome(tables: Mapping[str, Mapping[str, Any] | None]) -> dict[str, Any]:
     }  # fmt: skip
 
 
-def _num(value: Any, digits: str) -> str:
+def num(value: Any, digits: str) -> str:
     return "-" if value is None else format(value, digits)
 
 
@@ -464,7 +464,7 @@ def markdown(table: Mapping[str, Any]) -> str:
             for c in entry["systems"][system]["cost"]["components"]:
                 lines.append(
                     f"| {system} | {c['component']} | {c['kind']} | {c['hardware']} "
-                    f"| {_num(c['seconds'], '.6g')} | {_num(c['usd'], '.6f')} | {c['label']} |"
+                    f"| {num(c['seconds'], '.6g')} | {num(c['usd'], '.6f')} | {c['label']} |"
                 )
         first = entry["systems"][CANDIDATES[0]]["cost"]
         lines += ["", f"Totals per hardware, {first['totals_label']}:", ""]

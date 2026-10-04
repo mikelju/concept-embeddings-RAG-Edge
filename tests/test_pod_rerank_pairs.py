@@ -109,6 +109,27 @@ def test_failed_check_stops_before_scoring(tmp_path):
     assert not (scores_dir / "toy.jsonl.gz").exists()
 
 
+@pytest.mark.parametrize(
+    "key", ["inputs_sha256", "revision", "weights_sha256", "tolerance", "git_commit"]
+)
+def test_check_is_recomputed_when_its_run_differs(tmp_path, key):
+    pairs_dir, scores_dir = make_inputs(tmp_path, offset=0.01)
+    assert run(pairs_dir, scores_dir, Stub()) is False
+    check_path = scores_dir / "toy.check.json"
+    stale = json.loads(check_path.read_text())
+    current = stale[key]
+    stale[key] = "other"
+    check_path.write_text(json.dumps(stale))
+    stub = Stub()
+    assert run(pairs_dir, scores_dir, stub) is False
+    assert stub.calls == 1
+    assert json.loads(check_path.read_text())[key] == current
+    # The same run reuses it without scoring.
+    again = Stub()
+    assert run(pairs_dir, scores_dir, again) is False
+    assert again.calls == 0
+
+
 def test_scores_are_written_once(tmp_path):
     pairs_dir, scores_dir = make_inputs(tmp_path)
     assert run(pairs_dir, scores_dir, Stub()) is True

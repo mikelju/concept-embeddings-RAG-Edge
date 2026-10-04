@@ -8,7 +8,6 @@ run files, each ranking checked against the sha256 its manifest or Phase 02 reco
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from pathlib import Path
 from typing import Any
 
 from edge_rag import components, config, fuse, judge, metrics, pool, scoring
@@ -32,7 +31,7 @@ COMPARISONS = (
     (CONTROL, "best_so_far"),
 )
 STATE_NAMES = tuple(f"{s} vs {a.replace('_', ' ')}" for s, a in COMPARISONS)
-JUDGED = {CANDIDATE: "rrf4", CONTROL: "rrf3"}
+JUDGED = {judged: pooled for pooled, judged in judge.JUDGED.items()}
 POD = "seconds measured (Phase 04 pod manifest); USD derived (time x rate)"
 
 
@@ -72,9 +71,10 @@ def _row(name: str, kind: str, hardware: str, seconds: Any, usd: Any, label: str
 
 def system_cost(
     system: str, set_name: str, comp: Mapping, fused: Mapping, pooled: Mapping,
-    g_l: Mapping, gpu: str, pod: Mapping | None,
+    g_l: Mapping, gpu: str, pod: Mapping | None, units: int = 0,
 ) -> dict[str, Any]:  # fmt: skip
-    """Each component on its own hardware, per-hardware totals and the rerank-class check."""
+    """Each component on its own hardware, per-hardware totals and the rerank-class check;
+    `units` is the judged units per question, read from the judged rankings."""
     laptop, measured = comp["hardware"], fr.LAPTOP_USD
     hop = system in ("rrf4", CANDIDATE)
     inherited = "; ".join(
@@ -115,7 +115,9 @@ def system_cost(
         rows.append(_row("RRF", "online", laptop, fused["online_seconds_per_question"]["rrf"],
                          0.0, measured))  # fmt: skip
     if system in JUDGED and pod is not None:
-        rate = pod["cost_per_hr_usd"] or 0.0
+        rate = pod["cost_per_hr_usd"]
+        if rate is None:
+            raise ArtifactError(f"{set_name}: the pod manifest has no cost_per_hr_usd")
         per_100 = pod["timing_sample"]["seconds_per_100_pairs"]
         load = pod["seconds"]["load_model"]
         rows += [
@@ -136,7 +138,6 @@ def system_cost(
         for hw in {r["hardware"] for r in rows if r["kind"] == "online"}
     }
     gpus = {hw: s for hw, s in online.items() if hw != laptop}
-    units = UNIT_BOUND if system in JUDGED else 0
     return {
         "components": rows,
         "totals_per_hardware": totals,
@@ -158,13 +159,6 @@ def system_cost(
     }
 
 
-def pinned(path: Path, recorded: str) -> dict[str, list[str]]:
-    sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
-    if sha256 != recorded:
-        raise ArtifactError(f"{path}: sha256 {sha256}, recorded {recorded}")
-    return scoring.read_rankings(path)
-
-
 def set_table(set_name: str, phase02: Mapping[str, Any]) -> dict[str, Any]:
     spec = config.SETS[set_name]
     checks = Checks()
@@ -177,11 +171,11 @@ def set_table(set_name: str, phase02: Mapping[str, Any]) -> dict[str, Any]:
     fused = json.loads((p03 / fuse.MANIFEST).read_text("utf-8"))
     pooled = json.loads((p04 / pool.MANIFEST).read_text("utf-8"))
     judged = json.loads((p04 / judge.JUDGE_MANIFEST).read_text("utf-8"))
-    pod_path = judge.SCORES_DIR / f"{set_name}.manifest.json"
+    pod_path = config.PHASE04_SCORES_DIR / f"{set_name}.manifest.json"
     pod = json.loads(pod_path.read_text("utf-8"))
     old_rows = phase02["systems"]
-    best_in = max(IN_BOUND, key=lambda s: fr._fs(old_rows[s]))
-    best = max(old_rows, key=lambda s: fr._fs(old_rows[s]))
+    best_in = max(IN_BOUND, key=lambda s: fr.fs(old_rows[s]))
+    best = max(old_rows, key=lambda s: fr.fs(old_rows[s]))
     sources = {
         CANDIDATE: (p04, judged["outputs_sha256"]),
         CONTROL: (p04, judged["outputs_sha256"]),
@@ -196,9 +190,11 @@ def set_table(set_name: str, phase02: Mapping[str, Any]) -> dict[str, Any]:
             continue
         name = f"{system}.jsonl.gz"
         if system in sources:
-            ranked[system] = pinned(sources[system][0] / name, sources[system][1][name])
+            ranked[system] = judge.pinned_rankings(
+                sources[system][0] / name, sources[system][1][name]
+            )
         else:
-            ranked[system] = pinned(p02 / name, old_rows[system]["rankings_sha256"])
+            ranked[system] = judge.pinned_rankings(p02 / name, old_rows[system]["rankings_sha256"])
         summary, records[system] = scoring.score(questions, ranked[system], counts)
         if system in old_rows and summary != old_rows[system]["metrics"]:
             raise ArtifactError(f"{set_name} {system}: rescored metrics differ from Phase 02")
@@ -213,8 +209,9 @@ def set_table(set_name: str, phase02: Mapping[str, Any]) -> dict[str, Any]:
         }
     gpu = json.loads((p02 / "g-l.manifest.json").read_text("utf-8"))["gpu"]
     for system in (CANDIDATE, CONTROL, "rrf4"):
+        units = max((len(r) for r in ranked[system].values()), default=0) if system in JUDGED else 0
         rows[system]["cost"] = system_cost(
-            system, set_name, comp, fused, pooled, old_rows["g-l"]["cost"], gpu, pod
+            system, set_name, comp, fused, pooled, old_rows["g-l"]["cost"], gpu, pod, units
         )
     for system in rows:
         if system in old_rows:
@@ -225,11 +222,11 @@ def set_table(set_name: str, phase02: Mapping[str, Any]) -> dict[str, Any]:
         rows["f3"]["cost"] = {"label": "Phase 03 results.md (light class, laptop and G-L)"}
     # Exploratory: questions whose gold enters RRF4's top 100 only through the hop.
     lists = [
-        pinned(p02 / "p10-a.jsonl.gz", pooled["inputs_sha256"]["p10-a.jsonl.gz"]),
-        pinned(p03 / "bm25.jsonl.gz", pooled["inputs_sha256"]["bm25.jsonl.gz"]),
-        pinned(p02 / "g-l.jsonl.gz", pooled["inputs_sha256"]["g-l.jsonl.gz"]),
+        judge.pinned_rankings(p02 / "p10-a.jsonl.gz", pooled["inputs_sha256"]["p10-a.jsonl.gz"]),
+        judge.pinned_rankings(p03 / "bm25.jsonl.gz", pooled["inputs_sha256"]["bm25.jsonl.gz"]),
+        judge.pinned_rankings(p02 / "g-l.jsonl.gz", pooled["inputs_sha256"]["g-l.jsonl.gz"]),
     ]
-    hop = pinned(p04 / "hop.jsonl.gz", pooled["outputs_sha256"]["hop.jsonl.gz"])
+    hop = judge.pinned_rankings(p04 / "hop.jsonl.gz", pooled["outputs_sha256"]["hop.jsonl.gz"])
     through_hop = sum(
         any(
             pool.hop_only([g], [lst[q.qid][: config.DEPTH] for lst in lists], hop[q.qid])
@@ -341,7 +338,7 @@ def markdown(table: Mapping[str, Any]) -> str:
             for c in entry["systems"][system]["cost"]["components"]:
                 lines.append(
                     f"| {system} | {c['component']} | {c['kind']} | {c['hardware']} "
-                    f"| {fr._num(c['seconds'], '.6g')} | {fr._num(c['usd'], '.6f')} "
+                    f"| {fr.num(c['seconds'], '.6g')} | {fr.num(c['usd'], '.6f')} "
                     f"| {c['label']} |"
                 )
         lines.append("")
@@ -367,6 +364,18 @@ def markdown(table: Mapping[str, Any]) -> str:
                 f"for {check['gpu_bound_stated_for']}): {where} the rerank class on this set "
                 "(derived)."
             )
+            for hw in sorted(
+                h for h in check["gpu_online_seconds_per_question"] if "4090" not in h
+            ):
+                timed = ", ".join(
+                    c["component"]
+                    for c in cost["components"]
+                    if c["kind"] == "online" and c["hardware"] == hw
+                )
+                lines.append(
+                    f"  - {system}: {timed} time was measured on {hw}, not the RTX 4090 the "
+                    "GPU bound names, so the margin may be overstated."
+                )
         lines += ["", "Cost of the reference rows (inherited labels):", ""]
         for system in _systems(entry):
             if system in (CANDIDATE, CONTROL, "rrf4"):

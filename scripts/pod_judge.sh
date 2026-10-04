@@ -53,11 +53,17 @@ trap 'kill "$SAMPLER" 2> /dev/null || true' EXIT
 stage sync "" uv sync --frozen --group pod
 stage cuda "" cuda_check
 
+sums() {  # rewrite sha256sums.txt over every scores file so far, so a finished set is hashed at once
+  (cd "$OUT" && find . -type f ! -name 'sha256sums.*' -print0 | sort -z | xargs -0 -r sha256sum > sha256sums.tmp && mv sha256sums.tmp sha256sums.txt)
+}
+
+export -f main_py
 for set in $SETS; do
   stage "judge-$set" "$OUT/$set.manifest.json" \
-    bash -c "set -o pipefail; uv run --frozen --group pod python -m edge_rag.pod.rerank --pairs $set 2>&1 | tee -a $PROGRESS"
+    bash -c 'set -o pipefail; main_py -m edge_rag.pod.rerank --pairs "$1" 2>&1 | tee -a "$2"' _ "$set" "$PROGRESS"
+  sums
 done
 
-(cd "$OUT" && find . -type f ! -name sha256sums.txt -print0 | sort -z | xargs -0 sha256sum > sha256sums.txt)
+sums
 echo "STAGE_DONE sha256sums $(date -u +%FT%TZ)" >> "$LOG"
 echo "STAGE_DONE all" >> "$LOG"

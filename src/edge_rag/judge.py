@@ -79,11 +79,11 @@ def pair_row(
 
 
 # --- `edge-rag judge-pairs` (spec C3, plan increment 3) ---------------------------------------
-PAIRS_DIR = config.PHASE04_DIR / "pairs"
+PAIRS_DIR = config.PHASE04_PAIRS_DIR
 TIMING_QUESTIONS = 200
 # The master plan's preregistered HotpotQA subsample (spec gate fallback, plan D8).
 SUBSAMPLE_SET, SUBSAMPLE_SEED, SUBSAMPLE_SIZE = "hotpotqa-dev", 20261002, 1000
-POD_SETUP_HOURS, POD_USD_PER_HOUR = 0.75, 0.74
+POD_SETUP_HOURS = 0.75
 
 
 def pinned_rankings(path: Path, sha256: str) -> dict[str, list[str]]:
@@ -164,8 +164,8 @@ def projection(fresh_pairs: int, set_name: str) -> dict[str, Any]:
         "fresh_pairs": fresh_pairs,
         "pairs_per_second": rate,
         "scoring_hours": round(hours, 4),
-        "scoring_usd": round(hours * POD_USD_PER_HOUR, 4),
-        "note": f"the phase adds {POD_SETUP_HOURS} h once, at {POD_USD_PER_HOUR} USD/h",
+        "scoring_usd": round(hours * config.POD_USD_PER_HOUR, 4),
+        "note": f"the phase adds {POD_SETUP_HOURS} h once, at {config.POD_USD_PER_HOUR} USD/h",
     }
 
 
@@ -283,7 +283,7 @@ def run_pairs(set_name: str, say: Say = print) -> dict[str, Any]:
 
 
 # --- `edge-rag judge` (spec C6, plan increment 6) ---------------------------------------------
-SCORES_DIR = config.PHASE04_DIR / "scores"
+SCORES_DIR = config.PHASE04_SCORES_DIR
 JUDGE_MANIFEST = "judge.manifest.json"
 JUDGED = {"rrf3": "j-rrf3", "rrf4": "j-rrf4"}
 

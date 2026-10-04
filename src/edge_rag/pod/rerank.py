@@ -314,8 +314,8 @@ def check_old(args: argparse.Namespace) -> None:
 
 
 # --- Phase 04 `--pairs` mode (spec C4, C5; plan increment 5) ---------------------------------
-PAIRS_DIR = common.config.PHASE04_DIR / "pairs"
-SCORES_DIR = common.config.PHASE04_DIR / "scores"
+PAIRS_DIR = common.config.PHASE04_PAIRS_DIR
+SCORES_DIR = common.config.PHASE04_SCORES_DIR
 CGROUP_DIR = Path("/sys/fs/cgroup")
 
 
@@ -399,7 +399,8 @@ def score_pairs(
     say: Any = print,
 ) -> bool:
     """C4 then C5 for one set; False, with nothing scored, when the check fails. Write-once:
-    an existing scores manifest means nothing to do; an existing check file is reused."""
+    an existing scores manifest means nothing to do; an existing check file is reused only when
+    its inputs, model revision and weights, tolerance and commit match this run."""
     out = scores_dir / f"{set_name}.jsonl.gz"
     manifest = common.manifest_path(out)
     check_path = scores_dir / f"{set_name}.check.json"
@@ -416,12 +417,17 @@ def score_pairs(
     started = time.perf_counter()
     model = load()
     timer.add("load_model", started)
-    if check_path.exists():
-        check = json.loads(check_path.read_text("utf-8"))
-        if check.get("inputs_sha256") != pins:
-            raise ArtifactError(f"{check_path} was written for other inputs")
-    else:
-        check = {"set": set_name, **timing_check(model, timing_rows), "inputs_sha256": pins}
+    same = {
+        "inputs_sha256": pins,
+        "model": MODEL,
+        "revision": REVISION,
+        "weights_sha256": WEIGHTS_SHA256,
+        "tolerance": CHECK_TOLERANCE,
+        "git_commit": provenance["git_commit"],
+    }
+    check = json.loads(check_path.read_text("utf-8")) if check_path.exists() else {}
+    if any(check.get(key) != value for key, value in same.items()):
+        check = {"set": set_name, **timing_check(model, timing_rows), **same}
         check.update({**provenance, "gpu": common.gpu_name()})
         write_json(check_path, check)
     say(
