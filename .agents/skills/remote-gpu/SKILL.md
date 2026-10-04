@@ -51,6 +51,7 @@ The laptop is Windows 11 ARM64, 12 cores, about 32 GB RAM, no GPU. That is a dev
 
 - The manifest `hardware` block reports the host (for example 256 cores, 1.08 TB RAM), not the container; record the allocation separately (cgroup v2).
 - Billing lags about an hour behind a terminated pod: record time x rate, balance delta and invoice as three labelled figures; the author copies the invoice later.
+- Read and record `clientBalance` at the start of every phase, pod or not, and measure the phase's spend as the delta between two real readings; a reference derived from an earlier invoice or read before the last pod's charges landed is not a baseline (Phase 03 deviation 03.1).
 - PyPI `vllm` 0.30.0 is a CUDA 13 build against the pinned `torch==2.13.0+cu126`: pin `torchvision==0.28.0` and `torchaudio==2.11.0`
   to `pytorch-cu126` via `tool.uv.sources`, and add `<venv>/lib/python3.12/site-packages/nvidia/cu13/lib` to `LD_LIBRARY_PATH`.
 - `pkill -f <pattern>` kills the SSH session whose command line holds the pattern, even a bracketed one such as `[p]rogress` when the same command line also holds `progress`; use `pgrep -f` with a pattern absent from your own command, or kill by PID (vLLM serve, and the samplers of phase 02 session 6).
