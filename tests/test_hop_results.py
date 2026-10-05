@@ -1,5 +1,8 @@
 """Phase 05 states, verdict and entrant (spec C6): each bar, the context rows and `not run`."""
 
+import pytest
+
+from edge_rag.artifacts import ArtifactError
 from edge_rag.phase_results import Phase05 as hr
 
 SETS = ("hotpotqa-dev", "multihop-rag", "musique")
@@ -130,3 +133,20 @@ def test_best_systems_come_from_earlier_rows_by_fs_at_2048():
 
 def test_light_class_list_is_the_spec_list():
     assert hr.LIGHT == ("p10-a", "p10-b", "p10-c", "p14", "g-l", "rrf3", "f3", "rrf4")
+
+
+def test_bare_run_refuses_to_overwrite_stored_results(tmp_path, monkeypatch):
+    stored = tmp_path / "results.json"
+    stored.write_text("{}", "utf-8")
+    monkeypatch.setattr(hr, "RESULTS_JSON", stored)
+    with pytest.raises(ArtifactError, match="written once"):
+        hr.run(SETS)
+    assert stored.read_text("utf-8") == "{}"
+
+
+def test_earlier_results_must_match_their_pinned_sha256(tmp_path, monkeypatch):
+    changed = tmp_path / "results.json"
+    changed.write_text('{"sets": []}', "utf-8")
+    monkeypatch.setattr(hr, "EARLIER", (("Phase 03", changed, tmp_path),))
+    with pytest.raises(ArtifactError, match="not the pinned Phase 03"):
+        hr.earlier("musique")

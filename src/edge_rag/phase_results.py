@@ -227,6 +227,10 @@ class Phase:
     @classmethod
     def run(cls, set_names: Sequence[str], out: Path | None = None) -> dict[str, Any]:
         """Recompute the table from run files; write the stored pair, or `out` (plan D4)."""
+        if out is None and cls.RESULTS_JSON.exists():
+            raise ArtifactError(
+                f"{cls.RESULTS_JSON} exists and is written once; recompute with --out DIR"
+            )
         provenance = git_provenance()
         phase02 = {e["set"]: e for e in json.loads(PHASE02_RESULTS.read_text("utf-8"))["sets"]}
         tables: dict[str, dict[str, Any] | None] = {}
@@ -1127,6 +1131,12 @@ class Phase05(Phase):
         ("Phase 03", Phase03.RESULTS_JSON, config.PHASE03_RANKINGS_DIR),
         ("Phase 04", Phase04.RESULTS_JSON, config.PHASE04_RANKINGS_DIR),
     )
+    # Phase 03 and 04 digests from the spec; Phase 02's measured at the Phase 05 close.
+    EARLIER_SHA256 = {
+        "Phase 02": "287718c3a4c1f0fc429b1ee63cb04a7b5ba56e4b429cb51a1f9a8a91a0e1a483",
+        "Phase 03": "ccf4dfc98ebc893d81220dbbc3db3c324a3c8be1a2a471afb5f906e4a4b31efd",
+        "Phase 04": "93fa91404e2ec9a180225ce6f22740adbee45b69ba7163c6e5ea93d260ae4dc9",
+    }
     PAGES = {
         "Phase 03": "docs/plans/fase-03-fusion/results.md",
         "Phase 04": "docs/plans/fase-04-judge/results.md",
@@ -1158,9 +1168,10 @@ class Phase05(Phase):
         sha256: dict[str, str] = {}
         for phase, path, _ in cls.EARLIER:
             body = path.read_bytes()
-            sha256[str(path.relative_to(config.REPO_ROOT).as_posix())] = hashlib.sha256(
-                body
-            ).hexdigest()
+            digest = hashlib.sha256(body).hexdigest()
+            if digest != cls.EARLIER_SHA256[phase]:
+                raise ArtifactError(f"{path}: sha256 {digest} is not the pinned {phase} results")
+            sha256[str(path.relative_to(config.REPO_ROOT).as_posix())] = digest
             for entry in json.loads(body)["sets"]:
                 if entry["set"] == set_name:
                     for system in sorted(entry["systems"]):
@@ -1314,6 +1325,8 @@ class Phase05(Phase):
         here = config.PHASE05_RANKINGS_DIR / set_name
         p03, p04 = config.PHASE03_RANKINGS_DIR / set_name, config.PHASE04_RANKINGS_DIR / set_name
         conv = json.loads((here / converge.MANIFEST).read_text("utf-8"))
+        if any(c["equal"] != c["of"] for c in conv["equality"].values()):
+            raise ArtifactError(f"{set_name}: converge equality counts are not complete (C1)")
         comp = json.loads((p03 / components.MANIFEST).read_text("utf-8"))
         pooled = json.loads((p04 / pool.MANIFEST).read_text("utf-8"))
         found, earlier_sha256 = cls.earlier(set_name)
