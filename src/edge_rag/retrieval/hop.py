@@ -4,6 +4,7 @@ Copied from the old `nodes/index.load_node_index`, `retrieval/conceptual.rarity_
 `evaluation/second_hop.node_hop_columnwise` / `relevance_hop_columnwise` and
 `evaluation/phase14` (similarity, min-max, mix, cut). Neither hop reads the question's own
 entities: both start from `p1`, Dense's top paragraph, and exclude Dense's top `READ_DEPTH`.
+`seed_hop` (Phase 05) is the entity hop from any seed unit, excluding a caller-given set.
 """
 
 import hashlib
