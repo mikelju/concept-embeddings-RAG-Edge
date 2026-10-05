@@ -52,8 +52,8 @@ This file is the durable state: a new session resumes from here and from Git.
 | 0 | Phase start: create the `data` junction and check it (D2); read `clientBalance` and `myself { pods }` with UTC time and record them under Money | C7 | `plan.md` | main | done | junction created with `_winapi.CreateJunction`; the ignored-files status prints `!! data/`; `ls data` lists phase02-04 and results; 2026-10-04T14:09:46Z `clientBalance` 14.1147504042 USD, `pods` [] (measured) |
 | 1 | Shared results module (D3, D4): `phase_results.py` with the Phase 03 and Phase 04 descriptions; delete `fusion_results.py` and `judge_results.py`; CLI `fusion-results` and `judge-results` on the new module with `--from-json` and `--out`; tests move imports only. `--from-json` regenerates both stored pages byte-equal; full recompute of each phase into `.runtime/c3/`, JSON equal to the stored one except `git_commit` and `git_src_changes`, page byte-equal to the stored page | C3 | `src/edge_rag/phase_results.py`, `src/edge_rag/cli.py`, `tests/test_fusion_results.py`, `tests/test_judge_results.py` | A | pending | |
 | 2 | Finding 4 fix: the judge's online row is `J-strong over N units`, N = `judged_units` of the judged lists, seconds = per-100 seconds x N / 100, label saying `x N`; test with an 80-unit judged list (name and 0.8 x seconds); increment 1's recompute rerun after the fix gives the stored Phase 04 page and figures | C4, C3 | `src/edge_rag/phase_results.py`, `tests/test_judge_results.py` | A | pending | |
-| 3 | Retrieval code and tests: `config` constants (D1); `Hops.seed_hop` (D5); `converge.py` pure functions; `tests/test_converge.py` pinning seed order and deduplication, seed exclusion, `seed_hop` equal to `entity_hop` with Dense's first unit and top 10 excluded, the convergence example (two seeds at rank 50 above one seed at rank 1), an empty per-seed list adding nothing, `q'` on a two-dimensional example, the four-list RRF with an empty `hop-ms` | C2 | `src/edge_rag/config.py`, `src/edge_rag/retrieval/hop.py`, `src/edge_rag/converge.py`, `tests/test_converge.py` | B | pending | |
-| 4 | `converge.run` and `edge-rag converge --set <set>` (D6-D9, D11): `hop-ms`, `dense-prf`, `mch`, `rrf-prf`, `rrf-1s` depth-100 rankings into `data/phase05/rankings/<set>/`, write-once, `converge.manifest.json` with every C1 field and the three equality counts; run on MultiHop-RAG then MuSiQue with timed logs; one question per set traced by hand (seeds, cosine of `q'` with `q`, top `hop-ms` unit and its seeds with ranks and RRF sum), computed by a separate snippet from the stored files, not by `converge.py` | C1 | `src/edge_rag/converge.py`, `src/edge_rag/cli.py`, `plan.md` (trace) | B | pending | |
+| 3 | Retrieval code and tests: `config` constants (D1); `Hops.seed_hop` (D5); `converge.py` pure functions; `tests/test_converge.py` pinning seed order and deduplication, seed exclusion, `seed_hop` equal to `entity_hop` with Dense's first unit and top 10 excluded, the convergence example (two seeds at rank 50 above one seed at rank 1), an empty per-seed list adding nothing, `q'` on a two-dimensional example, the four-list RRF with an empty `hop-ms` | C2 | `src/edge_rag/config.py`, `src/edge_rag/retrieval/hop.py`, `src/edge_rag/converge.py`, `tests/test_converge.py` | B | done | commit 5f5dcb3 (docstring 5f313b6); `uv run pytest -q tests/test_converge.py tests/test_data_and_hops.py` 18 passed, 1 skipped (symlink privileges); three-lens review found no behaviour defect against the spec |
+| 4 | `converge.run` and `edge-rag converge --set <set>` (D6-D9, D11): `hop-ms`, `dense-prf`, `mch`, `rrf-prf`, `rrf-1s` depth-100 rankings into `data/phase05/rankings/<set>/`, write-once, `converge.manifest.json` with every C1 field and the three equality counts; run on MultiHop-RAG then MuSiQue with timed logs; one question per set traced by hand (seeds, cosine of `q'` with `q`, top `hop-ms` unit and its seeds with ranks and RRF sum), computed by a separate snippet from the stored files, not by `converge.py` | C1 | `src/edge_rag/converge.py`, `src/edge_rag/cli.py`, `plan.md` (trace) | B | done | `converge` at 5f313b6, logs `data/phase05/logs/converge-<set>.log` end `exit 0` (29.5 s, 61.6 s); equality 2,255 of 2,255 and 2,417 of 2,417 on all three checks; seed mean 8.97 and 8.79, range 5-10; `hop-ms` empty 0 and 0, short 34 and 12; peak RSS 219.1 and 516.8 MB; outputs byte-identical to the first run at 5f5dcb3; an independent script (no `edge_rag` import) reproduces `mch`, `rrf-prf`, `rrf-1s` from the stored inputs with 0 mismatches; traces below |
 | | **Session boundary A**: code for all three sets is committed and the two small sets are run; the HotpotQA run starts from a clean tree. | | | | | |
 | 5 | HotpotQA run on the laptop, launched by the main session in the background (see Laptop run); after it, check the manifest and record the HotpotQA hand trace | C1 | `plan.md` | main (trace: C) | pending | |
 | | **Session boundary B**: every Phase 05 ranking file and manifest is on disk; the results session starts from this table. | | | | | |
@@ -91,17 +91,38 @@ After it, check: the log ends with `exit 0`; `data/phase05/rankings/hotpotqa-dev
 If the laptop cannot hold it (memory error or a stall), HotpotQA is `not run` and a deviation is opened (spec A1), never moved to a pod.
 
 ## Hand traces (C1)
-One question per set, written by the agent that ran the set.
+One question per set, computed by a separate snippet from the stored files, not by `converge.py`.
+
+### MultiHop-RAG
+- multihop-rag, question `mhr-0000` (the set's first question), measured with a separate snippet that does not import `edge_rag.converge` or `Hops.seed_hop`: it rebuilds each seed's hop from the incidence matrix and `node_weights`, and computes RRF with exact fractions.
+- Seeds, 9 in order: Dense (`p10-a`) top 5 `26585272f0b17822`, `49e91e49ea3c94ea`, `acc64fb778603c17`, `401d139722cc3dc9`, `ac3588c17b9c6beb`, then BM25's `1370c5372d049f31`, `745f28b71648586d`, `6800b4e1c14dc607`, `4bb5b2c6778915e0` (BM25's rank-4 `ac3588c17b9c6beb` was already a seed, so it was dropped as a duplicate).
+- Every seed has 2 to 5 entity nodes, and every per-seed list is full at 100 units.
+- The cosine of `q'` with `q` is 0.9327 (`q` has unit norm).
+- The top `hop-ms` unit is `00be98c484904588`, which all 9 seeds reach, at per-seed ranks 19, 1, 52, 21, 3, 28, 3, 3, 3 in seed order; its RRF sum is 60199547/480897648 = 0.12518, ahead of `020cdee06f6142fb` at 0.12303.
+- The recomputed `hop-ms` list (100 units) is identical, in order, to the stored `data/phase05/rankings/multihop-rag/hop-ms.jsonl.gz` entry for `mhr-0000`, and the recomputed `dense-prf` list is identical to the stored one (its top unit is the seed `acc64fb778603c17`).
+
+### MuSiQue
+- MuSiQue, question `2hop__460946_294723` ("Who is the spouse of the Green performer?"), the first question of the set and the first line of the stored `hop-ms` file (measured).
+- Seeds in order are Dense (`p10-a`) top 5 `adc6fd8efa68d39f`, `d6f7054b295788c6`, `4566c5b8f905ddc1`, `711e267af7b6d7ea`, `1f57f15c66100eee`, then BM25 top 5 `4fb6ff21c7274493`, `690c1792a72ff2fb`, `6dc309a79b6d0f80`, `deb2e19528b1e5e2`, `ab80d69e2d9bb5e0`, with no overlap, so 10 seeds (measured).
+- Per-seed hop lists have lengths 100, 100, 100, 100, 100, 4, 100, 61, 100 and 5, and none is empty (measured).
+- The cosine of q' = (q + c) / ||q + c|| with q is 0.95635 (measured).
+- The top `hop-ms` unit is `0dc20226fbcb414a`, reached from seeds `adc6fd8efa68d39f` at rank 25 and `d6f7054b295788c6` at rank 17, with an RRF sum of 1/85 + 1/77 = 162/6545 = 0.024752 (measured).
+- The runner-up `05f668d6a88a91de` scores 0.022285, so the top unit comes from two Dense seeds converging, not from one high rank (measured).
+- An independent recomputation that does not import `edge_rag.converge` or call `seed_hop` reproduces the stored `hop-ms` list for this question exactly, all 100 units in order, and also the stored `dense-prf` list (measured).
 
 ## Money
 Phase start reading (increment 0), closing reading (increment 8), both with UTC time; spend 0 USD; money left inside the 25 USD authorization stays 9.89 USD (derived, provisional as in the master plan).
 
 ## Session boundary
-Empty state: nothing done yet.
-The spec is approved and committed (bc3fb9e); no code, run or reading of this phase exists; the next session starts at increment 0.
+Boundary A reached (2026-10-05): increments 0, 3 and 4 are done; code for the three sets is committed at 5f313b6 and the two small sets are run.
+Next: increment 5, the HotpotQA run, from the main checkout with a clean `src`; then increments 1-2 (group A) and 6-7 (group C).
 
 ## Decisions taken during execution
-None yet.
+- E1. Work moved from the worktree to the main checkout on branch `fase-05-hop` (2026-10-05), so `data/` is the real folder and the D2 junction is not used from here on; `OLD_DATA_ROOT` is still exported.
+  Reason: the group B subagent was stopped and its commit pushed to `fase-05-hop`; the worktree branch holds nothing more.
+- E2. The first MultiHop-RAG and MuSiQue runs (commit 5f5dcb3, no logs) were moved out of `data/` and rerun with timed logs at 5f313b6; the five output sha256 per set are identical, so the stored outputs are the reruns.
+- E3. Registered, not fixed: `Dense.retrieve` (`retrieval/dense_bm25.py`, before this phase) does not break an exact score tie straddling rank 100 by unit id, because `np.argpartition` picks an arbitrary member; it changes `dense-prf` on 1 MultiHop-RAG and 3 MuSiQue questions.
+  The spec fixes `dense-prf` as the unchanged `Dense.retrieve`, so the code stays; the effect is recorded here.
 
 ## Deviations
 | ID | Summary | Affects criteria | Status |
