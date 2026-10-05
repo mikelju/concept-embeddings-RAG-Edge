@@ -2,8 +2,8 @@
 
 import pytest
 
-from edge_rag import judge_results as jr
 from edge_rag.artifacts import ArtifactError
+from edge_rag.phase_results import Phase04 as jr
 
 SETS = ("hotpotqa-dev", "multihop-rag", "musique")
 WIN = {"wins": 30, "losses": 5, "ties": 0, "p": 0.001}
@@ -125,3 +125,21 @@ def test_judged_units_come_from_the_judged_lists():
     assert jr.judged_units({}) == 0
     assert cost(units=37)["class_check"]["judged_units_per_question"] == 37
     assert cost(units=101)["class_check"]["inside_rerank_class"] is False
+
+
+def test_judge_online_row_follows_the_judged_units():
+    """Phase 05 spec C4: an 80-unit judged list gives `J-strong over 80 units`, 0.8 x per-100."""
+    judged = {"q1": ["u"] * 80, "q2": ["u"] * 80}
+    found = cost(units=jr.judged_units(judged))
+    names = [r["component"] for r in found["components"] if r["kind"] == "online"]
+    assert "J-strong over 80 units" in names
+    assert "J-strong over 100 units" not in names
+    row = next(r for r in found["components"] if r["component"] == "J-strong over 80 units")
+    assert row["seconds"] == pytest.approx(0.8 * 0.3)
+    assert row["usd"] == pytest.approx(0.8 * 0.3 * 0.74 / 3600)
+    assert "x 80," in row["label"]
+    assert found["class_check"]["gpu_online_seconds_per_question"] == {
+        "RTX 4090": pytest.approx(0.02 + 0.24)
+    }
+    hundred = next(r for r in cost()["components"] if r["component"] == "J-strong over 100 units")
+    assert hundred["seconds"] == 0.3  # 100 units: the per-100 figure, bit for bit

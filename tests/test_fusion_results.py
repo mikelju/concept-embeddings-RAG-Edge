@@ -1,6 +1,6 @@
 import pytest
 
-from edge_rag import fusion_results as fr
+from edge_rag.phase_results import Phase03 as fr
 
 
 def test_state_needs_the_direction_and_p_below_alpha():
