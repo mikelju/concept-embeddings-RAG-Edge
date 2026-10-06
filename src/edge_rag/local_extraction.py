@@ -1,10 +1,11 @@
 # Provenance (plan D6, author's decision of 2026-10-06): copied byte for byte from the old
 # project, `concept-embeddings-RAG/src/concept_embeddings_rag/nodes/local_extraction.py` at old
-# commit 9abdc26 (last commit touching it; old HEAD 42b987f), SHA-256 of the original
-# dd745a9ac6a1024166f82c4a4c8c1dbe983c1ac3899817e6156aad025c26d83d. The original stays
-# untouched and is only read. Its imports still name the old package; increment 5 adapts
-# them for the GLiNER pass over QASPER units, and every change below this header is a diff
-# against that digest.
+# commit 9abdc26 (last commit touching it; old HEAD 42b987f). SHA-256 of the original as Git
+# stores it (LF): c1c96f014fc41eb5368648df80a38e96f032b96477d1b1623c17474b591b0baf;
+# of the Windows checkout (CRLF): dd745a9ac6a1024166f82c4a4c8c1dbe983c1ac3899817e6156aad025c26d83d.
+# The original stays untouched and is only read. Its imports still name the old package;
+# increment 5 adapts them for the GLiNER pass over QASPER units, and every change below this
+# header is a diff against that digest.
 
 """Reading entities out of every paragraph with a local extractor (Phase 7, S2).
 
