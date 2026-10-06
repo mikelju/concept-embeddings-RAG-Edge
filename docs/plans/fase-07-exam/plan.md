@@ -11,6 +11,8 @@ Taken by the agent; any of them may change before the test download under the sp
 - D3. Money readings, pod creation and termination follow `.agents/skills/remote-gpu/SKILL.md`; `RUNPOD_API_KEY` and `HF_TOKEN` are checked for presence only and never printed.
 - D4. Every money step (marked **[money]**) stops for the author: a fresh cost estimate from the balance and rates read that day, then launch only on the author's yes in chat.
 - D5. One frozen commit for every test-split run, its hash recorded here before the test download; the dev dry run uses that same code.
+- D6. Author's decision (chat, 2026-10-06): the old project's `src/concept_embeddings_rag/nodes/local_extraction.py` is copied into this repo for the GLiNER pass (increment 5), with a provenance note (source path, old commit and SHA-256 of the original); the original stays untouched and is only read.
+- D7. Author's decision (chat, 2026-10-06): while a pod runs, the agent may request keep-awake through the Claude desktop app; no Windows power settings are changed.
 
 ## Increments
 Each increment leaves the product working and covers named criteria.
