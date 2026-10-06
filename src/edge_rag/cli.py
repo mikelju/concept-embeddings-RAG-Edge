@@ -49,6 +49,11 @@ def main(argv: list[str] | None = None) -> int:
     converge.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     pairs = commands.add_parser("judge-pairs", help="Phase 04 uncached judge pairs per set")
     pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    commands.add_parser("rivals-subsample", help="Phase 06 HotpotQA 1,000-qid subsample")
+    rivals_pairs = commands.add_parser("rivals-pairs", help="Phase 06 G-R2 pairs per set")
+    rivals_pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    rivals_rank = commands.add_parser("rivals-rank", help="Phase 06 G-R2 lists from pod scores")
+    rivals_rank.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
     judge_cmd.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_results_cmd = commands.add_parser("judge-results", help="write the Phase 04 results")
@@ -122,6 +127,16 @@ def main(argv: list[str] | None = None) -> int:
         body = judge.run_pairs(args.set_name, say=_say)
         check = body["question_text_check"]
         return 0 if check["equal"] == check["of"] else 1
+    if args.command in ("rivals-subsample", "rivals-pairs", "rivals-rank"):
+        from edge_rag import rivals
+
+        if args.command == "rivals-subsample":
+            rivals.run_subsample(say=_say)
+        elif args.command == "rivals-pairs":
+            rivals.run_pairs(args.set_name, say=_say)
+        else:
+            rivals.run_rank(args.set_name, say=_say)
+        return 0
     if args.command == "judge-results":
         from edge_rag.phase_results import Phase04
 

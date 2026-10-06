@@ -350,3 +350,11 @@ PHASE05_DIR = DATA_DIR / "phase05"
 PHASE05_RANKINGS_DIR = PHASE05_DIR / "rankings"
 # Seeds per question: the top SEEDS_PER_LIST units of Dense, then of BM25, deduplicated.
 SEEDS_PER_LIST = 5
+
+# --- Phase 06: literature rivals never measured on the bench (spec, frozen 2026-10-06) --------
+PHASE06_DIR = DATA_DIR / "phase06"
+PHASE06_PAIRS_DIR = PHASE06_DIR / "pairs"
+PHASE06_SCORES_DIR = PHASE06_DIR / "scores"
+PHASE06_RANKINGS_DIR = PHASE06_DIR / "rankings"
+PHASE06_CHECKS_DIR = PHASE06_DIR / "checks"
+PHASE06_SUBSAMPLE_DIR = PHASE06_DIR / "subsample"

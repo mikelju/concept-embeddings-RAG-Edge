@@ -123,7 +123,7 @@ class QwenReranker:
     `no` logit. The score kept is log P(yes), monotone with the card's P(yes) and free of the
     ties its float32 saturation would make."""
 
-    def __init__(self) -> None:
+    def __init__(self, dtype: str | None = None) -> None:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -131,7 +131,10 @@ class QwenReranker:
         self.tokenizer = AutoTokenizer.from_pretrained(
             QWEN_MODEL, revision=QWEN_REVISION, padding_side="left"
         )
-        model: Any = AutoModelForCausalLM.from_pretrained(QWEN_MODEL, revision=QWEN_REVISION)
+        kwargs = {} if dtype is None else {"dtype": getattr(torch, dtype)}
+        model: Any = AutoModelForCausalLM.from_pretrained(
+            QWEN_MODEL, revision=QWEN_REVISION, **kwargs
+        )
         self.model = model.to("cuda" if torch.cuda.is_available() else "cpu").eval()
         self.no = self.tokenizer.convert_tokens_to_ids("no")
         self.yes = self.tokenizer.convert_tokens_to_ids("yes")
