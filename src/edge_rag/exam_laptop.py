@@ -273,10 +273,12 @@ def gliner_pass(
     model_dir: Path,
     *,
     papers: Sequence[str] | None = None,
+    limit_units: int | None = None,
     say: Callable[[str], None] = print,
 ) -> dict[str, Any]:
     """The copied `local_extraction.py` over QASPER units (`title. body`, one sentence each);
-    writes `records.jsonl.gz` and `extraction.json`, the archive `run` reads back."""
+    writes `records.jsonl.gz` and `extraction.json`, the archive `run` reads back.
+    `limit_units` keeps the first units in file order (the pod probe, spec)."""
     from edge_rag import local_extraction
     from edge_rag.old_nodes import IndexingUnit
 
@@ -284,6 +286,8 @@ def gliner_pass(
     if papers is not None:
         keep = set(papers)
         units = [u for u in units if u.paper_id in keep]
+    if limit_units is not None:
+        units = units[:limit_units]
     extractor, load_seconds = local_extraction.gliner_extractor(model_dir)
     pool = [IndexingUnit(u.unit_id, u.title, (u.body,)) for u in units]
     records, seconds = local_extraction.run_extraction(pool, extractor)

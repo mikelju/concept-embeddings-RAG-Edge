@@ -120,6 +120,7 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_argument("--out", type=Path, required=True)
     laptop.add_argument("--records", type=Path, required=True, help="GLiNER extraction folder")
     gliner.add_argument("--model-dir", type=Path, required=True)
+    gliner.add_argument("--limit-units", type=int, help="only the first N units (pod probe)")
     args = parser.parse_args(argv)
     if args.command in ("qasper-laptop", "qasper-gliner"):
         from edge_rag import exam_laptop, local_extraction
@@ -127,7 +128,14 @@ def main(argv: list[str] | None = None) -> int:
         split_dir = config.DATA_DIR / "phase07" / args.split
         papers = exam_laptop.first_papers(split_dir, args.papers) if args.papers else None
         if args.command == "qasper-gliner":
-            exam_laptop.gliner_pass(split_dir, args.out, args.model_dir, papers=papers, say=_say)
+            exam_laptop.gliner_pass(
+                split_dir,
+                args.out,
+                args.model_dir,
+                papers=papers,
+                limit_units=args.limit_units,
+                say=_say,
+            )
             return 0
         records, _ = local_extraction.load_extraction(args.records)
         summary = exam_laptop.run(

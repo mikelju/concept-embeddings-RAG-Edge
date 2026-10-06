@@ -1,0 +1,9 @@
+# GLiNER pass only (Phase 07, plan increment 5b), layered over the project env with
+# `uv run --with-requirements`; not a project dependency. Versions of the old project's
+# GLiNER runs (old uv.lock and data/phase15/nodes/extraction.json: gliner 0.2.29 with
+# transformers 5.16.1, tokenizers 0.23.1, torch 2.13.0, all already pinned by this project).
+# protobuf converts DeBERTa-v3's spm.model; without it transformers falls back to tiktoken.
+gliner==0.2.29
+sentencepiece==0.2.2
+protobuf==7.36.2
+torch==2.13.0
