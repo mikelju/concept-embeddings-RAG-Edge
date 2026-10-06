@@ -1,4 +1,4 @@
-"""Results tables of Phases 03, 04, 05 and 06 (Phase 05 spec C3-C6; plan D3, D4): one module.
+"""Results tables of Phases 03 to 07 (Phase 05 spec C3-C6; plan D3, D4): one module.
 
 The shared code (states, the advance rule, the verdict, inherited cost labels, the byte-equal
 write of `results.json` and `results.md`, the run) sits at module level and on `Phase`; each
@@ -2293,3 +2293,177 @@ class Phase06(Phase05):
             for note in cost.get("handover", []):
                 lines.append(f"  - {note['figure']} ({note['label']}; {note['source']}).")
         return lines
+
+
+# Phase 07 exam rows (its spec, "Locked single run and verdict rule"; C6). Fixed before the test
+# archive is opened and never chosen from exam figures. Ghost order is the bar tie-break after
+# FS@2,048: class L before R before A, then G-L, G-R, G-R2, G-A1 (`strongest` keeps the first).
+EXAM_QUESTIONS = 1_451
+EXAM_CLASSES = ("L", "R", "A")
+EXAM_ENTRANTS = {"L": "rrf4", "R": "j-rrf4", "A": "j-rrf4"}
+EXAM_GHOSTS = {"G-L": "L", "G-R": "R", "G-R2": "R", "G-A1": "A"}
+EXAM_CONTROL = "j-rrf3"
+EXAM_CONTEXT = ("j-rrf3", "p10-b", "p14")
+EXAM_ON = "pooled QASPER test, in-scope questions"
+EXAM_ORDER = ("rrf4", "j-rrf4", "j-rrf3", "p10-b", "p14", "G-L", "G-R", "G-R2", "G-A1")
+WITHIN_ONLY = "within-paper control only"
+
+
+def exam_hits(
+    rankings: Mapping[str, Sequence[str]],
+    token_counts: Mapping[str, int],
+    gold: Mapping[str, Sequence[Sequence[str]]],
+) -> dict[str, int] | None:
+    """FS@2,048 per in-scope question under the several-annotator rule (one fully covered
+    annotator set suffices); `None` (`not run`) for fewer than 1,451 rankings, never scored on
+    the subset. The in-scope filter (a question with no mapped set is skipped) is applied here."""
+    if len(rankings) < EXAM_QUESTIONS:
+        return None
+    hits = {}
+    for qid, sets in sorted(gold.items()):
+        if sets:
+            context = metrics.fill_context(rankings[qid], token_counts, config.BUDGET)
+            hits[qid] = max(metrics.full_support(context, s) for s in sets)
+    return hits
+
+
+def exam_kinds(gold: Mapping[str, Sequence[Sequence[str]]]) -> dict[str, str]:
+    """Multi-evidence when every in-scope annotator set has two or more units (as in C2)."""
+    return {qid: "multi" if all(len(s) >= 2 for s in sets) else "single"
+            for qid, sets in sorted(gold.items()) if sets}  # fmt: skip
+
+
+def exam_verdict(
+    records: Mapping[str, Mapping[str, int] | None], upper: Mapping[str, str]
+) -> list[dict[str, Any]]:
+    """Per class: the bar over the line-up ghosts of that class or a cheaper one, the hard-coded
+    entrant paired against it, `not run` when the entrant or any of those ghosts is; R and A
+    also carry the entrant against `j-rrf3`, report only. Context rows never enter here."""
+    qids = sorted(next(r for r in records.values() if r is not None))
+
+    def record(system: str) -> list[int] | None:
+        found = records.get(system)
+        return None if found is None else [found[q] for q in qids]
+
+    lines = []
+    for i, class_name in enumerate(EXAM_CLASSES):
+        own = EXAM_ENTRANTS[class_name]
+        ghosts = {g: record(g) for g, c in EXAM_GHOSTS.items() if c in EXAM_CLASSES[: i + 1]}
+        missing = [s for s in (own, *ghosts) if record(s) is None]
+        if missing:
+            bar: dict[str, Any] = {"class": class_name, "own": own, "on": EXAM_ON,
+                                   "state": NOT_RUN, "not_run": missing,
+                                   "strongest_ghost": None}  # fmt: skip
+        else:
+            bar = literature_bar(class_name, ghosts, own, record(own) or [], EXAM_ON)
+        if class_name != "L":
+            control, mine = record(EXAM_CONTROL), record(own)
+            test = None if control is None or mine is None else metrics.paired(control, mine)
+            bar["control"] = {"against": EXAM_CONTROL, **(test or {}), "state": state(test)}
+        bar["upper"] = {s: upper[s] for s in (own, bar["strongest_ghost"]) if s in upper}
+        lines.append(bar)
+    return lines
+
+
+def exam_table(
+    pooled: Mapping[str, Mapping[str, int] | None],
+    within: Mapping[str, Mapping[str, int] | None],
+    gold: Mapping[str, Sequence[Sequence[str]]],
+    costs: Mapping[str, Mapping[str, Any]],
+    upper: Mapping[str, str],
+) -> dict[str, Any]:
+    """The exam rows: pooled FS@2,048 with its single- and multi-evidence breakdown, the
+    within-paper control beside it (never in the verdict), cost and upper-reference label per
+    system, and the per-class verdict."""
+    kinds = exam_kinds(gold)
+
+    def total(found: Mapping[str, int] | None, kind: str | None = None) -> int | None:
+        if found is None:
+            return None
+        return sum(v for q, v in found.items() if kind is None or kinds[q] == kind)
+
+    rows = {}
+    for system in {**pooled, **within}:
+        found = pooled.get(system)
+        role = ("entrant" if system in EXAM_ENTRANTS.values() else "control"
+                if system == EXAM_CONTROL else "context" if system in EXAM_CONTEXT else "ghost"
+                if system in EXAM_GHOSTS else WITHIN_ONLY)  # fmt: skip
+        rows[system] = {
+            "role": role,
+            "fs": total(found),
+            "fs_single": total(found, "single"),
+            "fs_multi": total(found, "multi"),
+            "fs_within": total(within.get(system)),
+            "cost": costs.get(system, {"label": "not recorded"}),
+            "upper": upper.get(system),
+        }
+    return {
+        "n": len(kinds),
+        "n_single": sum(k == "single" for k in kinds.values()),
+        "n_multi": sum(k == "multi" for k in kinds.values()),
+        "rows": rows,
+        "verdict": exam_verdict(pooled, upper),
+        "label": "FS and paired tests measured; states and verdict written by code",
+    }
+
+
+def exam_verdict_lines(table: Mapping[str, Any]) -> list[str]:
+    """One line per class; the `j-rrf4` against `j-rrf3` state rides on the R and A lines."""
+    lines = []
+    for bar in table["verdict"]:
+        c, own, marks = bar["class"], bar["own"], bar["upper"]
+        if bar["state"] == NOT_RUN:
+            text = f"- **Class {c}: {NOT_RUN}** ({', '.join(bar['not_run'])} {NOT_RUN})."
+        else:
+            ghost = bar["strongest_ghost"]
+            text = (
+                f"- **Class {c}** ({bar['on']}): {own} {bar['own_fs']} against {ghost} "
+                f"{bar['ghosts_fs'][ghost]} (the bar): {bar['wins']} wins, {bar['losses']} "
+                f"losses, exact p {bar['p']:.3g}, **{bar['state']}**."
+            )
+            if bar["state"] == "win":
+                text += f" {own} keeps its place on the exam in class {c}"
+                text += f" (upper reference: {marks[own]})." if own in marks else "."
+            elif bar["state"] == "tie":
+                text += " Not losing, not a win."
+        if len(marks) == 2:
+            text += " Upper reference on both sides."
+        else:
+            text += "".join(f" {s}: upper reference ({m})." for s, m in marks.items())
+        if "control" in bar:
+            t = bar["control"]
+            text += f" Against the literature control {t['against']} (report only): {t['state']}"
+            text += (f", {t['wins']} wins, {t['losses']} losses, exact p {t['p']:.3g}."
+                     if t["state"] != NOT_RUN else ".")  # fmt: skip
+        lines.append(text)
+    return lines
+
+
+def exam_markdown(table: Mapping[str, Any]) -> str:
+    lines = [
+        "# Phase 07 - Exam on QASPER: results",
+        "",
+        f"In scope: {table['n']:,} questions ({table['n_single']:,} single-evidence, "
+        f"{table['n_multi']:,} multi-evidence); {table['label']}.",
+        "",
+        "## Verdict",
+        "",
+        *exam_verdict_lines(table),
+        "",
+        "## Systems",
+        "",
+        "| System | Role | FS@2,048 pooled | Single | Multi | FS@2,048 within-paper "
+        "| Upper reference | Cost |",
+        "|---|---|---:|---:|---:|---:|---|---|",
+    ]
+    rows = table["rows"]
+    for system in [s for s in EXAM_ORDER if s in rows] + sorted(set(rows) - set(EXAM_ORDER)):
+        row = rows[system]
+        empty = "-" if row["role"] == WITHIN_ONLY else NOT_RUN
+        cells = [empty if row[k] is None else str(row[k]) for k in ("fs", "fs_single", "fs_multi")]
+        cells.append(num(row["fs_within"], "d"))
+        lines.append(
+            f"| {system} | {row['role']} | {' | '.join(cells)} | {row['upper'] or '-'} "
+            f"| {cost_text(row['cost'])} |"
+        )
+    return "\n".join(lines) + "\n"
