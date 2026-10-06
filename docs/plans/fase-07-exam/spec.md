@@ -38,7 +38,7 @@ Test figures are published figures, never computed by us; train and dev figures 
 - Annotators per question (measured): train 1.03 on average (2,511 with one, 82 with two); dev 1.76 (261 with one, 729 with two, 15 with three).
   Multiple references are published as "98% in test, and 74% in validation" (paper Section 4.1, published); dev's 744 of 1,005 with two or more (74.0 %, measured) matches, so test has more references per question than dev (interpretation: more chances of a single-unit annotator set under the gold rule).
 - Evidence is a set of paragraphs, or table and figure captions (strings prefixed `FLOAT SELECTED:`), chosen per annotator.
-- Multi-evidence share, measured under the unit rule and the gold rule below (a question counts as multi-evidence when every annotator set that maps fully has two or more units): train 734 of 2,172 in-scope questions (33.8 %), dev 210 of 901 (23.3 %).
+- Multi-evidence share, measured under the unit rule and the gold rule below (a question counts as multi-evidence when every annotator set that maps fully has two or more units): train 733 of 2,172 in-scope questions (33.7 %), dev 210 of 901 (23.3 %), measured with the tested loader (increment 2, 2026-10-06); the first count script had 734 on train because train question `aa54e12f` of paper 1901.00439 lists the same caption twice in one set, which is one unit, so single-evidence.
   The paper's figure (Section 3, "Evidence types", published): "Among the answerable questions with text-only evidence", "55.5% of the answers have multi-paragraph evidence".
   Recomputed on that denominator (answers that are answerable with non-empty, text-only evidence), the released v0.3 train and dev give 640 of 1,981 (32.3 %) and 403 of 1,340 (30.1 %) (measured), so the gap is not a denominator difference; its cause is not known (perhaps an earlier annotation pool or data version, interpretation), and the measured shares stand for this spec.
   Full Support therefore differs from recall at the budget on about a quarter to a third of the questions, less than the draft assumed (interpretation).
@@ -53,18 +53,19 @@ Test figures are published figures, never computed by us; train and dev figures 
 ## Rules fixed before the exam opens (from the paper and train/dev only)
 - **Units**: one unit per full-text paragraph of a paper, title "paper title - section name"; one unit per table or figure, text its caption as released (the release has captions, not table contents), with the `FLOAT SELECTED:` prefix kept so evidence strings match.
   Numeric content of tables stays out of scope (master plan).
-  A unit's indexed text is `title. body`, as on the terrain (`src/edge_rag/corpus.py`), and its token count for the budget is taken over that whole text, title included, the same for every system; whether the terrain's inherited token counts included the title is not verified here and C2 records it.
+  A unit's indexed text is `title. body`, as on the terrain (`src/edge_rag/corpus.py`), and its token count for the budget is taken over that whole text, title included, the same for every system; the terrain's inherited token counts include the title (C2, measured 2026-10-06: on 2,000 evenly spaced units of each terrain set, the recorded count equals the terrain tokenizer's count of `title. body` for 2,000 of 2,000 and of the body alone for 0), so QASPER counts are taken the same way.
+  A text repeated inside one paper (551 on train and dev, mostly LaTeX or markup fragments such as `INLINEFORM0`) is one unit, at its first place, so each evidence string maps to exactly one unit (change before the test download, increment 2; the first count script counted the repeats).
 - **Gold mapping**: an evidence string maps to a unit of the question's own paper only, by exact match after whitespace normalization; a string equal to a unit of another paper never maps.
   Measured on train and dev with a first count script kept outside the repo (2026-10-06): train 4,062 of 4,209 evidence strings match (96.5 %), dev 2,679 of 2,808 (95.4 %); every `FLOAT SELECTED:` string matches (386 and 253).
   The non-matching strings seen are section headings (for example `Datasets`), not paragraphs, so they are not units (measured on four dev cases, interpretation for the rest); an annotator set with such a string is not fully mapped (76 sets on train, 52 on dev).
-  One example checked by hand: dev paper 1912.01214, question "what are the pivot-based baselines?", two evidence strings, both full paragraphs of section "Experiments ::: Main Results".
+  One example checked by hand: dev paper 1912.01214, question "what are the pivot-based baselines?", two annotators with two evidence strings each, all full paragraphs, mapped by the tested loader to two units each (sections "Experiments ::: Main Results" and "Results on MultiUN Dataset" for one annotator, "Setup ::: Experimental Details" and "Related Work" for the other; the first reading named only Main Results), so multi-evidence; single-evidence example checked by hand: dev paper 1503.00841, "What are the three regularization terms?", both annotators cite one paragraph of the Introduction, one unit of 118 tokens.
   C2 repeats these counts with the tested loader before the test archive is downloaded.
 - **Gold rule with several annotators**: a question is in scope when at least one annotator marks it answerable with a non-empty evidence set that maps fully to units; Full Support holds when the context covers every evidence unit of at least one such annotator (decided by the author, D3, 2026-10-06; QASPER's own evaluator also takes the best-matching annotator).
   In scope under this rule (measured): train 2,172 of 2,593 questions (83.8 %), dev 901 of 1,005 (89.7 %); so the 1,451 test questions are an upper bound for the in-scope count.
   Every system ranks all 1,451 test questions; ranking never reads the gold file, and the in-scope filter is applied only at scoring, by the outcome code.
-- **Paragraph-count estimate** (measured on train plus dev, 2026-10-06): 68,634 units over 1,169 papers, 58.71 units per paper (train 60.18, mean paragraphs 52.80 plus captions 7.38; dev 54.07); paragraphs average 70-73 words.
-  Projected exam corpus: 58.71 x 416 test papers = 24,424 units (derived), replacing the draft's 62,400 (150 units per paper, a guess).
-  Per question, the mean units of its own paper is 58.9 (measured, question-weighted), used for the within-paper control.
+- **Paragraph-count estimate** (measured with the tested loader on train plus dev, 2026-10-06): 68,083 units over 1,169 papers, 58.24 units per paper (train 52,961 units, 59.64 per paper; dev 15,122, 53.81; captions 6,557 and 1,929; train paper 1801.07804 has no full text and no units); the first count script had 68,634 and 58.71 with the repeated texts; paragraphs average 70-73 words; 116.73 budget tokens per unit, title included (train 116.50, dev 117.52).
+  Projected exam corpus: 58.24 x 416 test papers = 24,228 units (derived; 24,424 before the loader), replacing the draft's 62,400 (150 units per paper, a guess).
+  Per question, the mean units of its own paper is 58.37 (measured with the loader, question-weighted; 58.9 before it), used for the within-paper control.
 - **Settings**: pooled, every question searched against all units of the 416 test papers, declared a new setting (QASPER is natively within one paper); within-paper control, every question searched only in its own paper's units, for BM25, Dense and J-strong over all of that paper's units (decided by the author, D4, 2026-10-06), reported beside the pooled figures, never deciding the verdict.
 - **Pooled query (D8, approved by the author in chat, 2026-10-06)**: in the pooled setting every system's query is `<paper title>. <question>`, the same string for every system (G-A1 included), fixed before the exam opens; the within-paper control keeps the question alone.
   D8 makes the query the same only at the input: G-A1 writes its own search queries during its turns and may drop the title, so its retrieval queries can differ from the other systems' (interpretation).
@@ -118,18 +119,18 @@ An upper-reference label never changes the bar, the pairing or the state, which 
 
 ## Cost estimate
 Every USD is time x rate at the prices read on 2026-10-06T14:10:40Z through the RunPod API (`gpuTypes`, Secure Cloud, measured): RTX 4090 0.74, A40 0.49, RTX A6000 0.53, A100-SXM4-80GB 1.59, A100 80GB PCIe 1.59 USD/h.
-Sizes: 1,451 test questions (published figure, an upper bound for the in-scope count); 24,424 units (derived: 58.71 units per paper measured on train and dev, times 416 test papers).
+Sizes: 1,451 test questions (published figure, an upper bound for the in-scope count); 24,228 units (derived: 58.24 units per paper measured on train and dev, times 416 test papers); about 2.83 million budget tokens (derived, 116.73 per unit); re-fixed at increment 2 from 24,424, no USD figure below moves at two decimals.
 Laptop CPU (0 USD by assumption, as in earlier phases): BM25 build and search, Dense BGE-small corpus encoding (projection: under 1 h), question encoding, entity hop, RRF, `p10-b` and `p14`, within-paper BM25 and Dense, scoring.
-GLiNER stays on the pod: at the laptop's measured 0.558 paragraphs/s, 24,424 units would take about 12.2 h (derived), against 2.5 min on a 4090.
+GLiNER stays on the pod: at the laptop's measured 0.558 paragraphs/s, 24,228 units would take about 12.1 h (derived), against 2.5 min on a 4090.
 
 | Item | Basis | Label | h | USD |
 |---|---|---|---:|---:|
 | 4090 setup, uploads, model downloads | Phase 06 pods: `uv sync` and CUDA check 4-5 min (measured), plus downloads | projection | 0.25 | 0.19 |
-| GLiNER over 24,424 units | 162.178 paragraphs/s on a 4090 (measured, old project) | derived | 0.04 | 0.03 |
+| GLiNER over 24,228 units | 162.178 paragraphs/s on a 4090 (measured, old project) | derived | 0.04 | 0.03 |
 | G-L encode, index and search | 20.06 s for 27,989 units on a 4090 (measured, Phase 02), scaled to 17.5 s; search 0.1 s per question (projection) | projection | 0.05 | 0.03 |
 | C3 checks (fidelity and determinism) | Phase 06 C3 took 23-25 s (measured) | projection | 0.05 | 0.04 |
 | J-strong, pooled: G-R, `j-rrf3`, `j-rrf4` (300 pairs per question, overlap not removed) | 268 pairs/s, G-R on MultiHop-RAG, 4090 (measured, Phase 02) | derived | 0.45 | 0.33 |
-| J-strong, within-paper control (58.9 pairs per question: the mean units of the question's paper, measured on train and dev) | same pace | derived | 0.09 | 0.07 |
+| J-strong, within-paper control (58.37 pairs per question: the mean units of the question's paper, measured on train and dev) | same pace | derived | 0.09 | 0.07 |
 | G-R2, pooled | 1.634 s per question, MuSiQue, 4090 (measured, Phase 06) | derived | 0.66 | 0.49 |
 | 4090 download | | projection | 0.05 | 0.04 |
 | **4090 pod, base** | sum | derived | 1.64 | 1.21 |
@@ -190,7 +191,7 @@ Approved 2026-10-06; changed only under the change rule above.
 | ID | Observable criterion | How it is checked |
 |---|---|---|
 | C1 | The paper figures above are checked against the paper text and corrected visibly before approval (done 2026-10-06: Sections 3 and 4.1 quoted above, arXiv 2105.03011) | quotes with section in `plan.md` |
-| C2 | Before the test archive is downloaded: mean units per paper, evidence match rate (within the question's own paper), annotator counts, in-scope counts and the single- versus multi-evidence breakdown (train 734 of 2,172, dev 210 of 901) measured on train and dev only with the tested loader, one single- and one multi-evidence example checked by hand, whether the terrain's token counts include the unit title recorded, and the cost projection re-fixed from them | `plan.md` record, its commit earlier than the test archive's download time |
+| C2 | Before the test archive is downloaded: mean units per paper, evidence match rate (within the question's own paper), annotator counts, in-scope counts and the single- versus multi-evidence breakdown (train 733 of 2,172, dev 210 of 901) measured on train and dev only with the tested loader, one single- and one multi-evidence example checked by hand, whether the terrain's token counts include the unit title recorded, and the cost projection re-fixed from them | `plan.md` record, its commit earlier than the test archive's download time |
 | C3 | Before opening: licence and QASPER training-data status of every system's models recorded with source and date; each labelled ghost, own or upper reference | `plan.md` |
 | C4 | The test archive is downloaded once; its sha256, the units, questions and gold files and their digests are recorded; no gold-derived figure exists before every ranking is digested | manifests and timestamps under `data/phase07/` |
 | C5 | Every system in the approved line-up has a depth-100 ranking (G-A1: evidence lists) for every one of the 1,451 test questions, written without reading the gold file, pooled (with the D8 query), and the within-paper control for its systems, written once, with manifests pinning code commit, models and revisions, hardware, `costPerHr` and seconds | manifests, digests in `plan.md` |
@@ -201,7 +202,7 @@ Approved 2026-10-06; changed only under the change rule above.
 
 ## Assumptions
 - QASPER paragraphs (70-73 words on average, measured on train and dev) are close to MultiHop-RAG's units in length, so the judges' measured paces hold (assumed; the stress case covers 2.7 times slower).
-- G-A1 on an A100 80 GB with a G-L index of 24,424 units fits in memory, as the Phase 06 run did with 27,989 MultiHop-RAG units (interpretation).
+- G-A1 on an A100 80 GB with a G-L index of 24,228 units fits in memory, as the Phase 06 run did with 27,989 MultiHop-RAG units (interpretation).
 - GLiNER's entity types, built for Wikipedia and news, find usable entities in NLP papers (interpretation; the hop may add little, which the context comparison shows).
 
 ## Risks
