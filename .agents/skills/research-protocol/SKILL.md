@@ -55,6 +55,7 @@ Every reported value carries one: **measured** (read from an artifact or a comma
 
 - Expensive deterministic outputs (embeddings, indexes, extractions, judge scores) are cached on disk and reused.
   A different model or configuration writes a distinct cache; it never overwrites the artifact behind a result.
+- A cached result is reused only when every input of its key matches, the commit and the dirty state of `src/` included; any mismatch recomputes.
 - A digest chain from extraction to final run, so a figure cannot be detached from the reading and selection that authorized it.
 - Non-executing formats only (JSON, JSONL, NPZ); no pickle. Pin model identity and revision for every download.
 - A provenance problem in a closed phase gets a prospective fix in the producer, never an edit of the frozen artifact.

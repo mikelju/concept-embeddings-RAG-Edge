@@ -45,6 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     fuse.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     pool = commands.add_parser("pool", help="Phase 04 entity hop and RRF4 lists")
     pool.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    converge = commands.add_parser("converge", help="Phase 05 multi-seed hop and its fusions")
+    converge.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     pairs = commands.add_parser("judge-pairs", help="Phase 04 uncached judge pairs per set")
     pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
@@ -52,6 +54,9 @@ def main(argv: list[str] | None = None) -> int:
     judge_results_cmd = commands.add_parser("judge-results", help="write the Phase 04 results")
     judge_results_cmd.add_argument(
         "--from-json", action="store_true", help="only check results.md regenerates byte-equal"
+    )
+    judge_results_cmd.add_argument(
+        "--out", type=Path, help="write results.json and results.md into this folder instead"
     )
     score = commands.add_parser("score", help="score one ranking file on one set")
     score.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
@@ -71,6 +76,16 @@ def main(argv: list[str] | None = None) -> int:
         "--from-json",
         action="store_true",
         help="only check that results.md renders byte-equal from results.json as written",
+    )
+    fusion_cmd.add_argument(
+        "--out", type=Path, help="write results.json and results.md into this folder instead"
+    )
+    hop_cmd = commands.add_parser("hop-results", help="write the Phase 05 results table")
+    hop_cmd.add_argument(
+        "--from-json", action="store_true", help="only check results.md regenerates byte-equal"
+    )
+    hop_cmd.add_argument(
+        "--out", type=Path, help="write results.json and results.md into this folder instead"
     )
     args = parser.parse_args(argv)
     if args.command == "reproduce":
@@ -95,6 +110,12 @@ def main(argv: list[str] | None = None) -> int:
         body = pool_module.run(args.set_name, say=_say)
         entry = body["equality"]["fusion_equals_p10-c"]
         return 0 if entry["equal"] == entry["of"] else 1
+    if args.command == "converge":
+        from edge_rag import converge as converge_module
+
+        body = converge_module.run(args.set_name, say=_say)
+        equal = body["equality"].values()
+        return 0 if all(entry["equal"] == entry["of"] for entry in equal) else 1
     if args.command == "judge-pairs":
         from edge_rag import judge
 
@@ -102,12 +123,20 @@ def main(argv: list[str] | None = None) -> int:
         check = body["question_text_check"]
         return 0 if check["equal"] == check["of"] else 1
     if args.command == "judge-results":
-        from edge_rag import judge_results
+        from edge_rag.phase_results import Phase04
 
         if args.from_json:
-            _say(f"results.md regenerates byte-equal, sha256 {judge_results.regenerate()}")
+            _say(f"results.md regenerates byte-equal, sha256 {Phase04.regenerate()}")
             return 0
-        _say(json.dumps(judge_results.run(sorted(config.SETS))["outcome"], indent=2))
+        _say(json.dumps(Phase04.run(sorted(config.SETS), args.out)["outcome"], indent=2))
+        return 0
+    if args.command == "hop-results":
+        from edge_rag.phase_results import Phase05
+
+        if args.from_json:
+            _say(f"results.md regenerates byte-equal, sha256 {Phase05.regenerate()}")
+            return 0
+        _say(json.dumps(Phase05.run(sorted(config.SETS), args.out)["outcome"], indent=2))
         return 0
     if args.command == "judge":
         from edge_rag import judge
@@ -138,12 +167,12 @@ def main(argv: list[str] | None = None) -> int:
             _say(f"[{entry['set']}] systems {', '.join(entry['systems'])}")
         return 0
     if args.command == "fusion-results":
-        from edge_rag import fusion_results
+        from edge_rag.phase_results import Phase03
 
         if args.from_json:
-            _say(f"results.md regenerates byte-equal, sha256 {fusion_results.regenerate()}")
+            _say(f"results.md regenerates byte-equal, sha256 {Phase03.regenerate()}")
             return 0
-        table = fusion_results.run(sorted(config.SETS))
+        table = Phase03.run(sorted(config.SETS), args.out)
         outcome = table["outcome"]
         _say(f"F3 verdict: {outcome['f3_verdict']}; exam entrant: {outcome['exam_entrant']}")
         for set_name, reason in table["not_run"].items():

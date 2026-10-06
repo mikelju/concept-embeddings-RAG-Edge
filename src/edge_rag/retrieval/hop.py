@@ -4,11 +4,12 @@ Copied from the old `nodes/index.load_node_index`, `retrieval/conceptual.rarity_
 `evaluation/second_hop.node_hop_columnwise` / `relevance_hop_columnwise` and
 `evaluation/phase14` (similarity, min-max, mix, cut). Neither hop reads the question's own
 entities: both start from `p1`, Dense's top paragraph, and exclude Dense's top `READ_DEPTH`.
+`seed_hop` (Phase 05) is the entity hop from any seed unit, excluding a caller-given set.
 """
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -114,6 +115,30 @@ class Hops:
 
     def entity_hop(self, first: Sequence[Hit], depth: int) -> list[Hit]:
         scores, positive = self._rarity(first)
+        kept = positive
+        if positive.size > depth:
+            values = scores[positive]
+            threshold = -np.partition(-values, depth - 1)[depth - 1]
+            kept = positive[values >= threshold]
+        unit_ids = self.index.unit_ids
+        ordered = sorted((int(r) for r in kept), key=lambda r: (-float(scores[r]), unit_ids[r]))
+        return [(unit_ids[r], float(scores[r])) for r in ordered[:depth]]
+
+    def seed_hop(self, seed: str, excluded: Collection[str], depth: int) -> list[Hit]:
+        """Phase 05's per-seed hop (spec, plan D5): the entity hop's rarity scores from `seed`
+        instead of Dense's first unit, without the `excluded` units; empty when the seed has no
+        entity node. `entity_hop` is left as it was, so the two paths cross-check each other."""
+        incidence = self.index.incidence
+        row = self._rows[seed]
+        nodes = incidence.indices[incidence.indptr[row] : incidence.indptr[row + 1]]
+        shared = np.sort(nodes[self.columns.mask[nodes]])
+        scores = np.zeros(incidence.shape[0])
+        for node in shared:
+            rows = self.columns.indices[self.columns.indptr[node] : self.columns.indptr[node + 1]]
+            scores[rows] += self.weights[node]
+        keep = scores > 0.0
+        keep[[self._rows[unit_id] for unit_id in excluded]] = False
+        positive = np.nonzero(keep)[0]
         kept = positive
         if positive.size > depth:
             values = scores[positive]
