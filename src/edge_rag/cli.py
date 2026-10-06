@@ -104,7 +104,22 @@ def main(argv: list[str] | None = None) -> int:
     hop_cmd.add_argument(
         "--out", type=Path, help="write results.json and results.md into this folder instead"
     )
+    rivals_results = commands.add_parser("rivals-results", help="write the Phase 06 results")
+    rivals_results.add_argument(
+        "--from-json", action="store_true", help="only check results.md regenerates byte-equal"
+    )
+    rivals_results.add_argument(
+        "--out", type=Path, help="write results.json and results.md into this folder instead"
+    )
     args = parser.parse_args(argv)
+    if args.command == "rivals-results":
+        from edge_rag.phase_results import Phase06
+
+        if args.from_json:
+            _say(f"results.md regenerates byte-equal, sha256 {Phase06.regenerate()}")
+            return 0
+        _say(json.dumps(Phase06.run(sorted(config.SETS), args.out)["outcome"], indent=2))
+        return 0
     if args.command == "reproduce":
         from edge_rag.reproduce import run
 
