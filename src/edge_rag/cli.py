@@ -49,6 +49,23 @@ def main(argv: list[str] | None = None) -> int:
     converge.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     pairs = commands.add_parser("judge-pairs", help="Phase 04 uncached judge pairs per set")
     pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    commands.add_parser("rivals-subsample", help="Phase 06 HotpotQA 1,000-qid subsample")
+    rivals_pairs = commands.add_parser("rivals-pairs", help="Phase 06 G-R2 pairs per set")
+    rivals_pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    rivals_rank = commands.add_parser("rivals-rank", help="Phase 06 G-R2 lists from pod scores")
+    rivals_rank.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    ga2_export = commands.add_parser("ga2-export", help="Phase 06 G-A2 MultiHop-RAG bundle")
+    ga2_export.add_argument("--out", type=Path, default=config.PHASE06_DIR / "ga2")
+    ga2_rank = commands.add_parser("ga2-rank", help="Phase 06 G-A2 lists from the pod output")
+    ga2_rank.add_argument("--bundle", type=Path, default=config.PHASE06_DIR / "ga2")
+    ga2_rank.add_argument("--pod", type=Path, default=config.PHASE06_DIR / "ga2" / "pod")
+    ga2_rank.add_argument("--rankings", type=Path, default=config.PHASE06_RANKINGS_DIR)
+    ga1_export = commands.add_parser("ga1-export", help="Phase 06 G-A1 HotpotQA 1,000 bundle")
+    ga1_export.add_argument("--out", type=Path, default=config.PHASE06_DIR / "ga1")
+    ga1_rank = commands.add_parser("ga1-rank", help="Phase 06 G-A1 lists from the pod output")
+    ga1_rank.add_argument("--bundle", type=Path, default=config.PHASE06_DIR / "ga1")
+    ga1_rank.add_argument("--pod", type=Path, default=config.PHASE06_DIR / "ga1" / "pod")
+    ga1_rank.add_argument("--rankings", type=Path, default=config.PHASE06_RANKINGS_DIR)
     judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
     judge_cmd.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_results_cmd = commands.add_parser("judge-results", help="write the Phase 04 results")
@@ -87,7 +104,22 @@ def main(argv: list[str] | None = None) -> int:
     hop_cmd.add_argument(
         "--out", type=Path, help="write results.json and results.md into this folder instead"
     )
+    rivals_results = commands.add_parser("rivals-results", help="write the Phase 06 results")
+    rivals_results.add_argument(
+        "--from-json", action="store_true", help="only check results.md regenerates byte-equal"
+    )
+    rivals_results.add_argument(
+        "--out", type=Path, help="write results.json and results.md into this folder instead"
+    )
     args = parser.parse_args(argv)
+    if args.command == "rivals-results":
+        from edge_rag.phase_results import Phase06
+
+        if args.from_json:
+            _say(f"results.md regenerates byte-equal, sha256 {Phase06.regenerate()}")
+            return 0
+        _say(json.dumps(Phase06.run(sorted(config.SETS), args.out)["outcome"], indent=2))
+        return 0
     if args.command == "reproduce":
         from edge_rag.reproduce import run
 
@@ -122,6 +154,32 @@ def main(argv: list[str] | None = None) -> int:
         body = judge.run_pairs(args.set_name, say=_say)
         check = body["question_text_check"]
         return 0 if check["equal"] == check["of"] else 1
+    if args.command in ("rivals-subsample", "rivals-pairs", "rivals-rank"):
+        from edge_rag import rivals
+
+        if args.command == "rivals-subsample":
+            rivals.run_subsample(say=_say)
+        elif args.command == "rivals-pairs":
+            rivals.run_pairs(args.set_name, say=_say)
+        else:
+            rivals.run_rank(args.set_name, say=_say)
+        return 0
+    if args.command in ("ga2-export", "ga2-rank"):
+        from edge_rag import ga2
+
+        if args.command == "ga2-export":
+            ga2.run_export(args.out, say=_say)
+        else:
+            ga2.run_rank(args.bundle, args.pod, args.rankings, say=_say)
+        return 0
+    if args.command in ("ga1-export", "ga1-rank"):
+        from edge_rag import ga1_hotpot
+
+        if args.command == "ga1-export":
+            ga1_hotpot.run_export(args.out, say=_say)
+        else:
+            ga1_hotpot.run_rank(args.bundle, args.pod, args.rankings, say=_say)
+        return 0
     if args.command == "judge-results":
         from edge_rag.phase_results import Phase04
 

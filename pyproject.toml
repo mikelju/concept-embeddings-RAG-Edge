@@ -76,6 +76,8 @@ select = ["E", "F", "I", "UP", "B", "SIM", "S"]
 "tests/**" = ["S101"]
 # Recorded digests, not secrets.
 "src/edge_rag/config.py" = ["S105", "S106"]
+# Exact-match snippets of upstream HippoRAG source; its digest is recorded on the pod.
+"src/edge_rag/pod/ga2_openie_patch.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

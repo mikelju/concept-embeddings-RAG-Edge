@@ -123,7 +123,7 @@ class QwenReranker:
     `no` logit. The score kept is log P(yes), monotone with the card's P(yes) and free of the
     ties its float32 saturation would make."""
 
-    def __init__(self) -> None:
+    def __init__(self, dtype: str | None = None) -> None:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -131,7 +131,10 @@ class QwenReranker:
         self.tokenizer = AutoTokenizer.from_pretrained(
             QWEN_MODEL, revision=QWEN_REVISION, padding_side="left"
         )
-        model: Any = AutoModelForCausalLM.from_pretrained(QWEN_MODEL, revision=QWEN_REVISION)
+        kwargs = {} if dtype is None else {"dtype": getattr(torch, dtype)}
+        model: Any = AutoModelForCausalLM.from_pretrained(
+            QWEN_MODEL, revision=QWEN_REVISION, **kwargs
+        )
         self.model = model.to("cuda" if torch.cuda.is_available() else "cpu").eval()
         self.no = self.tokenizer.convert_tokens_to_ids("no")
         self.yes = self.tokenizer.convert_tokens_to_ids("yes")
@@ -156,10 +159,13 @@ class QwenReranker:
             batch = self.tokenizer.pad(
                 inputs, padding=True, return_tensors="pt", max_length=QWEN_MAX_LENGTH
             ).to(self.model.device)
+            # Memory only (deviation 06.1): lm_head on the last position, no KV cache, and no
+            # tensor of this batch carried into the next forward.
             with self.torch.no_grad():
-                logits = self.model(**batch).logits[:, -1, :]
+                logits = self.model(**batch, use_cache=False, logits_to_keep=1).logits[:, -1, :]
             pair = self.torch.stack([logits[:, self.no], logits[:, self.yes]], dim=1)
             out.extend(self.torch.nn.functional.log_softmax(pair.float(), dim=1)[:, 1].tolist())
+            del batch, logits, pair
         return np.asarray(out, dtype=np.float32)
 
 
