@@ -23,12 +23,13 @@ Test figures are published figures, never computed by us; train and dev figures 
   Nothing from the test archive was downloaded, opened or computed.
 - Totals: 5,049 questions over 1,585 NLP papers (dataset card).
 - Train: 888 papers, 2,593 questions; dev: 281 papers, 1,005 questions (dataset card table, and measured on the archive: equal).
-- Test: 416 papers, 1,451 questions (derived from the card's totals minus its train and dev rows; the paper's own split table is still to be quoted under C1).
+- Test: 416 papers, 1,451 questions (papers derived from the card's totals minus its train and dev rows; questions published, paper Section 4.1, "Data splits": "This resulted in 2,593, 1,005, and 1,451 questions in the three sets"; the paper has no split table and gives no paper counts per split).
 - Annotators per question (measured): train 1.03 on average (2,511 with one, 82 with two); dev 1.76 (261 with one, 729 with two, 15 with three).
-  Test is annotated like dev (paper, to be quoted under C1), so dev is the closer guide to test.
+  Multiple references are published as "98% in test, and 74% in validation" (paper Section 4.1, published); dev's 744 of 1,005 with two or more (74.0 %, measured) matches, so test has more references per question than dev (interpretation: more chances of a single-unit annotator set under the gold rule).
 - Evidence is a set of paragraphs, or table and figure captions (strings prefixed `FLOAT SELECTED:`), chosen per annotator.
 - Multi-evidence share, measured under the unit rule and the gold rule below (a question counts as multi-evidence when every annotator set that maps fully has two or more units): train 734 of 2,172 in-scope questions (33.8 %), dev 210 of 901 (23.3 %).
-  The draft's 55.5 % (paper figure via the master plan, 2026-10-02) is not what these rules give; it is still to be found and quoted under C1, and the measured shares stand for this spec.
+  The paper's figure (Section 3, "Evidence types", published): "Among the answerable questions with text-only evidence", "55.5% of the answers have multi-paragraph evidence".
+  Recomputed on that denominator (answers that are answerable with non-empty, text-only evidence), the released v0.3 train and dev give 640 of 1,981 (32.3 %) and 403 of 1,340 (30.1 %) (measured), so the gap is not a denominator difference; its cause is not known (perhaps an earlier annotation pool or data version, interpretation), and the measured shares stand for this spec.
   Full Support therefore differs from recall at the budget on about a quarter to a third of the questions, less than the draft assumed (interpretation).
 - Answer types: extractive, abstractive, yes/no, unanswerable.
 
@@ -126,9 +127,9 @@ In that case the hard cuts stop each stage first (4090 at 2.27, G-A1 at 2.89), a
 
 ### Run order and the G-A1 gate (decided by the author, D6, 2026-10-06)
 The 4090 pod runs first; G-A1 runs last and only through this gate.
-After the 4090 pod is terminated, read `clientBalance`; G-A1 is launched only if that measured balance minus the 1.0 USD buffer covers G-A1's hard cut (1.5 x its projection, 2.89 USD at today's figures, re-projected before launch).
+After the 4090 pod is terminated, read `clientBalance`; G-A1 is launched only if that measured balance minus the 1.0 USD buffer minus the 0.14 USD billing tail (Phase 06 C8, which a reading taken right after termination may not yet show) covers G-A1's hard cut (1.5 x its projection, 2.89 USD at today's figures, re-projected before launch).
 Otherwise G-A1 is recorded `not run (cost gate)` and class A's verdict is `not run`.
-At today's figures the gate needs a balance of at least 3.89 USD, so a first stage of at most 2.60 USD balance delta from 6.4847 USD (derived); this is above the 4090 pod's 2.27 USD cut, so a 4090 stage inside its cut passes unless its billing shows more than 0.33 USD beyond its cut (derived).
+At today's figures the gate needs a balance of at least 4.03 USD (1.0 + 0.14 + 2.89), so a first stage of at most 2.46 USD balance delta from 6.4847 USD (derived); this is above the 4090 pod's 2.27 USD cut, so a 4090 stage inside its cut passes unless its balance delta exceeds its cut by more than 0.19 USD (derived).
 
 ## Money and stopping rule
 - Authorization: the remaining balance, no top-up (D13 (c)); the exam runs only if the projection of the approved set fits with margin.
@@ -146,7 +147,7 @@ Frozen on approval.
 
 | ID | Observable criterion | How it is checked |
 |---|---|---|
-| C1 | The paper figures above are checked against the paper text and corrected visibly before freezing | quotes with page or table in `plan.md` |
+| C1 | The paper figures above are checked against the paper text and corrected visibly before freezing (done 2026-10-06: Sections 3 and 4.1 quoted above, arXiv 2105.03011) | quotes with page or table in `plan.md` |
 | C2 | Before the test archive is downloaded: mean units per paper, evidence match rate and annotator counts measured on train and dev only, one example checked by hand, and the cost projection re-fixed from them | `plan.md` record, its commit earlier than the test archive's download time |
 | C3 | Before opening: licence and QASPER training-data status of every system's models recorded with source and date; each labelled ghost, own or upper reference | `plan.md` |
 | C4 | The test archive is downloaded once; its sha256, the units, questions and gold files and their digests are recorded; no gold-derived figure exists before every ranking is digested | manifests and timestamps under `data/phase07/` |
@@ -174,5 +175,5 @@ Frozen on approval.
 3. **D3 Gold rule**: any annotator's full evidence set, as recommended in the draft.
 4. **D4 Within-paper control**: BM25, Dense and J-strong over all of the paper's units, as recommended in the draft (0.07 USD base after the train/dev count).
 5. **D5 Claim rule**: "keeps its place" only on `win`, as recommended in the draft.
-6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer covering G-A1's hard cut; otherwise `not run (cost gate)`.
+6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer and the 0.14 USD tail covering G-A1's hard cut (tail added by the author, 2026-10-06); otherwise `not run (cost gate)`.
 7. **D7 Downloads**: train and dev authorized now and downloaded from the official AllenAI source on 2026-10-06 (10.8 MB archive, above); the test split only after the spec is frozen; nothing is downloaded, opened or computed on test before then.
