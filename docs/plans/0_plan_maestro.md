@@ -31,7 +31,7 @@ Starting brief: `docs/refs/successor_project_charter.md` (decisions) and `docs/r
 | 04 | Second candidate: judge over a pooled bag (charter candidate 1, rerank class), G-L in the pool | 02 | integrated |
 | 05 | Third candidate: multi-seed convergent hop with a refined query (charter candidate 2, light class) | 02 | integrated |
 | 06 | Rivals: measure on the terrain the literature ghosts never run (G-R2 Qwen3-Reranker-0.6B, G-A2 HippoRAG 2, G-A1 on the HotpotQA subsample) and fix by code the literature bar per set and cost class | 02-05 | ready locally |
-| 07 | Exam: one locked run of the chosen candidates and the ghosts on the exam corpus, under a rule frozen before it opens | 03-06 | pending |
+| 07 | Exam: one locked run of the chosen candidates and the ghosts on the exam corpus, under a rule frozen before it opens | 03-06 | spec in review |
 | 08 | Game: a tower-defense page that reads the measured results as aggregate performance, never computing anything | 07 | pending |
 
 Statuses: pending, spec in review, spec approved, in progress, blocked, ready locally, integrated.
