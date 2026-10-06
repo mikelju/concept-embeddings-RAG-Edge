@@ -11,7 +11,9 @@ G-L, the class L bar, is weaker than the light systems already on disk, and MDR,
 ## Verdict
 
 Beats the literature (only where a bar's state is `win`): class L on hotpotqa-dev, class R on hotpotqa-dev, class A on hotpotqa-dev, class L on multihop-rag, class R on multihop-rag, class A on multihop-rag, class L on musique, class R on musique.
-The class A claim on multihop-rag stands on measured ghosts only: g-a2 not run.
+The class A claim on hotpotqa-dev stands on measured ghosts only (g-a1): g-a2 not run.
+The claims on hotpotqa-dev carry in-domain caveats: G-L (answerai-colbert-small-v1) is in-domain; BGE-small, inside the fused own systems (rrf4, j-rrf4 and the other Dense fusions), was fine-tuned on HotpotQA train; G-A1's Search-R1 checkpoint was trained on HotpotQA train.
+The class A claim on multihop-rag stands on measured ghosts only (g-a1): g-a2 not run.
 
 Each rival against the project's best own system, per set:
 
@@ -43,6 +45,7 @@ Each rival against the project's best own system, per set:
 - G-R2 on HotpotQA dev was scored on the 1,000 preregistered qids only, not on the full 7,405 the spec named (deviation 06.2, D11: G-R2's measured pace projected past its hard cut).
 - G-A1 on the full HotpotQA dev is outside the spec's scope; it ran on the 1,000 qids.
 - G-A2 on MuSiQue and HotpotQA dev is outside the spec's scope.
+- G-A1's figures come from a rerun after a GPU out-of-memory failure (deviation 06.4): the spec's stop rule (abort an item without retry under other settings when it runs out of memory once) was not followed as written; the rerun changed only the retrieval-server memory margin, to reach E3's planned vLLM share 0.46, and the author's ratification is pending (plan, deviation 06.4).
 
 ## Comparisons
 
@@ -82,7 +85,7 @@ Per set and class, the strongest measured ghost by FS@2,048 and the state of the
 
 Best system so far: j-rrf4; best own system: j-rrf4; best own by class or cheaper: L rrf4, R j-rrf4, A j-rrf4 (by FS@2,048 on the full set, read from the Phase 02-05 results).
 Note: HotpotQA dev is in-sample for the old P10-C and P14 fitted weights, so their rows here are an upper bound; BGE-small (Dense, in every fused list) was fine-tuned on HotpotQA train and answerai-colbert-small-v1 (G-L) is in-domain here (research protocol, known traps).
-Note: G-A1's Search-R1 checkpoint was trained on NQ and HotpotQA train: HotpotQA is in-domain for it (plan, C1 record); its evidence lists are short (retrieved passages only), so FS@k and recall at large k are bounded by them.
+Note: G-A1's Search-R1 checkpoint was trained on NQ and HotpotQA train: HotpotQA is in-domain for it (plan, C1 record); its evidence lists are short (retrieved passages only, not filled to the budget), so FS@k and recall at large k are bounded by them; the code follows Phase 02's Search-R1 driver, and the spec's "filled to the budget" wording is stale, with no effect on the figures (plan, notes).
 Note: G-R2 reranks G-L's top 100: it has no index of its own, and its online cost comes on top of G-L's first stage.
 
 Full set (7,405 questions):
@@ -197,7 +200,7 @@ Paired exact McNemar on FS@2,048:
 | g-r2 vs best so far | g-a1 | full set | 666 | 1101 | 173 | 608 | 1636 | 1.747e-57 | loss |
 | g-r2 vs best own | j-rrf4 | full set | 666 | 831 | 99 | 264 | 2054 | 1.883e-18 | loss |
 | g-r2 vs g-r | g-r | full set | 666 | 661 | 119 | 114 | 2184 | 0.7934 | tie |
-| g-a1 vs best so far | g-a1 | - | - | - | - | - | - | - | not run: g-a1 is outside the spec's scope on this set |
+| g-a1 vs best so far | g-a1 | - | - | - | - | - | - | - | not run: g-a1 is itself the best system so far on this set; no self-comparison |
 | g-a1 vs best own | j-rrf4 | - | - | - | - | - | - | - | not run: g-a1 is outside the spec's scope on this set |
 | g-a1 vs g-a2 | g-a2 | - | - | - | - | - | - | - | not run: g-a1 is outside the spec's scope on this set |
 | g-a2 vs best so far | g-a1 | - | - | - | - | - | - | - | not run: g-a2 is outside the spec's scope on this set |
