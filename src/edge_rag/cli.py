@@ -112,7 +112,29 @@ def main(argv: list[str] | None = None) -> int:
         "--out", type=Path, help="write results.json and results.md into this folder instead"
     )
     commands.add_parser("qasper-c2", help="Phase 07 QASPER loader and C2 counts, train and dev")
+    laptop = commands.add_parser("qasper-laptop", help="Phase 07 laptop rankings on one split")
+    gliner = commands.add_parser("qasper-gliner", help="Phase 07 GLiNER records on one split")
+    for sub in (laptop, gliner):
+        sub.add_argument("split", choices=("dev", "test"))
+        sub.add_argument("--papers", type=int, help="only the first N papers (smoke run)")
+        sub.add_argument("--out", type=Path, required=True)
+    laptop.add_argument("--records", type=Path, required=True, help="GLiNER extraction folder")
+    gliner.add_argument("--model-dir", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.command in ("qasper-laptop", "qasper-gliner"):
+        from edge_rag import exam_laptop, local_extraction
+
+        split_dir = config.DATA_DIR / "phase07" / args.split
+        papers = exam_laptop.first_papers(split_dir, args.papers) if args.papers else None
+        if args.command == "qasper-gliner":
+            exam_laptop.gliner_pass(split_dir, args.out, args.model_dir, papers=papers, say=_say)
+            return 0
+        records, _ = local_extraction.load_extraction(args.records)
+        summary = exam_laptop.run(
+            split_dir, args.out, records, exam_laptop.bge_encoder(), papers=papers, say=_say
+        )
+        _say(json.dumps(summary, default=round))
+        return 0
     if args.command == "qasper-c2":
         from edge_rag import qasper
 

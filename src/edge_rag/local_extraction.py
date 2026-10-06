@@ -59,10 +59,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from concept_embeddings_rag import config
-from concept_embeddings_rag.artifacts import write_text_atomic
-from concept_embeddings_rag.corpus.pool import IndexingUnit
-from concept_embeddings_rag.nodes.extraction import FAILED, OK, ExtractionRecord
+from edge_rag import old_nodes as config
+from edge_rag.old_nodes import FAILED, OK, ExtractionRecord, IndexingUnit, write_text_atomic
 
 # One line per paragraph, `unit_id` sorted, in the Phase 5 line shape; and the manifest
 # that says which extractor, on which hardware, in how long, produced them.
