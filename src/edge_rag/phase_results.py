@@ -1765,7 +1765,22 @@ class Phase06(Phase05):
         "hard cut).",
         "G-A1 on the full HotpotQA dev is outside the spec's scope; it ran on the 1,000 qids.",
         "G-A2 on MuSiQue and HotpotQA dev is outside the spec's scope.",
+        "G-A1's figures come from a rerun after a GPU out-of-memory failure (deviation 06.4): "
+        "the spec's stop rule (abort an item without retry under other settings when it runs "
+        "out of memory once) was not followed as written; the rerun changed only the "
+        "retrieval-server memory margin, to reach E3's planned vLLM share 0.46, and the "
+        "author's ratification is pending (plan, deviation 06.4).",
     )
+    # Per set, systems whose training data covers the set (research protocol, known traps;
+    # plan, C1 record): a claim on that set is printed with them beside the verdict.
+    IN_DOMAIN: ClassVar[dict[str, dict[str, str]]] = {
+        "hotpotqa-dev": {
+            "g-l": "G-L (answerai-colbert-small-v1) is in-domain",
+            "rrf4": "BGE-small, inside the fused own systems (rrf4, j-rrf4 and the other Dense "
+            "fusions), was fine-tuned on HotpotQA train",
+            "g-a1": "G-A1's Search-R1 checkpoint was trained on HotpotQA train",
+        },
+    }
     COMPARISONS = tuple(
         (r, a)
         for r in ("g-r2", "g-a1", "g-a2")
@@ -1944,6 +1959,9 @@ class Phase06(Phase05):
         for name, (rival, against) in zip(cls.STATE_NAMES, cls.COMPARISONS, strict=True):
             target = bests.get(against, against)
             entry: dict[str, Any] = {"name": name, "system": rival, "against": target}
+            if target == rival:
+                paired.append({**entry, "state": NOT_RUN, "reason": cls.self_reason(name)})
+                continue
             missing = rival if rival not in manifests else target if target not in rows else None
             if missing is not None:
                 reason = cls.NOT_RUN_REASONS.get(
@@ -1977,7 +1995,10 @@ class Phase06(Phase05):
             notes.append(
                 "G-A1's Search-R1 checkpoint was trained on NQ and HotpotQA train: HotpotQA is "
                 "in-domain for it (plan, C1 record); its evidence lists are short (retrieved "
-                "passages only), so FS@k and recall at large k are bounded by them."
+                "passages only, not filled to the budget), so FS@k and recall at large k are "
+                "bounded by them; the code follows Phase 02's Search-R1 driver, and the spec's "
+                '"filled to the budget" wording is stale, with no effect on the figures (plan, '
+                "notes)."
             )
         if "g-r2" in manifests:
             notes.append(
@@ -2001,6 +2022,9 @@ class Phase06(Phase05):
             "subset_metrics": subset_metrics,
             f"paired_full_support_at_{config.BUDGET}": paired,
             "literature_bar": bars,
+            "in_domain": [
+                note for system, note in cls.IN_DOMAIN.get(set_name, {}).items() if system in rows
+            ],
             "notes": notes,
             "earlier_results_sha256": earlier_sha256,
             "manifests_sha256": {
@@ -2031,6 +2055,33 @@ class Phase06(Phase05):
             "beats_the_literature": literature_claims(bars),
             "label": "written by code under the frozen rule (spec, comparisons and the bar)",
         }
+
+    @staticmethod
+    def self_reason(name: str) -> str:
+        rival, against = name.split(" vs ")
+        role = {"best so far": "best system so far", "best own": "best own system"}[against]
+        return f"{rival} is itself the {role} on this set; no self-comparison"
+
+    @classmethod
+    def claim_caveats(cls, entry: Mapping[str, Any]) -> list[str]:
+        """Beside the verdict: per won bar, the ghosts it was not measured against, and per set
+        with a won bar, the systems in-domain on it."""
+        lines = []
+        won = [bar for bar in entry["literature_bar"] if bar["state"] == "win"]
+        for bar in won:
+            if bar["not_measured"]:
+                lines.append(
+                    f"The class {bar['class']} claim on {entry['set']} stands on measured "
+                    f"ghosts only ({bar['strongest_ghost']}): "
+                    f"{', '.join(bar['not_measured'])} {NOT_RUN}."
+                )
+        if won and entry.get("in_domain"):
+            lines.append(
+                f"The claims on {entry['set']} carry in-domain caveats: "
+                + "; ".join(entry["in_domain"])
+                + "."
+            )
+        return lines
 
     @classmethod
     def verdict_lines(cls, entry: Mapping[str, Any]) -> list[str]:
@@ -2097,18 +2148,11 @@ class Phase06(Phase05):
             + ".",
         ]
         for entry in entries:
-            for bar in entry["literature_bar"]:
-                if bar["not_run_in_scope"] and bar["state"] == "win":
-                    lines.append(
-                        f"The class {bar['class']} claim on {entry['set']} stands on measured "
-                        f"ghosts only: {', '.join(bar['not_run_in_scope'])} {NOT_RUN}."
-                    )
+            lines += cls.claim_caveats(entry)
         lines += ["", "Each rival against the project's best own system, per set:", ""]
         for rival in cls.RIVALS:
             per_set = out["states"][f"{rival} vs best own"]
-            lines.append(
-                f"- {rival}: " + ", ".join(f"{s} {per_set[s]}" for s in set_names) + "."
-            )
+            lines.append(f"- {rival}: " + ", ".join(f"{s} {per_set[s]}" for s in set_names) + ".")
         lines.append("")
         for entry in entries:
             lines += cls.verdict_lines(entry)

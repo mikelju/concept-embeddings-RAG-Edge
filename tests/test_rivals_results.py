@@ -118,3 +118,44 @@ def test_stored_hotpotqa_rival_tests_pair_the_same_1000_qids():
     assert all(t["on"] == pr.SUBSET and t["n"] == 1000 for t in tested)
     bars = {b["class"]: b for b in entry["literature_bar"]}
     assert bars["R"]["on"] == bars["A"]["on"] == pr.SUBSET
+
+
+def test_won_bar_caveats_sit_beside_the_verdict():
+    bar_a = pr.literature_bar(
+        "A", {"g-a1": hits(10), "g-a2": None}, "j-rrf4", hits(30), pr.FULL_SET
+    )
+    bar_l = pr.literature_bar("L", {"g-l": hits(10)}, "rrf4", hits(30), pr.FULL_SET)
+    entry = {
+        "set": "hotpotqa-dev",
+        "literature_bar": [bar_l, bar_a],
+        "in_domain": ["x is in-domain"],
+    }
+    lines = rr.claim_caveats(entry)
+    assert lines == [
+        "The class A claim on hotpotqa-dev stands on measured ghosts only (g-a1): g-a2 not run.",
+        "The claims on hotpotqa-dev carry in-domain caveats: x is in-domain.",
+    ]
+    lost = pr.literature_bar("A", {"g-a1": hits(30), "g-a2": None}, "x", hits(10), pr.FULL_SET)
+    assert rr.claim_caveats({"set": "musique", "literature_bar": [lost], "in_domain": ["y"]}) == []
+    assert rr.claim_caveats({"set": "musique", "literature_bar": [bar_l]}) == []
+
+
+def test_a_rival_that_is_the_best_so_far_is_not_compared_with_itself():
+    assert rr.self_reason("g-a1 vs best so far") == (
+        "g-a1 is itself the best system so far on this set; no self-comparison"
+    )
+    assert "best own system" in rr.self_reason("g-a1 vs best own")
+
+
+@pytest.mark.skipif(not rr.RESULTS_JSON.exists(), reason="data/phase06/results.json not present")
+def test_stored_musique_g_a1_is_not_compared_with_itself():
+    table = json.loads(rr.RESULTS_JSON.read_text("utf-8"))
+    entry = next(e for e in table["sets"] if e["set"] == "musique")
+    assert entry["best_so_far"] == "g-a1"
+    test = next(
+        t
+        for t in entry[f"paired_full_support_at_{config.BUDGET}"]
+        if t["name"] == "g-a1 vs best so far"
+    )
+    assert test["state"] == pr.NOT_RUN
+    assert test["reason"] == rr.self_reason("g-a1 vs best so far")
