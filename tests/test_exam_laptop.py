@@ -123,3 +123,13 @@ def test_rrf4_lists_fuses_in_terrain_order():
     ]  # hop rank 1 > BM25 rank 2
     with pytest.raises(ArtifactError):
         exam_laptop.rrf4_lists(dense, bm25, {}, hop)
+
+
+def test_run_without_records_skips_only_the_entity_systems(tmp_path):
+    out = tmp_path / "rankings"
+    exam_laptop.run(split(tmp_path), out, None, encode, say=lambda _: None)
+    for name in exam_laptop.POOLED:
+        written = exam_laptop.is_complete(out / "pooled", name, 3)
+        assert written == (name not in exam_laptop.ENTITY), name
+    for name in exam_laptop.WITHIN:
+        assert exam_laptop.is_complete(out / "within", name, 3)

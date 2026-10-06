@@ -118,7 +118,11 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_argument("split", choices=("dev", "test"))
         sub.add_argument("--papers", type=int, help="only the first N papers (smoke run)")
         sub.add_argument("--out", type=Path, required=True)
-    laptop.add_argument("--records", type=Path, required=True, help="GLiNER extraction folder")
+    laptop.add_argument(
+        "--records",
+        type=Path,
+        help="GLiNER extraction folder; without it hop and p14 are not written",
+    )
     gliner.add_argument("--model-dir", type=Path, required=True)
     gliner.add_argument("--limit-units", type=int, help="only the first N units (pod probe)")
     args = parser.parse_args(argv)
@@ -137,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
                 say=_say,
             )
             return 0
-        records, _ = local_extraction.load_extraction(args.records)
+        records = local_extraction.load_extraction(args.records)[0] if args.records else None
         summary = exam_laptop.run(
             split_dir, args.out, records, exam_laptop.bge_encoder(), papers=papers, say=_say
         )

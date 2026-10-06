@@ -32,6 +32,7 @@ from edge_rag.retrieval.fusion import fuse_lists
 from edge_rag.retrieval.hop import Hops
 
 POOLED = ("dense", "bm25", "p10-b", "hop", "p14")
+ENTITY = ("hop", "p14")  # the systems that read GLiNER records
 WITHIN = ("dense", "bm25")
 MARKER = "{name}.complete.json"
 Encode = Callable[[Sequence[str]], np.ndarray]
@@ -88,17 +89,19 @@ def pooled_rankings(
     questions: Sequence[QasperQuestion],
     unit_vectors: np.ndarray,
     query_vectors: np.ndarray,
-    records: Mapping[str, ExtractionRecord],
+    records: Mapping[str, ExtractionRecord] | None,
 ) -> tuple[dict[str, dict[str, list[str]]], dict[str, float]]:
-    """Every pooled laptop system, as `reproduce.py` (P10-B, P14) and `pool.py` (hop)."""
+    """Every pooled laptop system, as `reproduce.py` (P10-B, P14) and `pool.py` (hop);
+    without records the entity systems are left out."""
     depth = config.DEPTH
     unit_ids = [u.unit_id for u in units]
     started = time.perf_counter()
     dense = Dense(unit_vectors, unit_ids)
     bm25 = BM25([u.text for u in units], unit_ids)
-    hops = Hops(build_node_index(records, unit_ids), unit_vectors)
-    seconds = {"index": time.perf_counter() - started, **dict.fromkeys(POOLED, 0.0)}
-    out: dict[str, dict[str, list[str]]] = {name: {} for name in POOLED}
+    hops = None if records is None else Hops(build_node_index(records, unit_ids), unit_vectors)
+    names = [name for name in POOLED if hops is not None or name not in ENTITY]
+    seconds = {"index": time.perf_counter() - started, **dict.fromkeys(names, 0.0)}
+    out: dict[str, dict[str, list[str]]] = {name: {} for name in names}
     for question, vector in zip(questions, query_vectors, strict=True):
         qid = question.qid
         tick = time.perf_counter()
@@ -110,6 +113,9 @@ def pooled_rankings(
         tick = time.perf_counter()
         fused = fuse_lists([first, second], config.WEIGHTS_P10B, top_k=depth)
         seconds["p10-b"] += time.perf_counter() - tick
+        out["dense"][qid], out["bm25"][qid], out["p10-b"][qid] = ids(first), ids(second), ids(fused)
+        if hops is None:
+            continue
         tick = time.perf_counter()
         hop = hops.entity_hop(first, depth)
         seconds["hop"] += time.perf_counter() - tick
@@ -117,14 +123,7 @@ def pooled_rankings(
         relevance = hops.relevance_hop(first, vector, depth, config.P14_ALPHA)
         p14 = fuse_lists([first, second, relevance], config.WEIGHTS_TRIPLE, top_k=depth)
         seconds["p14"] += time.perf_counter() - tick
-        for name, hits in (
-            ("dense", first),
-            ("bm25", second),
-            ("p10-b", fused),
-            ("hop", hop),
-            ("p14", p14),
-        ):
-            out[name][qid] = ids(hits)
+        out["hop"][qid], out["p14"][qid] = ids(hop), ids(p14)
     return out, seconds
 
 
@@ -216,13 +215,14 @@ def is_complete(directory: Path, name: str, questions: int) -> bool:
 def run(
     split_dir: Path,
     out: Path,
-    records: Mapping[str, ExtractionRecord],
+    records: Mapping[str, ExtractionRecord] | None,
     encode: Encode,
     *,
     papers: Sequence[str] | None = None,
     say: Callable[[str], None] = print,
 ) -> dict[str, Any]:
-    """Every laptop system on one split; `papers` limits it to a smoke subset."""
+    """Every laptop system on one split; `papers` limits it to a smoke subset. Without GLiNER
+    records (`None`) the entity systems (`ENTITY`) are not written, the others are."""
     units, questions = read_split(split_dir)
     if papers is not None:
         keep = set(papers)
