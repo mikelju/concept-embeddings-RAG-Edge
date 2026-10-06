@@ -30,8 +30,9 @@ Starting brief: `docs/refs/successor_project_charter.md` (decisions) and `docs/r
 | 03 | First candidate: weight-free fusion with source diversity (charter candidate 3, light class), on the laptop | 02 | integrated |
 | 04 | Second candidate: judge over a pooled bag (charter candidate 1, rerank class), G-L in the pool | 02 | integrated |
 | 05 | Third candidate: multi-seed convergent hop with a refined query (charter candidate 2, light class) | 02 | done |
-| 06 | Exam: one locked run of the chosen candidates and the ghosts on the exam corpus, under a rule frozen before it opens | 03-05 | pending |
-| 07 | Game: a tower-defense page that reads the measured results as aggregate performance, never computing anything | 06 | pending |
+| 06 | Rivals: measure on the terrain the literature ghosts never run (G-R2 Qwen3-Reranker-0.6B, G-A2 HippoRAG 2, G-A1 on the HotpotQA subsample) and fix by code the literature bar per set and cost class | 02-05 | spec approved, in progress |
+| 07 | Exam: one locked run of the chosen candidates and the ghosts on the exam corpus, under a rule frozen before it opens | 03-06 | pending |
+| 08 | Game: a tower-defense page that reads the measured results as aggregate performance, never computing anything | 07 | pending |
 
 Statuses: pending, spec in review, spec approved, in progress, blocked, ready locally, integrated.
 Only the author adds, removes or reorders phases; the agent proposes.
@@ -82,6 +83,7 @@ Phases 03-05 are placeholders: their number and content are decided after Phase 
 | 2026-10-04 | Phase 04 sends no entrant to the exam: `j-rrf4` advances against G-R but loses to `j-rrf3` on MultiHop-RAG (written by code, `fase-04-judge/results.md`); `j-rrf3`'s own verdict is context only, never an entrant; no candidate has entered the exam so far, and Phase 05 stays as planned; Phase 04 spent 0.33 USD (author's invoice), leaving 9.89 USD inside the 25 USD authorization (derived; provisional until the C9 closing `clientBalance` reading, pending) | the selection rule frozen in the Phase 04 spec, applied by the outcome code to the run files | entering `j-rrf4` or promoting `j-rrf3` after seeing the figures, which would choose by looking at the results |
 | 2026-10-04 | Author's decisions after Phase 04: deviation 04.1 is overturned, so Phase 05 merges the Phase 03 and Phase 04 results code into one shared module (Phase 03 and Phase 04 pages must regenerate byte-equal) and fixes the open round 2 finding 4 (the judge cost row label fixed at "100 units") there; of the four Phase 04 candidate learnings only the first (a cached result is reused only when every input of its key matches) is applied, to research-protocol; the money reserve is set aside for now (9.89 USD left against the 9.9 USD reserve) | taken by the author | keeping the split (04.1 option A); applying learnings 2-4 |
 | 2026-10-05 | Phase 05 sends no entrant to the exam: `mch` does not advance (a loss to G-L on HotpotQA, to `rrf-prf` on MultiHop-RAG and to the best light-class system so far on every set; written by code, `fase-05-hop/results.md`); `rrf-prf`'s verdict is context only; no candidate from Phases 03-05 has entered the exam, so what Phase 06 examines is the author's decision; Phase 05 spent 0 USD (two `clientBalance` readings), leaving 9.89 USD inside the 25 USD authorization (derived, provisional) | the selection rule frozen in the Phase 05 spec, applied by the outcome code to the run files | entering `mch` or `rrf-prf` after seeing the figures, which would choose by looking at the results |
+| 2026-10-06 | Phase 06 spec approved by the author (`fase-06-rivals/spec.md`): the literature rivals G-R2, G-A2 and G-A1 on HotpotQA become Phase 06, the exam Phase 07 and the game Phase 08; earlier frozen documents that say "Phase 06" for the exam are not edited. Money: the author authorizes spending the remaining RunPod balance (14.11 USD, measured 2026-10-05) on Phase 06, with a phase cap equal to the `clientBalance` read before its first pod minus a 1.0 USD safety buffer (about 13.1 USD, derived) and a hard cut per item at 1.5 times its projection; total spend authorized for the project becomes 15.11 USD spent plus that cap (derived), replacing the 25 USD total; the exam core reserve is dropped, so the exam (Phase 07) is unfunded and needs a top-up the author decides then. G-R2 also runs on HotpotQA dev; run order G-R2, G-A2 (MultiHop-RAG), G-A1 (HotpotQA 1,000), with G-A2 and G-A1 swappable if Llama-3.1 access is not ready; Llama-3.1 access through a user-level `HF_TOKEN` set by the author, checked for presence only, and G-A2 `not run` (gated access) if it is still absent at the end, with no LLM swap. The author delegates every further decision of Phase 06 to the agent; merging stays the author's | taken by the author: no candidate of Phases 03-05 entered the exam, and the project cannot claim to beat the literature in a class whose strongest ghost was never measured | 05b numbering or folding the rivals into the exam; keeping the 7.49 USD cap and dropping G-A1 on HotpotQA; swapping G-A2 to Qwen3-8B |
 
 ## Open decisions (after Phase 00)
 
@@ -91,5 +93,6 @@ None: the six items listed here until 2026-10-02 (metrics, reading budget, cost 
 
 - After 00: a map of the field and its costs, useful on its own.
 - After 02: honest baselines, the ghosts beside the old systems, on the terrain.
-- After 06: the tournament's answer, with the exam result, ready to write up.
-- After 07: the game.
+- After 06: the literature bar measured on the terrain, every ghost of Phase 00 run or recorded as not run.
+- After 07: the tournament's answer, with the exam result, ready to write up.
+- After 08: the game.
