@@ -111,7 +111,13 @@ def main(argv: list[str] | None = None) -> int:
     rivals_results.add_argument(
         "--out", type=Path, help="write results.json and results.md into this folder instead"
     )
+    commands.add_parser("qasper-c2", help="Phase 07 QASPER loader and C2 counts, train and dev")
     args = parser.parse_args(argv)
+    if args.command == "qasper-c2":
+        from edge_rag import qasper
+
+        qasper.run_c2(config.DATA_DIR / "phase07" / "train-dev", say=_say)
+        return 0
     if args.command == "rivals-results":
         from edge_rag.phase_results import Phase06
 
