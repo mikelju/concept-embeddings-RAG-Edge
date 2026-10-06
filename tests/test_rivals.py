@@ -11,6 +11,7 @@ import pytest
 
 from edge_rag import config, rivals
 from edge_rag.artifacts import ArtifactError, sha256_file
+from edge_rag.pod import qwen_rerank
 from edge_rag.pod.qwen_rerank import compare
 
 SUBSAMPLE_SHA256 = "6cebd41ff9e5e9f02e27ebb019620de0e37b77794fc6a783a2ff0d80fb3a62bd"
@@ -116,6 +117,117 @@ def test_run_rank_writes_rankings_and_manifest(tmp_path, monkeypatch):
         rivals.run_rank(
             "toy", scores_dir=scores_dir, pairs_dir=pairs_dir, rankings_dir=tmp_path, say=print
         )
+
+
+def _toy_subset(tmp_path, monkeypatch, qids):
+    """A D11 subset for the toy set: a qid file in `tmp_path / 'subsample'` pinned by sha256."""
+    directory = tmp_path / "subsample"
+    directory.mkdir()
+    body = "".join(f"{qid}\n" for qid in qids).encode("utf-8")
+    (directory / "toy-2.txt").write_bytes(body)
+    monkeypatch.setitem(qwen_rerank.SUBSETS, "toy", ("toy-2.txt", hashlib.sha256(body).hexdigest()))
+    return directory
+
+
+def test_subset_is_pinned_and_recorded(tmp_path, monkeypatch):
+    directory = _toy_subset(tmp_path, monkeypatch, ["q3", "q1"])
+    qids, record = qwen_rerank.subset("toy", directory)
+    assert qids == {"q1", "q3"}
+    assert record is not None and record["questions"] == 2
+    assert record["file"] == "data/phase06/subsample/toy-2.txt"
+    assert qwen_rerank.subset("musique", directory) == (None, None)
+    (directory / "toy-2.txt").write_text("q1\nq2\n")
+    with pytest.raises(ArtifactError, match="pinned"):
+        qwen_rerank.subset("toy", directory)
+    name, pinned = qwen_rerank.SUBSETS["hotpotqa-dev"]
+    assert (name, pinned) == (rivals.SUBSAMPLE_FILE, SUBSAMPLE_SHA256)
+
+
+def test_score_set_scores_only_the_subset(tmp_path, monkeypatch):
+    """D11: hotpotqa-dev is scored on its 1,000 qids; here a toy set on 2 of 3 questions."""
+    subset_dir = _toy_subset(tmp_path, monkeypatch, ["q3", "q1"])
+    pairs_dir, scores_dir = tmp_path / "pairs", tmp_path / "scores"
+    pairs_dir.mkdir()
+    scores_dir.mkdir()
+    rows = [
+        {"qid": q, "question": f"question {q}", "unit_ids": [f"{q}a", f"{q}b"], "texts": ["x", "y"]}
+        for q in ("q1", "q2", "q3")
+    ]
+    pins = {"toy.jsonl.gz": _gz(pairs_dir / "toy.jsonl.gz", rows)}
+    (pairs_dir / "toy.manifest.json").write_text(json.dumps({"outputs_sha256": pins}))
+    check_path = tmp_path / "c3.json"
+    check_path.write_text(
+        json.dumps(
+            {
+                "pass": True,
+                "inputs_sha256": pins,
+                "git_commit": "c",
+                **{"fidelity_max_abs_diff": 0.0, "determinism_max_abs_diff": 0.0},
+            }
+        )
+    )
+    provenance = {"git_commit": "c", "git_src_changes": []}
+    monkeypatch.setattr(qwen_rerank.common, "git_provenance", lambda: provenance)
+    written = {}
+    monkeypatch.setattr(
+        qwen_rerank.common, "write_manifest", lambda path, body, _out: written.update(body)
+    )
+    asked = []
+
+    class Model:
+        def predict(self, pairs):
+            asked.extend(question for question, _text in pairs)
+            return np.zeros(len(pairs))
+
+    qwen_rerank.score_set(
+        "toy",
+        load=Model,
+        pairs_dir=pairs_dir,
+        scores_dir=scores_dir,
+        check_path=check_path,
+        subset_dir=subset_dir,
+        say=lambda _line: None,
+    )
+    with gzip.open(scores_dir / "toy.jsonl.gz", "rt", encoding="utf-8") as handle:
+        scored = [json.loads(line) for line in handle]
+    assert [row["qid"] for row in scored] == ["q1", "q3"]
+    assert set(asked) == {"question q1", "question q3"}
+    assert written["questions"] == 2 and written["pairs"] == 4
+    assert written["subset"]["sha256"] == qwen_rerank.SUBSETS["toy"][1]
+
+
+def test_run_rank_ranks_exactly_the_subset(tmp_path, monkeypatch):
+    subset_dir = _toy_subset(tmp_path, monkeypatch, ["q2"])
+    tops = {"q1": ["a", "b"], "q2": ["c", "d"]}
+    monkeypatch.setattr(rivals, "gl_tops", lambda _set: tops)
+    monkeypatch.setitem(config.GL_SHA256, "toy", "e" * 64)
+    pairs_dir, scores_dir, rankings_dir = (tmp_path / n for n in ("pairs", "scores", "rankings"))
+    pairs_dir.mkdir()
+    scores_dir.mkdir()
+    pins = {"toy.jsonl.gz": "f" * 64}
+    (pairs_dir / "toy.manifest.json").write_text(json.dumps({"outputs_sha256": pins}))
+    rows = [{"qid": "q2", "unit_ids": ["c", "d"], "scores": [-1.0, -0.2]}]
+    _qids, record = qwen_rerank.subset("toy", subset_dir)
+    pod = {
+        "model": "m",
+        "revision": "r",
+        "settings": {},
+        "inputs_sha256": pins,
+        "check": {"pass": True},
+        "seconds": {"score": 1.0},
+        "subset": record,
+        "outputs": {"toy.jsonl.gz": _gz(scores_dir / "toy.jsonl.gz", rows)},
+    }
+    (scores_dir / "toy.manifest.json").write_text(json.dumps(pod))
+    kwargs = {"scores_dir": scores_dir, "pairs_dir": pairs_dir, "subset_dir": subset_dir}
+    body = rivals.run_rank("toy", rankings_dir=rankings_dir, say=lambda _line: None, **kwargs)
+    with gzip.open(rankings_dir / "toy" / "g-r2.jsonl.gz", "rt", encoding="utf-8") as handle:
+        assert [json.loads(line) for line in handle] == [{"qid": "q2", "ranked": ["d", "c"]}]
+    assert body["questions"] == 1 and body["subset"] == record
+
+    (scores_dir / "toy.manifest.json").write_text(json.dumps({**pod, "subset": None}))
+    with pytest.raises(ArtifactError, match="subset"):
+        rivals.run_rank("toy", rankings_dir=tmp_path / "other", say=print, **kwargs)
 
 
 def test_c3_compare_works_on_p_yes():

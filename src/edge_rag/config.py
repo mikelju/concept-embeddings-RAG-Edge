@@ -358,3 +358,6 @@ PHASE06_SCORES_DIR = PHASE06_DIR / "scores"
 PHASE06_RANKINGS_DIR = PHASE06_DIR / "rankings"
 PHASE06_CHECKS_DIR = PHASE06_DIR / "checks"
 PHASE06_SUBSAMPLE_DIR = PHASE06_DIR / "subsample"
+# Plan increment 1 (C2): the preregistered HotpotQA 1,000 qids as `rivals-subsample` wrote them.
+PHASE06_SUBSAMPLE_FILE = "hotpotqa-dev-1000.txt"
+PHASE06_SUBSAMPLE_SHA256 = "6cebd41ff9e5e9f02e27ebb019620de0e37b77794fc6a783a2ff0d80fb3a62bd"

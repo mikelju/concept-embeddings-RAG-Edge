@@ -9,7 +9,9 @@ of each of the three sets (300 pairs):
 - determinism: the same 300 pairs scored in reversed order (other batches, other padding).
 Both compare the card's score, P(yes), within 1e-3 absolute; log P(yes) differences are
 recorded too. `--score <set>` refuses unless that check passed on the same pairs files and
-commit. No corpus is read.
+commit. HotpotQA dev is scored only on the preregistered 1,000 qids (D11, deviation 06.2),
+read from `data/phase06/subsample/` against their pinned sha256 and recorded in the manifest.
+No corpus is read.
 
     uv run --group pod python -m edge_rag.pod.qwen_rerank --check
     uv run --group pod python -m edge_rag.pod.qwen_rerank --score musique
@@ -25,7 +27,7 @@ from typing import Any
 
 import numpy as np
 
-from edge_rag.artifacts import ArtifactError, write_bytes, write_json
+from edge_rag.artifacts import ArtifactError, sha256_file, write_bytes, write_json
 from edge_rag.pod import common
 from edge_rag.pod.rerank import (
     CHECK_PAIRS,
@@ -49,6 +51,9 @@ SETS = ("musique", "multihop-rag", "hotpotqa-dev")
 PAIRS_DIR = config.PHASE06_PAIRS_DIR
 SCORES_DIR = config.PHASE06_SCORES_DIR
 CHECK_PATH = config.PHASE06_CHECKS_DIR / "c3-g-r2.json"
+SUBSAMPLE_DIR = config.PHASE06_SUBSAMPLE_DIR
+# D11 (deviation 06.2): the sets G-R2 scores on a preregistered subset, file name and sha256.
+SUBSETS = {"hotpotqa-dev": (config.PHASE06_SUBSAMPLE_FILE, config.PHASE06_SUBSAMPLE_SHA256)}
 SETTINGS = {
     "dtype": DTYPE,
     "batch_size": QWEN_BATCH_SIZE,
@@ -62,6 +67,29 @@ SETTINGS = {
 def pins(set_name: str, pairs_dir: Path = PAIRS_DIR) -> dict[str, str]:
     manifest = json.loads((pairs_dir / f"{set_name}.manifest.json").read_text("utf-8"))
     return dict(manifest["outputs_sha256"])
+
+
+def subset(
+    set_name: str, directory: Path = SUBSAMPLE_DIR
+) -> tuple[frozenset[str] | None, dict[str, Any] | None]:
+    """D11: the qids G-R2 scores in this set (None: every question) and the record that the
+    scores and rankings manifests carry; the qid file must match its pinned sha256."""
+    if set_name not in SUBSETS:
+        return None, None
+    name, pinned = SUBSETS[set_name]
+    measured = sha256_file(directory / name)
+    if measured != pinned:
+        raise ArtifactError(f"{directory / name}: sha256 {measured}, pinned {pinned}")
+    qids = (directory / name).read_text("utf-8").split()
+    if len(set(qids)) != len(qids):
+        raise ArtifactError(f"{directory / name}: repeated qids")
+    record = {
+        "file": f"data/phase06/subsample/{name}",
+        "sha256": pinned,
+        "questions": len(qids),
+        "decision": "D11 (deviation 06.2): only these qids are scored and ranked",
+    }
+    return frozenset(qids), record
 
 
 def first_pairs(rows: Sequence[dict], n: int) -> list[tuple[str, str]]:
@@ -198,10 +226,11 @@ def score_set(
     pairs_dir: Path = PAIRS_DIR,
     scores_dir: Path = SCORES_DIR,
     check_path: Path = CHECK_PATH,
+    subset_dir: Path = SUBSAMPLE_DIR,
     say: Any = print,
 ) -> None:
-    """Score one set's pairs file once; refuses without a passed C3 check on the same pairs
-    files at the same commit with no uncommitted source change."""
+    """Score one set's pairs file once, or its D11 subset; refuses without a passed C3 check on
+    the same pairs files at the same commit with no uncommitted source change."""
     out = scores_dir / f"{set_name}.jsonl.gz"
     manifest = common.manifest_path(out)
     if manifest.exists():
@@ -218,10 +247,15 @@ def score_set(
         raise ArtifactError(f"{set_name}: the C3 check read other pairs files")
     if provenance["git_src_changes"] or check["git_commit"] != provenance["git_commit"]:
         raise ArtifactError("the C3 check ran at another commit or with uncommitted changes")
+    qids, subset_record = subset(set_name, subset_dir)
     timer = common.Timer()
     started = time.perf_counter()
     name = f"{set_name}.jsonl.gz"
     rows = read_pinned(pairs_dir / name, set_pins[name])
+    if qids is not None:
+        rows = [row for row in rows if row["qid"] in qids]
+        if len(rows) != len(qids):
+            raise ArtifactError(f"{set_name}: {len(rows)} of the {len(qids)} subset qids paired")
     timer.add("read", started)
     started = time.perf_counter()
     model = load()
@@ -253,6 +287,7 @@ def score_set(
             "settings": SETTINGS,
             "git_src_changes": provenance["git_src_changes"],
             "inputs_sha256": set_pins,
+            "subset": subset_record,
             "check": {
                 k: check[k] for k in ("fidelity_max_abs_diff", "determinism_max_abs_diff", "pass")
             },

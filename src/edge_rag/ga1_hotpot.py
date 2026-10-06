@@ -11,8 +11,10 @@ units in retrieval order, later duplicates dropped). `rank` checks the downloade
 against their digests, the C3 diff, the qid list and the corpus, and writes the evidence lists
 in the Phase 06 ranking format (`scoring.write_rankings` plus a `g-a1.manifest.json`).
 
-    uv run python -m edge_rag.ga1_hotpot export --out <dir>
-    uv run python -m edge_rag.ga1_hotpot rank --bundle <dir> --pod <dir>
+    uv run edge-rag ga1-export --out <dir>
+    uv run edge-rag ga1-rank --bundle <dir> --pod <dir>
+
+(the same as `python -m edge_rag.ga1_hotpot export` and `... rank`).
 """
 
 import argparse
@@ -35,9 +37,8 @@ from edge_rag.reproduce import Say
 
 SET = "hotpotqa-dev"
 SYSTEM = "g-a1"
-QIDS_FILE = "hotpotqa-dev-1000.txt"
-# Plan increment 1 (C2): the preregistered subsample, as `rivals-subsample` wrote it.
-QIDS_SHA256 = "6cebd41ff9e5e9f02e27ebb019620de0e37b77794fc6a783a2ff0d80fb3a62bd"
+QIDS_FILE = config.PHASE06_SUBSAMPLE_FILE
+QIDS_SHA256 = config.PHASE06_SUBSAMPLE_SHA256
 OLD_FILES = ("corpus.json", "corpus.jsonl.gz", "questions.json")
 UPLOAD_MANIFEST = "upload.manifest.json"
 UPLOAD_SUMS = "upload.sha256"

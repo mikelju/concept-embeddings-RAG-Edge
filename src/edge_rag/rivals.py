@@ -19,6 +19,7 @@ from edge_rag import components, config, scoring
 from edge_rag.artifacts import ArtifactError, keep_manifest, sha256_file, write_bytes, write_json
 from edge_rag.judge import SUBSAMPLE_SEED, SUBSAMPLE_SET, SUBSAMPLE_SIZE, pair_row, write_once
 from edge_rag.pod.common import git_provenance, open_set, units_by_id
+from edge_rag.pod.qwen_rerank import SUBSAMPLE_DIR, subset
 from edge_rag.pod.rerank import reorder
 from edge_rag.process import peak_rss_mb
 from edge_rag.reproduce import Say
@@ -154,6 +155,7 @@ def run_rank(
     scores_dir: Path = config.PHASE06_SCORES_DIR,
     pairs_dir: Path = config.PHASE06_PAIRS_DIR,
     rankings_dir: Path = config.PHASE06_RANKINGS_DIR,
+    subset_dir: Path = SUBSAMPLE_DIR,
     say: Say = print,
 ) -> dict[str, Any]:
     directory = rankings_dir / set_name
@@ -161,6 +163,13 @@ def run_rank(
     keep_manifest(manifest_path)
     tops = gl_tops(set_name)
     scored, pod = pod_scores(set_name, scores_dir, pairs_dir)
+    qids, subset_record = subset(set_name, subset_dir)
+    if pod.get("subset") != subset_record:
+        raise ArtifactError(f"{set_name}: the pod scored subset {pod.get('subset')}")
+    if qids is not None:
+        if not qids <= set(tops):
+            raise ArtifactError(f"{set_name}: subset qids outside G-L's lists")
+        tops = {qid: ranked for qid, ranked in tops.items() if qid in qids}
     ranked = rank(tops, scored)
     order = [str(row["qid"]) for row in scored]
     name = f"{SYSTEM}.jsonl.gz"
@@ -190,6 +199,7 @@ def run_rank(
             ),
         },
         "check": pod["check"],
+        "subset": subset_record,
         "outputs_sha256": {name: digest},
     }
     write_json(manifest_path, body)

@@ -21,13 +21,13 @@ Prepared on the laptop on 2026-10-06 (branch `ga1-prep`); no pod was rented and 
   It records the qid list's sha256, the driver files' sha256 and the commit in `subset.json`.
 - The build's own search is cut to the first 100 questions (`--limit-questions 100`, an existing option; `GL_SEARCH_QUESTIONS=` for all 7,405, about 0.74 h more at F9's 0.358 s/question): the spec's cost row counts encode and index only, and G-A1 searches through the server.
 
-## The GPU memory split (open: author decision)
+## The GPU memory split (decided: E3 in `plan.md`)
 - Read from source (PyLate 1.6.0 and fast-plaid 1.4.6.2110 wheels, 2026-10-06): PyLate's `PLAID` passes `low_memory=False` by default, so the retrieval server loads the whole index onto the GPU when it starts.
 - The HotpotQA index is 35 GB on disk (F9); the MuSiQue and MultiHop-RAG indexes beside which the driver's `GPU_MEMORY_UTILIZATION` 0.80 was set (D15) were small.
   On an 80 GB card, 0.80 asks vLLM for 64 GB while the server holds about 35-40 GB (projection), so vLLM would refuse to start.
 - The script therefore measures the server's GPU memory once it answers, and gives vLLM `min(0.80, (total - used - 6 GiB) / total)`, refusing below 0.30; with a 37 GB server that is about 0.46 (projection): 15 GB of bf16 weights and about 20 GB of KV cache.
   `ga1_subset` sets it through the driver's module constant, so the file is unchanged, and records both values; the conversion copies it into the manifest settings.
-- This is a memory setting, not a ghost setting (D15 and F6 of Phase 02 treat it as a run setting), but it changes vLLM's batch composition, which may move greedy outputs slightly; it is the author's call before the pod starts.
+- This is a memory setting, not a ghost setting (D15 and F6 of Phase 02 treat it as a run setting), but it changes vLLM's batch composition, which may move greedy outputs slightly; it was the author's call before the pod starts; taken as E3 in `plan.md` (1x A100 80 GB, the split above).
   Alternatives: a 2x A100 80 GB pod with the server on the second card (no setting changes; about 3.18 USD/h, projected 3.3 h is about 10.3 USD, past the 6.9 USD cut); or the server on the CPU (Phase 02 F6: too slow on MultiHop-RAG; not tried on a 5.2 M-unit index).
 
 ## Pod
@@ -54,7 +54,7 @@ Prepared on the laptop on 2026-10-06 (branch `ga1-prep`); no pod was rented and 
 
 ## Uploads
 - The repository at the frozen commit (cloned on the pod; the commit pushed first).
-- `data/phase06/ga1/` from the main checkout, to `data/phase06/ga1/` in the clone (export of 2026-10-06, `uv run python -m edge_rag.ga1_hotpot export`):
+- `data/phase06/ga1/` from the main checkout, to `data/phase06/ga1/` in the clone (export of 2026-10-06, `uv run edge-rag ga1-export`, the same as `uv run python -m edge_rag.ga1_hotpot export`):
   - `hotpotqa-dev-1000.txt` sha256 6cebd41ff9e5e9f02e27ebb019620de0e37b77794fc6a783a2ff0d80fb3a62bd (25,000 bytes, 1,000 qids, the C2 file);
   - `upload.sha256`, `old.sha256` (checked by the script with `sha256sum -c`), `upload.manifest.json` (sizes, digests, commit; its sha256 goes to `plan.md` with the run).
 - Old data, read in place from the old repository and uploaded unchanged to `/workspace/old-data/phase9/` (`OLD_DATA_ROOT=/workspace/old-data`), as in Phase 02 D16:
@@ -68,7 +68,7 @@ Prepared on the laptop on 2026-10-06 (branch `ga1-prep`); no pod was rented and 
 3. `POD_COST_PER_HR=<costPerHr> SPENT_S=<seconds since creation> OLD_DATA_ROOT=/workspace/old-data nohup bash scripts/pod_ga1.sh > /workspace/pod_ga1.out 2>&1 &`
 4. Watch `/workspace/pod_ga1.log` for `STAGE_DONE`, `STAGE_FAIL`, `PACE` and `STOP_CUT` lines, `/workspace/pod_ga1.samples` for GPU, host memory and disk.
 5. Download `data/phase06/ga1/pod/` (flat; `sha256sums.txt` lists every file) to the main checkout's `data/phase06/ga1/pod/`, `sha256sum -c sha256sums.txt` there, then `podTerminate` and check `myself { pods }` is empty.
-6. Laptop: `uv run python -m edge_rag.ga1_hotpot rank` (checks every file against `sha256sums.txt`, the empty C3 diff, the qid list, the D17 settings and the corpus units) writes the ranking and manifest.
+6. Laptop: `uv run edge-rag ga1-rank` (checks every file against `sha256sums.txt`, the empty C3 diff, the qid list, the D17 settings and the corpus units) writes the ranking and manifest.
 
 ## Downloads (`data/phase06/ga1/pod/`)
 - `g-a1.jsonl.gz` and `g-a1.manifest.json` (driver), `trace.jsonl.gz` (each question's searches and answer), `subset.json`, `gpu_split.txt`.
@@ -84,6 +84,6 @@ Prepared on the laptop on 2026-10-06 (branch `ga1-prep`); no pod was rented and 
 - A stage that fails twice on the same problem is recorded failed with its log (Phase 02 rule); G-A1 is aborted without retry under other settings if C3 fails.
 
 ## For the integrator (not done here: `cli.py`, `plan.md` and `phase_results.py` are edited on `fase-06-rivals`)
-- `cli.py`: two commands mapping to `ga1_hotpot.run_export(out)` and `ga1_hotpot.run_rank(bundle, pod, rankings)`, defaults `data/phase06/ga1`, `data/phase06/ga1/pod`, `config.PHASE06_RANKINGS_DIR` (or keep `python -m edge_rag.ga1_hotpot`).
+- `cli.py`: done on `fase-06-rivals`: `edge-rag ga1-export` calls `ga1_hotpot.run_export(out)` and `edge-rag ga1-rank` calls `ga1_hotpot.run_rank(bundle, pod, rankings)`, defaults `data/phase06/ga1`, `data/phase06/ga1/pod`, `config.PHASE06_RANKINGS_DIR`; `python -m edge_rag.ga1_hotpot` still works.
 - Increment 6 results: read `rankings/hotpotqa-dev/g-a1.jsonl.gz` (1,000 rows, evidence lists of at most 24 units, as Phase 02 G-A1); FS@2,048 and every McNemar test of G-A1 on HotpotQA on those 1,000 qids only (spec C6), pairing the other systems' rows restricted to the same qids; offline cost from `offline_seconds` (the rebuild's encode and index) and online from `online_seconds`, at `pod.cost_per_hr_usd`.
-- `plan.md` row 5: the frozen commit, the export manifest's sha256, the author's choice on the GPU memory split, and the pod record.
+- `plan.md` row 5: the frozen commit, the export manifest's sha256, the GPU memory split actually used (E3), and the pod record.

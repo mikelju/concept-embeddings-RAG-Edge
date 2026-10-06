@@ -60,6 +60,12 @@ def main(argv: list[str] | None = None) -> int:
     ga2_rank.add_argument("--bundle", type=Path, default=config.PHASE06_DIR / "ga2")
     ga2_rank.add_argument("--pod", type=Path, default=config.PHASE06_DIR / "ga2" / "pod")
     ga2_rank.add_argument("--rankings", type=Path, default=config.PHASE06_RANKINGS_DIR)
+    ga1_export = commands.add_parser("ga1-export", help="Phase 06 G-A1 HotpotQA 1,000 bundle")
+    ga1_export.add_argument("--out", type=Path, default=config.PHASE06_DIR / "ga1")
+    ga1_rank = commands.add_parser("ga1-rank", help="Phase 06 G-A1 lists from the pod output")
+    ga1_rank.add_argument("--bundle", type=Path, default=config.PHASE06_DIR / "ga1")
+    ga1_rank.add_argument("--pod", type=Path, default=config.PHASE06_DIR / "ga1" / "pod")
+    ga1_rank.add_argument("--rankings", type=Path, default=config.PHASE06_RANKINGS_DIR)
     judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
     judge_cmd.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_results_cmd = commands.add_parser("judge-results", help="write the Phase 04 results")
@@ -150,6 +156,14 @@ def main(argv: list[str] | None = None) -> int:
             ga2.run_export(args.out, say=_say)
         else:
             ga2.run_rank(args.bundle, args.pod, args.rankings, say=_say)
+        return 0
+    if args.command in ("ga1-export", "ga1-rank"):
+        from edge_rag import ga1_hotpot
+
+        if args.command == "ga1-export":
+            ga1_hotpot.run_export(args.out, say=_say)
+        else:
+            ga1_hotpot.run_rank(args.bundle, args.pod, args.rankings, say=_say)
         return 0
     if args.command == "judge-results":
         from edge_rag.phase_results import Phase04
