@@ -227,10 +227,16 @@ class Phase:
     @classmethod
     def run(cls, set_names: Sequence[str], out: Path | None = None) -> dict[str, Any]:
         """Recompute the table from run files; write the stored pair, or `out` (plan D4)."""
-        if out is None and cls.RESULTS_JSON.exists():
-            raise ArtifactError(
-                f"{cls.RESULTS_JSON} exists and is written once; recompute with --out DIR"
-            )
+        targets = (
+            (cls.RESULTS_JSON, cls.RESULTS_MD)
+            if out is None
+            else (out / "results.json", out / "results.md")
+        )
+        for target in targets:
+            if target.exists():
+                raise ArtifactError(
+                    f"{target} exists and is written once; recompute with --out to an empty folder"
+                )
         provenance = git_provenance()
         phase02 = {e["set"]: e for e in json.loads(PHASE02_RESULTS.read_text("utf-8"))["sets"]}
         tables: dict[str, dict[str, Any] | None] = {}
@@ -247,10 +253,7 @@ class Phase:
             "not_run": not_run,
             "sets": [t for t in tables.values() if t is not None],
         }
-        if out is None:
-            write_pair(table, cls.markdown, cls.RESULTS_JSON, cls.RESULTS_MD)
-        else:
-            write_pair(table, cls.markdown, out / "results.json", out / "results.md")
+        write_pair(table, cls.markdown, *targets)
         return table
 
     @classmethod
@@ -1097,6 +1100,17 @@ class Phase04(Phase):
         return "\n".join(lines) + "\n"
 
 
+EQUALITY_CHECKS = ("bm25_equals_bm25", "dense_equals_p10-a", "seed_hop_equals_phase04_hop")
+
+
+def converge_complete(manifest: Mapping[str, Any]) -> bool:
+    """Spec C1: each of the three equality checks covers every question of the set."""
+    checks = manifest.get("equality", {})
+    return set(checks) == set(EQUALITY_CHECKS) and all(
+        c["equal"] == c["of"] == manifest["questions"] for c in checks.values()
+    )
+
+
 class Phase05(Phase):
     """Phase 05 (its spec C5, C6; plan D11): `mch` against G-L, `rrf-prf` and the bars.
 
@@ -1325,7 +1339,7 @@ class Phase05(Phase):
         here = config.PHASE05_RANKINGS_DIR / set_name
         p03, p04 = config.PHASE03_RANKINGS_DIR / set_name, config.PHASE04_RANKINGS_DIR / set_name
         conv = json.loads((here / converge.MANIFEST).read_text("utf-8"))
-        if any(c["equal"] != c["of"] for c in conv["equality"].values()):
+        if not converge_complete(conv):
             raise ArtifactError(f"{set_name}: converge equality counts are not complete (C1)")
         comp = json.loads((p03 / components.MANIFEST).read_text("utf-8"))
         pooled = json.loads((p04 / pool.MANIFEST).read_text("utf-8"))

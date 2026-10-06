@@ -2,6 +2,7 @@
 
 import pytest
 
+from edge_rag import phase_results as pr
 from edge_rag.artifacts import ArtifactError
 from edge_rag.phase_results import Phase05 as hr
 
@@ -150,3 +151,33 @@ def test_earlier_results_must_match_their_pinned_sha256(tmp_path, monkeypatch):
     monkeypatch.setattr(hr, "EARLIER", (("Phase 03", changed, tmp_path),))
     with pytest.raises(ArtifactError, match="not the pinned Phase 03"):
         hr.earlier("musique")
+
+
+def test_out_refuses_an_existing_page(tmp_path):
+    (tmp_path / "results.md").write_text("page", "utf-8")
+    with pytest.raises(ArtifactError, match="written once"):
+        hr.run(SETS, out=tmp_path)
+    assert (tmp_path / "results.md").read_text("utf-8") == "page"
+    assert not (tmp_path / "results.json").exists()
+
+
+def test_bare_run_refuses_when_only_the_stored_page_exists(tmp_path, monkeypatch):
+    page = tmp_path / "results.md"
+    page.write_text("page", "utf-8")
+    monkeypatch.setattr(hr, "RESULTS_JSON", tmp_path / "results.json")
+    monkeypatch.setattr(hr, "RESULTS_MD", page)
+    with pytest.raises(ArtifactError, match="written once"):
+        hr.run(SETS)
+
+
+def test_converge_must_be_complete_on_all_three_checks():
+    full = {"equal": 5, "of": 5}
+    manifest = {"questions": 5, "equality": dict.fromkeys(pr.EQUALITY_CHECKS, full)}
+    assert pr.converge_complete(manifest)
+    short = {
+        **manifest,
+        "equality": {**manifest["equality"], "dense_equals_p10-a": {"equal": 4, "of": 5}},
+    }
+    missing = {**manifest, "equality": {k: full for k in pr.EQUALITY_CHECKS[:2]}}
+    fewer = {**manifest, "equality": dict.fromkeys(pr.EQUALITY_CHECKS, {"equal": 4, "of": 4})}
+    assert not any(pr.converge_complete(m) for m in (short, missing, fewer))
