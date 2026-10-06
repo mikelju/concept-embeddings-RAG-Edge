@@ -6,7 +6,7 @@
 #   HF_TOKEN=... POD_COST_PER_HR=0.49 nohup bash scripts/pod_ga2.sh > /workspace/pod_ga2.out 2>&1 &
 # Progress: `STAGE_DONE <name>` (or STAGE_SKIP / STAGE_FAIL) lines in $LOG; a sampler line every
 # 30 s in $SAMPLES (UTC time, last progress line, GPU memory used, cgroup memory).
-# A non-empty C3 diff, a fact-filter error or a probe projection past the cut stops the session.
+# A non-empty upstream C3 diff, an OpenIE fallback past 5% (deviation 06.3), a fact-filter error or a probe projection past the cut stops the session.
 set -euo pipefail
 
 : "${HF_TOKEN:?set HF_TOKEN (read token with Llama-3.1 access); it is never printed}"
@@ -72,10 +72,20 @@ venv() {  # HippoRAG's own pins (torch 2.5.1, transformers 4.45.2, vllm 0.6.6.po
   "$VENV/bin/python" -c 'import torch; x = torch.randn(2048, 2048, device="cuda"); print(torch.__version__, torch.cuda.get_device_name(0), (x @ x).sum().item())'
 }
 
-c3_diff() {  # spec C3: the diff against the pinned commit, recorded; this recipe changes nothing
-  git -C "$HR" diff "$HIPPORAG_COMMIT" > "$OUT/c3-g-a2.diff"
+c3_diff() {  # spec C3: the pinned commit is clean before the deviation 06.3 patch (tracked files reset)
+  git -C "$HR" checkout -q -- .
+  git -C "$HR" diff "$HIPPORAG_COMMIT" > "$OUT/c3-g-a2.upstream.diff"
   git -C "$HR" status --porcelain --untracked-files=all > "$OUT/c3-g-a2.status"
-  [ ! -s "$OUT/c3-g-a2.diff" ]
+  [ ! -s "$OUT/c3-g-a2.upstream.diff" ]
+}
+
+openie_patch() {  # deviation 06.3: a NER or triple parse failure gives an empty chunk, not a fatal error;
+  # the recorded C3 diff is the patch and must touch only openie_openai.py
+  local f=src/hipporag/information_extraction/openie_openai.py
+  python3 src/edge_rag/pod/ga2_openie_patch.py "$HR/$f"
+  sha256sum src/edge_rag/pod/ga2_openie_patch.py > "$OUT/ga2_openie_patch.sha256"
+  git -C "$HR" diff "$HIPPORAG_COMMIT" > "$OUT/c3-g-a2.diff"
+  [ "$(git -C "$HR" diff --name-only "$HIPPORAG_COMMIT")" = "$f" ]
 }
 
 models() {  # both models at their pinned revisions; GritLM is loaded by name, so its refs/main
@@ -101,7 +111,7 @@ serve() {  # vLLM's OpenAI-compatible server, default sampling; only memory and 
 run() {  # run <save dir> <out dir> [extra args]
   local save=$1 out=$2
   shift 2
-  HF_HUB_OFFLINE=1 "$VENV/bin/python" src/edge_rag/pod/hipporag_run.py --bundle "$BUNDLE" \
+  EDGE_FALLBACK_LOG="$out/openie_fallback.jsonl" HF_HUB_OFFLINE=1 "$VENV/bin/python" src/edge_rag/pod/hipporag_run.py --bundle "$BUNDLE" \
     --save-dir "$save" --out "$out" --llm-base-url "http://localhost:$PORT/v1" \
     --hipporag-dir "$HR" --diff "$OUT/c3-g-a2.diff" "$@" 2>&1 | tee -a "$PROGRESS"
   return "${PIPESTATUS[0]}"
@@ -130,6 +140,7 @@ trap 'kill "$SAMPLER" 2> /dev/null || true; [ -f /workspace/vllm.pid ] && kill "
 stage clone "" clone
 stage venv "$OUT/pip-freeze.txt" venv
 stage c3-diff "" c3_diff
+stage openie-patch "" openie_patch
 stage models "" models
 stage serve "" serve
 stage probe "$OUT/probe/hipporag.manifest.json" \
