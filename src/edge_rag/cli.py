@@ -54,6 +54,12 @@ def main(argv: list[str] | None = None) -> int:
     rivals_pairs.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     rivals_rank = commands.add_parser("rivals-rank", help="Phase 06 G-R2 lists from pod scores")
     rivals_rank.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
+    ga2_export = commands.add_parser("ga2-export", help="Phase 06 G-A2 MultiHop-RAG bundle")
+    ga2_export.add_argument("--out", type=Path, default=config.PHASE06_DIR / "ga2")
+    ga2_rank = commands.add_parser("ga2-rank", help="Phase 06 G-A2 lists from the pod output")
+    ga2_rank.add_argument("--bundle", type=Path, default=config.PHASE06_DIR / "ga2")
+    ga2_rank.add_argument("--pod", type=Path, default=config.PHASE06_DIR / "ga2" / "pod")
+    ga2_rank.add_argument("--rankings", type=Path, default=config.PHASE06_RANKINGS_DIR)
     judge_cmd = commands.add_parser("judge", help="Phase 04 j-rrf3 and j-rrf4 lists")
     judge_cmd.add_argument("--set", dest="set_name", required=True, choices=sorted(config.SETS))
     judge_results_cmd = commands.add_parser("judge-results", help="write the Phase 04 results")
@@ -136,6 +142,14 @@ def main(argv: list[str] | None = None) -> int:
             rivals.run_pairs(args.set_name, say=_say)
         else:
             rivals.run_rank(args.set_name, say=_say)
+        return 0
+    if args.command in ("ga2-export", "ga2-rank"):
+        from edge_rag import ga2
+
+        if args.command == "ga2-export":
+            ga2.run_export(args.out, say=_say)
+        else:
+            ga2.run_rank(args.bundle, args.pod, args.rankings, say=_say)
         return 0
     if args.command == "judge-results":
         from edge_rag.phase_results import Phase04

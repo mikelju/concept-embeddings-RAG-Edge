@@ -128,3 +128,40 @@ def test_c3_compare_works_on_p_yes():
     shifted[0] = np.log(0.503)
     report = compare(batched, shifted, reference)
     assert report["fidelity_pass"] and not report["determinism_pass"] and not report["pass"]
+
+
+def test_qwen_scorer_asks_for_the_last_position_only_and_no_cache():
+    """Deviation 06.1: the forward call keeps logits for one position and no KV cache."""
+    import torch
+
+    from edge_rag.pod.rerank import QWEN_BATCH_SIZE, QwenReranker
+
+    class Batch(dict):
+        def to(self, _device):
+            return self
+
+    class Tokenizer:
+        def __call__(self, texts, **_):
+            return {"input_ids": [[1, 2] for _ in texts]}
+
+        def pad(self, inputs, **_):
+            return Batch(input_ids=torch.tensor(inputs["input_ids"]))
+
+    calls = []
+
+    class Model:
+        device = "cpu"
+
+        def __call__(self, **kwargs):
+            calls.append({k: v for k, v in kwargs.items() if k != "input_ids"})
+            logits = torch.zeros(len(kwargs["input_ids"]), 1, 4)
+            logits[:, -1, 3] = 1.0
+            return type("Out", (), {"logits": logits})()
+
+    scorer = QwenReranker.__new__(QwenReranker)
+    scorer.torch, scorer.tokenizer, scorer.model = torch, Tokenizer(), Model()
+    scorer.no, scorer.yes, scorer.prefix, scorer.suffix = 2, 3, [0], [0]
+    scores = scorer.predict([("q", "d")] * (QWEN_BATCH_SIZE + 1))
+    assert len(scores) == QWEN_BATCH_SIZE + 1
+    assert calls == [{"use_cache": False, "logits_to_keep": 1}] * 2
+    assert np.allclose(scores, np.log(np.exp(1.0) / (np.exp(1.0) + 1.0)))
