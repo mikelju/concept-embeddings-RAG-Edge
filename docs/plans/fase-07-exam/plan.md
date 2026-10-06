@@ -1,0 +1,47 @@
+# Phase 07 - Exam on QASPER: plan
+
+Status: draft for the author's approval
+Spec: `spec.md` (approved by the author 2026-10-06; modifiable until the test archive is downloaded, change rule in the spec)
+Base: branch `fase-07-exam` from `main`, spec approved at 849c920
+
+## Decisions
+Taken by the agent; any of them may change before the test download under the spec's change rule.
+- D1. Phase 07 outputs live in `data/phase07/` (`train-dev/` already there; `test/`, `rankings/{pooled,within}/`, `pod/`, `money/`, `results.json`); `results.md` is generated into this folder, as in Phases 03-06.
+- D2. Reuse before writing: every task below names the existing code it starts from; new code is only the QASPER loader, the GLiNER pass over new units, the Phase 07 rows of the results module, the pod stage script and the two termination stops.
+- D3. Money readings, pod creation and termination follow `.agents/skills/remote-gpu/SKILL.md`; `RUNPOD_API_KEY` and `HF_TOKEN` are checked for presence only and never printed.
+- D4. Every money step (marked **[money]**) stops for the author: a fresh cost estimate from the balance and rates read that day, then launch only on the author's yes in chat.
+- D5. One frozen commit for every test-split run, its hash recorded here before the test download; the dev dry run uses that same code.
+
+## Increments
+Each increment leaves the product working and covers named criteria.
+This file is the durable state: a new session resumes from here and from Git.
+Increments 1-6 are local and cost nothing; the test archive is downloaded only after all of them are done.
+
+| # | Increment | Criteria | Reuses | Done when | Status | Evidence |
+|---|---|---|---|---|---|---|
+| 1 | Pod self-termination and laptop backup timer, tested on a stub before anything that costs money: the in-pod watchdog stops the work at its cut, flushes outputs, then calls the remove command; the laptop timer calls `podTerminate` at expiry if the pod still exists | C9 | the 30 s hard-cut sampler of `scripts/pod_gr2.sh` (`over_cut`, `STOP_CUT`); `scripts/pod_ga1.sh` and `src/edge_rag/pod/ga1_pace.py` for the stage log; `podTerminate` and `myself { pods }` calls of `remote-gpu` | a test with a cut of a few seconds, a fake `runpodctl` on `PATH` and a fake local GraphQL endpoint shows, in order, `STOP_CUT`, the flushed files, one remove call, and the timer's one `podTerminate` call (none when the fake pod is already gone); no real pod, no spend; commit recorded here | pending | |
+| 2 | QASPER loader: units (paragraphs and `FLOAT SELECTED:` captions, `title. body`, token counts in batches), questions, separate gold file with digests, the D8 pooled query `<paper title>. <question>`; C2 counts repeated with this loader on train and dev, one single- and one multi-evidence example checked by hand, whether the terrain's token counts include the title recorded, cost projection re-fixed | C2, C5 (inputs) | `src/edge_rag/corpus.py` (unit ids, digests), `scoring.token_counts`, `artifacts.py` (digests, write path); the counts of the out-of-repo script of 2026-10-06 as the expected values | tests on a hand-built two-paper example (cross-paper string never maps, heading string leaves the set unmapped); train 734 of 2,172 and dev 210 of 901 reproduced, or the spec corrected in its own commit with the reason; record committed before any test download | pending | |
+| 3 | Contamination and licence record for BGE-small, answerai-colbert-small-v1, bge-reranker-v2-m3, Qwen3-Reranker-0.6B, GLiNER and Search-R1 against QASPER (model cards, papers, dataset lists), source and date per answer, each system labelled ghost, own or upper reference | C3 | Phase 06 `plan.md` "Licence and training-data record (C1)" and Phase 06 E1 | table in this file, one row per model, before the test download | pending | |
+| 4 | Exam rows of the results module with the hard-coded entrants (L `rrf4`, R and A `j-rrf4`), the bar with its tie-break, the partial-run and missing-system rules, the `j-rrf4` against `j-rrf3` state on the R and A lines, upper-reference labels, single- and multi-evidence breakdown, within-paper control beside the pooled figures, in-scope filter applied only at scoring | C6 | `src/edge_rag/phase_results.py` (`state`, `strongest`, `literature_bar`, `literature_claims`, `cost_row`, `write_pair`, the `Phase06` class), `metrics.py` (`fill_context`, `full_support`, `paired` at the fixed exact McNemar), `cli.py` | tests on hand-built examples, each passing: a context row (`p14`, `p10-b`, `j-rrf3`) beating the entrant leaves the verdict unchanged; G-A1 not run gives class A `not run`; a bar tie resolved G-L, G-R, G-R2, G-A1 after FS and class; an upper-reference label printed without changing the state; a system with 1,450 rankings is `not run` and never scored; entrant `not run` and needed ghost `not run` each give the class `not run`; the `j-rrf4` against `j-rrf3` state printed without changing the verdict | pending | |
+| 5 | Laptop and pod paths for QASPER: BM25 and Dense (pooled and within-paper), entity hop, RRF3, RRF4, `p10-b`, `p14`; pod stage script in the fixed order (setup, GLiNER, G-L, C3 checks, J-strong for G-R and `j-rrf4`, G-R2, J-strong for `j-rrf3`, within-paper J-strong, download) with the per-item probe (first 50 questions, or first 1,000 units for a corpus pass) and `not run (cut)` skip; G-A1 bundle with the D8 query | C5 | `retrieval/dense_bm25.py`, `retrieval/hop.py`, `retrieval/rrf.py`, `retrieval/fusion.py`, `pool.py`, `fuse.py`, `components.py`; `judge.py` (`pair_row`, `write_once`, `assemble`) and `pod/rerank.py` for J-strong and G-R; `rivals.py` and `pod/qwen_rerank.py` for G-R2; `pod/colbert.py` (D17 build) for G-L; `pod/searchr1.py` unchanged, `pod/ga1_subset.py`, `ga1_hotpot.py`, `scripts/pod_ga1.sh` for G-A1; `scripts/pod_judge.sh` and `scripts/pod_gr2.sh` stage pattern; GLiNER from the old project's `nodes/local_extraction.py` (read in place, copied, not imported) | unit tests on a hand-built example for the probe's skip decision and the fixed order; `npm run check` passes | pending | |
+| 6 | Local dry run on dev only: the whole laptop path over the 1,005 dev questions, and the pod script run on the laptop CPU over a small dev slice (a few papers) with the watchdog and a fake remove command, writing rankings, manifests and a dev results page by the same scoring call; nothing chosen from dev figures, which are reported as a dry run only | C5, C6, C9 | increments 1-5 | every system writes a ranking for every question of the slice; the scoring call runs end to end; the frozen commit hash for the exam recorded here (D5) | pending | |
+| 7 | Test archive download, only after increments 1-6 are done: once, from the test URL of the official loader `qasper.py` in `allenai/qasper`, sha256 recorded; the loader writes units, questions and the separate gold file with digests; no gold-derived figure before every ranking is digested | C4 | increment 2 loader | sha256 and digests in this file, download time later than the commits of increments 1-6 | pending | |
+| 8 | Laptop rankings on test, pooled (D8 query) and within-paper, for every laptop system, before any pod | C5 | increment 5 | 1,451 rankings per system, manifests and digests recorded | pending | |
+| 9 | **[money]** Balance reading and 4090 pod: read `clientBalance`, `myself { pods }` and the offered rate; re-fix the cap and re-project; ask the author with the fresh estimate; launch with the watchdog (cut over rate, 3.07 h at 2.27 USD and 0.74 USD/h) and the laptop backup timer (plus 5 min), laptop awake and on mains; run the fixed order with per-item probes; download, terminate, confirm `myself { pods }` empty | C5, C7, C9 | `remote-gpu` skill; increments 1 and 5 | rankings and manifests of every item that ran, `not run (cut)` recorded for any skipped item, pod gone, balance read after termination | pending | |
+| 10 | **[money]** G-A1 gate and A100 80 GB pod: gate on the balance read after increment 9 (balance minus 1.0 minus 0.14 covers G-A1's cut, 4.03 USD at today's figures, re-projected at the offered rate); if it passes, ask the author with the fresh estimate; launch with watchdog (1.82 h at 2.89 USD and 1.59 USD/h) and backup timer; otherwise record `not run (cost gate)` or `not run (no GPU / cost gate)` | C5, C7, C9 | `scripts/pod_ga1.sh`, `pod/searchr1.py`, `pod/ga1_pace.py`, Phase 06 `ga1_recipe.md` and the deviation 06.4 memory fix | evidence lists for 1,451 questions with manifest, or the `not run` state recorded; pod gone | pending | |
+| 11 | Scoring: one call of the outcome code writes `data/phase07/results.json` and `docs/plans/fase-07-exam/results.md`; states and claims by code | C6 | increment 4 | the generated page, byte-equal on regeneration | pending | |
+| 12 | Close: closing balance at least 2 h after the last termination and the three money figures (time x rate, balance delta, invoice if the author copies it); `npm run check`; adversarial review; master plan row; candidate learnings; push and PR to `main` | C7, C8 | `sdd-delivery`, `sdd-review` skills | C7 readings here, `npm run check` exit 0, review findings closed, PR open | pending | |
+
+## Deviations
+| ID | Summary | Criteria affected | Status |
+|---|---|---|---|
+
+## Adversarial review
+| Round | Backend | Range | Lenses | Findings | Status |
+|---|---|---|---|---|---|
+
+## Results by criterion
+Filled at the close.
+
+## Candidate learnings
+Only reusable lessons with a verbatim quote from the session.
