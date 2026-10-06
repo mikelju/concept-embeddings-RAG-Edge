@@ -1,6 +1,6 @@
 # Phase 07 - Exam on QASPER: specification
 
-Status: draft, for the author's approval (not frozen); decisions D1-D7 resolved by the author in chat on 2026-10-06; D8 (pooled query names the paper) pending the author's approval at freeze; train/dev figures measured 2026-10-06
+Status: draft, for the author's approval (not frozen); decisions D1-D7 resolved by the author in chat on 2026-10-06, except D6's 4.17 USD gate threshold; that threshold and D8 (pooled query names the paper) pending the author's approval at freeze; train/dev figures measured 2026-10-06
 Master plan: `../0_plan_maestro.md` (exam corpus decision of 2026-10-02; author decision D13 (c) of 2026-10-06 in `../fase-06-rivals/plan.md`).
 Starting point: Phase 06 `results.md` (literature bar on the terrain), Phase 02 to 06 plans for measured paces and costs.
 
@@ -60,6 +60,7 @@ Test figures are published figures, never computed by us; train and dev figures 
   Per question, the mean units of its own paper is 58.9 (measured, question-weighted), used for the within-paper control.
 - **Settings**: pooled, every question searched against all units of the 416 test papers, declared a new setting (QASPER is natively within one paper); within-paper control, every question searched only in its own paper's units, for BM25, Dense and J-strong over all of that paper's units (decided by the author, D4, 2026-10-06), reported beside the pooled figures, never deciding the verdict.
 - **Pooled query (D8, pending the author's approval at freeze)**: in the pooled setting every system's query is `<paper title>. <question>`, the same string for every system (G-A1 included), fixed before the exam opens; the within-paper control keeps the question alone.
+  D8 makes the query the same only at the input: G-A1 writes its own search queries during its turns and may drop the title, so its retrieval queries can differ from the other systems' (interpretation).
   Reason: annotators saw only the title and abstract and wrote questions such as "What baselines do they use?", which name no paper; pooled over 416 papers such a question has no single right answer, every system may score near the floor and most pairs may tie.
   Naming the paper is the realistic setting of a user asking about a paper they know.
   Hand check (dev, read only, no score computed, 2026-10-06): the first question of each of the 15 dev papers with the lowest ids (1503.00841 to 1606.02891); 12 of 15 cannot be answered without knowing the paper (for example "What baseline model is used?", "How was this data collected?", "What evaluation metric do they use?"), and 3 name enough of their topic to point to it (medical Wikipedia jargon, LDA spam detection, conversation flow in debates) (measured by reading, a judgment per question).
@@ -100,8 +101,10 @@ An upper-reference label never changes the bar, the pairing or the state, which 
 - Scoring: one call of the outcome code reads the gold file, writes `results.json` and `results.md`; states and claims are written by code.
 - Verdict per class c in L, R, A: the bar is the strongest measured ghost of class c or a cheaper class by pooled FS@2,048; the own entrant is paired against it with exact McNemar.
   The entrants are hard-coded in the outcome code before the exam opens, L `rrf4`, R and A `j-rrf4`, and never chosen from exam figures; context rows (`j-rrf3`, `p10-b`, `p14`) never enter the verdict, even when they beat the entrant.
+  Each R and A verdict line also prints, on the same line, the state of `j-rrf4` against `j-rrf3` (the literature control, which beat `j-rrf4` on MultiHop-RAG in Phase 04); this is report only and never changes the verdict.
   Bar tie-break, deterministic: higher FS@2,048, then the cheaper class (L before R before A), then the fixed order G-L, G-R, G-R2, G-A1.
-  One rule for missing ghosts: class c's state is `not run` when any line-up ghost of class c or a cheaper class was not run, because the project cannot claim to beat the literature in a class whose strongest ghost was never measured (Phase 06 author rationale); so with G-A1 not run, class A is `not run` and no cheaper ghost stands in for it.
+  Partial runs: a system with fewer than 1,451 test rankings (for example an item stopped by its cut or skipped by its probe) is `not run`; it is never scored on the subset it wrote, and its files are kept only as a record.
+  One rule for missing systems: class c's state is `not run` when its entrant is `not run` or when any line-up ghost of class c or a cheaper class is `not run`, because the project cannot claim to beat the literature in a class whose entrant or strongest ghost was never fully measured (Phase 06 author rationale); so with G-A1 not run, class A is `not run` and no cheaper ghost stands in for it.
   Otherwise the state is `win` when wins > losses and p < 0.05, `loss` when losses > wins and p < 0.05, `tie` otherwise.
   "Keeps its place on the exam in class c" is written only where the state is `win` (decided by the author, D5, 2026-10-06); `tie` is reported as not losing, never as a win.
 - Context, not verdict: `j-rrf4` against `j-rrf3` (does the hop help outside the terrain), every own system against every ghost, the within-paper control.
@@ -148,15 +151,22 @@ In that case the hard cuts stop each stage first (4090 at 2.27, G-A1 at 2.89), a
 The 4090 pod runs first; G-A1 runs last and only through this gate.
 After the 4090 pod is terminated, read `clientBalance`; G-A1 is launched only if that measured balance minus the 1.0 USD buffer, minus the 4090 pod's 0.14 USD billing tail (Phase 06 C8, which a reading taken right after termination may not yet show), minus G-A1's own 0.14 USD tail, covers G-A1's hard cut (1.5 x its projection, 2.89 USD at today's figures, re-projected before launch at the offered rate).
 Otherwise G-A1 is recorded `not run (cost gate)` and class A's verdict is `not run` (verdict rule above).
-At today's figures the gate needs a balance of at least 4.17 USD (1.0 + 0.14 + 0.14 + 2.89), so a first stage of at most 2.31 USD balance delta from 6.4847 USD (derived); this is 0.04 USD above the 4090 pod's 2.27 USD cut, so a 4090 stage that bills past its cut by more than 0.04 USD keeps G-A1 out (derived).
+At today's figures the gate needs a balance of at least 4.17 USD (1.0 + 0.14 + 0.14 + 2.89; G-A1's own tail in this sum pending the author's confirmation at freeze), so a first stage of at most 2.31 USD balance delta from 6.4847 USD (derived); this is 0.04 USD above the 4090 pod's 2.27 USD cut, so a 4090 stage that bills past its cut by more than 0.04 USD keeps G-A1 out (derived).
 
 ## Money and stopping rule
 - Authorization: the remaining balance, no top-up (D13 (c)); the exam runs only if the projection of the approved set fits with margin.
 - Before each pod: read `clientBalance` and `myself { pods }`, record the offered rate, re-project the item; close with a reading at least 2 h after the last termination.
-- Hard cut per item at 1.5 times its projection, never past the cap; a probe on the first 50 questions of each GPU stage projects the full stage, and a stage that projects past its cut stops and is recorded `not run`.
-- Each pod carries its own timer, its cut divided by the offered rate, started at pod creation: 3.07 h for the 4090 (2.27 / 0.74) and 1.82 h for the A100 80 GB (2.89 / 1.59) at today's figures (derived), recomputed from the rate read before launch.
-  Inside the pod, the work stops at the cut by the same mechanism as Phase 06's hard-cut watchdog in `scripts/pod_gr2.sh` (`HARD_CUT_USD`, `SPENT_S`, `POD_COST_PER_HR`; a 30 s sampler that writes `STOP_CUT` and kills the scoring once elapsed seconds x rate reach the cut).
-  That watchdog stops the work but does not terminate the pod (measured, reading the script), so the timer also calls `podTerminate` from the laptop when it expires; files already written are kept, and the stage is recorded with what it wrote.
+- Hard cut per pod at 1.5 times its projection, never past the cap.
+- Items inside a pod run in a fixed order, hard-coded before the exam opens: verdict items first, then the within-paper control and the context rows.
+  4090 pod: setup, GLiNER, G-L, C3 checks, J-strong for G-R and `j-rrf4`, G-R2, then J-strong for `j-rrf3`, then the within-paper J-strong control, then download; the A100 pod runs G-A1 alone.
+- The probe is per item: each per-question item first runs its first 50 questions (a corpus pass such as GLiNER or the G-L encoding, its first 1,000 units) and projects its full run from that pace.
+  An item whose projection does not fit the pod's remaining cut (the cut minus the time x rate already spent) is skipped and recorded `not run (cut)`; later items in the order are still probed, so one slow item does not stop the others.
+- Each pod terminates itself at its cut: a watchdog started at pod creation, its cut divided by the offered rate, 3.07 h for the 4090 (2.27 / 0.74) and 1.82 h for the A100 80 GB (2.89 / 1.59) at today's figures (derived), recomputed from the rate read before launch.
+  It extends Phase 06's hard-cut watchdog in `scripts/pod_gr2.sh` (`HARD_CUT_USD`, `SPENT_S`, `POD_COST_PER_HR`; a 30 s sampler that writes `STOP_CUT` and kills the work once elapsed seconds x rate reach the cut), which stops the work but does not terminate the pod (measured, reading the script).
+  At the cut it stops the work, flushes the outputs already written to the laptop-readable volume or download location, and then calls `runpodctl remove pod $RUNPOD_POD_ID` (or the equivalent RunPod API call); whether the pod's own credentials allow that call is not verified yet (interpretation), which the backup covers.
+- Backup: a laptop timer per pod, the same length plus 5 min, calls `podTerminate` if the pod still exists when it expires.
+  It covers the in-pod watchdog only partly: if the Windows laptop sleeps, hibernates or loses network, the timer does not fire on time, so the laptop is kept awake and on mains power while a pod lives (risk below).
+- Files already written are kept as a record; a system cut short is `not run` under the partial-run rule above, never scored on a subset.
 - No A100 80 GB available, or an offered rate above 1.59 USD/h: G-A1 is re-projected at the offered rate and runs only if it still passes the gate; otherwise it is recorded `not run (no GPU / cost gate)`.
   No swap to another GPU type unless it has at least 80 GB of GPU memory and passes the gate at its own rate.
 - Out of GPU memory once: one rerun with identical settings and a memory-only fix (06.4), or one resize to the next tier if the re-projection fits the cut; otherwise `not run`.
@@ -176,9 +186,10 @@ Frozen on approval.
 | C3 | Before opening: licence and QASPER training-data status of every system's models recorded with source and date; each labelled ghost, own or upper reference | `plan.md` |
 | C4 | The test archive is downloaded once; its sha256, the units, questions and gold files and their digests are recorded; no gold-derived figure exists before every ranking is digested | manifests and timestamps under `data/phase07/` |
 | C5 | Every system in the approved line-up has a depth-100 ranking (G-A1: evidence lists) for every one of the 1,451 test questions, written without reading the gold file, pooled (with the D8 query if approved), and the within-paper control for its systems, written once, with manifests pinning code commit, models and revisions, hardware, `costPerHr` and seconds | manifests, digests in `plan.md` |
-| C6 | `results.json` and `results.md`, written by code in one scoring call, give every metric of record with a label, offline and online cost per system, exact McNemar per comparison, the single- and multi-evidence breakdown, the in-scope filter applied only here, and the per-class verdict under the frozen rule | tests on hand-built examples for the verdict: a context row (`p14`, `p10-b` or `j-rrf3`) beating the entrant leaves the verdict unchanged; G-A1 not run gives class A `not run`; a bar tie resolved by the tie-break; an upper-reference label printed without changing the state; the generated page |
-| C7 | Money: spend at most the cap, no item past its hard cut, `myself { pods }` empty at the close, three labelled spend figures | readings in `plan.md` |
+| C6 | `results.json` and `results.md`, written by code in one scoring call, give every metric of record with a label, offline and online cost per system, exact McNemar per comparison, the single- and multi-evidence breakdown, the in-scope filter applied only here, and the per-class verdict under the frozen rule | tests on hand-built examples for the verdict: a context row (`p14`, `p10-b` or `j-rrf3`) beating the entrant leaves the verdict unchanged; G-A1 not run gives class A `not run`; a bar tie resolved by the tie-break; an upper-reference label printed without changing the state; a system with fewer than 1,451 rankings is `not run` and never scored on its subset; an entrant `not run` and a needed ghost `not run` each give that class `not run`; the `j-rrf4` against `j-rrf3` state printed on the R and A verdict lines without changing them; the generated page |
+| C7 | Money: spend at most the cap, no pod past its hard cut, `myself { pods }` empty at the close, three labelled spend figures | readings in `plan.md` |
 | C8 | `npm run check` passes | exit 0 |
+| C9 | Before any pod is launched: the in-pod self-termination (watchdog flushes outputs, then calls the remove command at its cut) and the laptop backup timer (calls `podTerminate` at its expiry) are both tested on a stub, with a short cut, a fake remove command and a fake API endpoint, no real pod and no spend | test output and commit in `plan.md`, earlier than the first pod's creation time |
 
 ## Assumptions
 - QASPER paragraphs (70-73 words on average, measured on train and dev) are close to MultiHop-RAG's units in length, so the judges' measured paces hold (assumed; the stress case covers 2.7 times slower).
@@ -189,6 +200,7 @@ Frozen on approval.
 - A single run can fail for a technical reason; the rerun rule above allows one identical rerun before scoring, nothing after.
 - The terrain wins on HotpotQA carry in-domain caveats (Phase 06); the exam is the first test without them.
 - G-A1 may be slower than projected on QASPER; its cut and probe stop it, and the gate keeps it out when the first stage overspends.
+- If the in-pod self-termination fails (for example the pod's credentials cannot remove it) while the Windows laptop sleeps or is offline, neither stop fires on time and the pod keeps billing past its cut; keeping the laptop awake and checking `myself { pods }` after each expected end reduces but does not remove this risk.
 
 ## Anti-goals
 - No new candidate, constant or variant; no look at any test figure before scoring; no reader.
@@ -199,8 +211,9 @@ Frozen on approval.
 3. **D3 Gold rule**: any annotator's full evidence set, as recommended in the draft.
 4. **D4 Within-paper control**: BM25, Dense and J-strong over all of the paper's units, as recommended in the draft (0.07 USD base after the train/dev count).
 5. **D5 Claim rule**: "keeps its place" only on `win`, as recommended in the draft.
-6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer and the 0.14 USD tail covering G-A1's hard cut (tail added by the author, 2026-10-06; G-A1's own 0.14 USD tail added after the adversarial review of f1c1895, threshold 4.17 USD, pending the author's confirmation at freeze); otherwise `not run (cost gate)`.
+6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer and the 4090 pod's 0.14 USD tail covering G-A1's hard cut (tail added by the author, 2026-10-06); otherwise `not run (cost gate)`; the 4.17 USD threshold is pending (below).
+7. **D7 Downloads**: train and dev authorized now and downloaded from the official AllenAI source on 2026-10-06 (10.8 MB archive, above); the test split only after the spec is frozen; nothing is downloaded, opened or computed on test before then.
 
 ## Decisions pending the author's approval at freeze
-8. **D8 Pooled query**: `<paper title>. <question>` in the pooled setting for every system, question alone in the within-paper control (proposed after the adversarial review of f1c1895; reason, hand check and rejected alternative under "Rules fixed before the exam opens").
-7. **D7 Downloads**: train and dev authorized now and downloaded from the official AllenAI source on 2026-10-06 (10.8 MB archive, above); the test split only after the spec is frozen; nothing is downloaded, opened or computed on test before then.
+- **D6 threshold**: G-A1's own 0.14 USD tail also subtracted in the gate, so a threshold of 4.17 USD (1.0 + 0.14 + 0.14 + 2.89) at today's figures (added after the adversarial review of f1c1895).
+- **D8 Pooled query**: `<paper title>. <question>` in the pooled setting for every system, question alone in the within-paper control (proposed after the adversarial review of f1c1895; reason, hand check and rejected alternative under "Rules fixed before the exam opens").
