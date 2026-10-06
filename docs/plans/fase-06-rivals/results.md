@@ -45,7 +45,7 @@ Each rival against the project's best own system, per set:
 - G-R2 on HotpotQA dev was scored on the 1,000 preregistered qids only, not on the full 7,405 the spec named (deviation 06.2, D11: G-R2's measured pace projected past its hard cut).
 - G-A1 on the full HotpotQA dev is outside the spec's scope; it ran on the 1,000 qids.
 - G-A2 on MuSiQue and HotpotQA dev is outside the spec's scope.
-- G-A1's figures come from a rerun after a GPU out-of-memory failure (deviation 06.4): the spec's stop rule (abort an item without retry under other settings when it runs out of memory once) was not followed as written; the rerun changed only the retrieval-server memory margin, to reach E3's planned vLLM share 0.46, and the author's ratification is pending (plan, deviation 06.4).
+- G-A1's figures come from a rerun after a GPU out-of-memory failure (deviation 06.4): the spec's stop rule (abort an item without retry under other settings when it runs out of memory once) was not followed as written; the rerun changed only the retrieval-server memory margin, to reach E3's planned vLLM share 0.46, and the author ratified the deviation on 2026-10-06 (plan, deviation 06.4).
 
 ## Comparisons
 
