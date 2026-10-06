@@ -1,7 +1,11 @@
 """Phase 07 exam rows (spec C6): the verdict rule on hand-built examples, no exam data."""
 
+import argparse
+import json
+
 import pytest
 
+from edge_rag import cli, config, qasper
 from edge_rag import phase_results as pr
 
 QIDS = [f"q{i:02d}" for i in range(40)]
@@ -144,3 +148,70 @@ def test_page_regenerates_from_the_json(tmp_path):
     t = table(full() | {"G-A1": None})
     pr.write_pair(t, pr.exam_markdown, tmp_path / "results.json", tmp_path / "results.md")
     pr.regenerate(pr.exam_markdown, tmp_path / "results.json", tmp_path / "results.md")
+
+
+def scored_dir(tmp_path, n_questions, short=()):
+    """A synthetic dev split (gold.json, units.jsonl) and laptop rankings with D9 markers;
+    systems in `short` miss their last question."""
+    from edge_rag.exam_laptop import write_system
+
+    ids = [f"d{i:04d}" for i in range(n_questions)]
+    split = tmp_path / "data" / "phase07" / "dev"
+    split.mkdir(parents=True)
+    (split / "gold.json").write_text(json.dumps({q: [["u-" + q]] for q in ids}), "utf-8")
+    units = [json.dumps({"unit_id": "u-" + q, "tokens": 100}) for q in ids]
+    (split / "units.jsonl").write_text("\n".join(units) + "\n", "utf-8")
+    rankings = tmp_path / "rankings"
+    for setting, names in (("pooled", ("dense", "bm25", "p10-b")), ("within", ("dense",))):
+        for name in names:
+            qids = ids[:-1] if name in short else ids
+            write_system(rankings / setting, name, {q: ["u-" + q] for q in qids}, qids)
+    return rankings
+
+
+def test_dev_dry_run_scores_end_to_end(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path / "data")
+    rankings = scored_dir(tmp_path, 12)
+    out = tmp_path / "score"
+    argv = ["exam-score", "dev", "--rankings", str(rankings), "--expected", "12"]
+    assert cli.main([*argv, "--out", str(out)]) == 0
+    page = (out / "results.md").read_text("utf-8")
+    assert page.startswith(f"# {pr.EXAM_DRY_RUN}\n")
+    assert "| dense | component | 12 | 12 | 0 | 12 |" in page
+    assert "| p10-b | context | 12 |" in page
+    assert "| rrf4 | entrant | not run |" in page and "**Class A: not run**" in page
+    pr.regenerate(pr.exam_markdown, out / "results.json", out / "results.md")
+    with pytest.raises(SystemExit):  # a dry run never writes the exam locations
+        cli.main([*argv, "--out", str(pr.EXAM_PAGE.parent)])
+    with pytest.raises(SystemExit):
+        cli.main(argv)
+
+
+def test_system_short_of_the_expected_count_is_not_run(tmp_path):
+    rankings = scored_dir(tmp_path, 12, short=("bm25",))
+    gold, tokens = qasper.read_gold(tmp_path / "data" / "phase07" / "dev")
+    t = pr.exam_score(rankings, gold, tokens, expected=12, dry_run=True)
+    assert t["rows"]["bm25"]["fs"] is None and t["rows"]["dense"]["fs"] == 12
+    tampered = rankings / "pooled" / "dense.complete.json"
+    tampered.write_text(json.dumps({"sha256": "0" * 64}), "utf-8")
+    assert pr.exam_score(rankings, gold, tokens, expected=12)["rows"]["dense"]["fs"] is None
+
+
+def test_default_expected_count_is_still_1451(tmp_path, monkeypatch):
+    rankings = scored_dir(tmp_path, 12)
+    gold, tokens = qasper.read_gold(tmp_path / "data" / "phase07" / "dev")
+    t = pr.exam_score(rankings, gold, tokens)
+    assert t["expected"] == pr.EXAM_QUESTIONS == 1_451 and t["dry_run"] is None
+    assert all(row["fs"] is None for row in t["rows"].values())
+    assert "DRY RUN" not in pr.exam_markdown(t)
+    seen = []
+    real = argparse.ArgumentParser.parse_args
+
+    def spy(self, argv=None, namespace=None):  # stop before any read or write
+        seen.append(real(self, argv, namespace).expected)
+        raise SystemExit(0)
+
+    monkeypatch.setattr(argparse.ArgumentParser, "parse_args", spy)
+    with pytest.raises(SystemExit):
+        cli.main(["exam-score", "test", "--rankings", "x"])
+    assert seen == [1_451]

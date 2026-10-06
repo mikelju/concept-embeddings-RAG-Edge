@@ -226,6 +226,15 @@ def write(out: Path, split: Split, tokens: Sequence[int]) -> dict[str, str]:
     return digests
 
 
+def read_gold(split_dir: Path) -> tuple[dict[str, list[list[str]]], dict[str, int]]:
+    """The separate `gold.json` and the unit token counts of one split, for scoring only;
+    ranking never calls this."""
+    gold = json.loads((split_dir / "gold.json").read_text("utf-8"))
+    lines = (split_dir / "units.jsonl").read_text("utf-8").splitlines()
+    tokens = {r["unit_id"]: int(r["tokens"]) for r in map(json.loads, lines)}
+    return gold, tokens
+
+
 def run_c2(train_dev: Path, say: Callable[[str], None]) -> dict[str, Any]:
     """C2 on train and dev: load, count tokens in batches, write each split, report counts."""
     figures: dict[str, Any] = {}

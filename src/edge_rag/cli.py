@@ -125,7 +125,35 @@ def main(argv: list[str] | None = None) -> int:
     )
     gliner.add_argument("--model-dir", type=Path, required=True)
     gliner.add_argument("--limit-units", type=int, help="only the first N units (pod probe)")
+    exam = commands.add_parser("exam-score", help="Phase 07 exam rows from rankings and gold")
+    exam.add_argument("split", choices=("dev", "test"))
+    exam.add_argument("--rankings", type=Path, required=True, help="folder with pooled/, within/")
+    exam.add_argument("--expected", type=int, default=1_451, help="questions per system (dev 1005)")
+    exam.add_argument("--dry-run", action="store_true", help="always on for dev")
+    exam.add_argument("--out", type=Path, help="dry-run folder; the exam writes its fixed paths")
     args = parser.parse_args(argv)
+    if args.command == "exam-score":
+        from edge_rag import phase_results as pr
+        from edge_rag import qasper
+
+        dry_run = args.dry_run or args.split == "dev"
+        if dry_run:
+            exam_dirs = (pr.EXAM_JSON.parent.resolve(), pr.EXAM_PAGE.parent.resolve())
+            out = args.out.resolve() if args.out else None
+            if out is None or out == exam_dirs[0] or out.is_relative_to(exam_dirs[1]):
+                parser.error("a dry run needs --out outside the exam locations")
+            json_path, md_path = out / "results.json", out / "results.md"
+        elif args.out:
+            parser.error("--out is for a dry run only")
+        else:
+            json_path, md_path = pr.EXAM_JSON, pr.EXAM_PAGE
+        gold, tokens = qasper.read_gold(config.DATA_DIR / "phase07" / args.split)
+        table = pr.exam_score(args.rankings, gold, tokens, args.expected, dry_run)
+        pr.write_pair(table, pr.exam_markdown, json_path, md_path)
+        for line in pr.exam_verdict_lines(table):
+            _say(line)
+        _say(f"[OK] {md_path}" + (f" ({pr.EXAM_DRY_RUN})" if dry_run else ""))
+        return 0
     if args.command in ("qasper-laptop", "qasper-gliner"):
         from edge_rag import exam_laptop, local_extraction
 

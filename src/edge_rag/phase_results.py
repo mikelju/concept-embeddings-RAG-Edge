@@ -2307,17 +2307,22 @@ EXAM_CONTEXT = ("j-rrf3", "p10-b", "p14")
 EXAM_ON = "pooled QASPER test, in-scope questions"
 EXAM_ORDER = ("rrf4", "j-rrf4", "j-rrf3", "p10-b", "p14", "G-L", "G-R", "G-R2", "G-A1")
 WITHIN_ONLY = "within-paper control only"
+EXAM_DRY_RUN = "DRY RUN - dev, not an exam result"
+EXAM_JSON = config.DATA_DIR / "phase07" / "results.json"
+EXAM_PAGE = config.REPO_ROOT / "docs" / "plans" / "fase-07-exam" / "results.md"
 
 
 def exam_hits(
     rankings: Mapping[str, Sequence[str]],
     token_counts: Mapping[str, int],
     gold: Mapping[str, Sequence[Sequence[str]]],
+    expected: int = EXAM_QUESTIONS,
 ) -> dict[str, int] | None:
     """FS@2,048 per in-scope question under the several-annotator rule (one fully covered
-    annotator set suffices); `None` (`not run`) for fewer than 1,451 rankings, never scored on
-    the subset. The in-scope filter (a question with no mapped set is skipped) is applied here."""
-    if len(rankings) < EXAM_QUESTIONS:
+    annotator set suffices); `None` (`not run`) for fewer than `expected` rankings (1,451 on
+    test), never scored on the subset. The in-scope filter (a question with no mapped set is
+    skipped) is applied here."""
+    if len(rankings) < expected:
         return None
     hits = {}
     for qid, sets in sorted(gold.items()):
@@ -2339,7 +2344,7 @@ def exam_verdict(
     """Per class: the bar over the line-up ghosts of that class or a cheaper one, the hard-coded
     entrant paired against it, `not run` when the entrant or any of those ghosts is; R and A
     also carry the entrant against `j-rrf3`, report only. Context rows never enter here."""
-    qids = sorted(next(r for r in records.values() if r is not None))
+    qids = sorted(next((r for r in records.values() if r is not None), {}))
 
     def record(system: str) -> list[int] | None:
         found = records.get(system)
@@ -2387,7 +2392,8 @@ def exam_table(
         found = pooled.get(system)
         role = ("entrant" if system in EXAM_ENTRANTS.values() else "control"
                 if system == EXAM_CONTROL else "context" if system in EXAM_CONTEXT else "ghost"
-                if system in EXAM_GHOSTS else WITHIN_ONLY)  # fmt: skip
+                if system in EXAM_GHOSTS else "component" if system in pooled
+                else WITHIN_ONLY)  # fmt: skip
         rows[system] = {
             "role": role,
             "fs": total(found),
@@ -2405,6 +2411,53 @@ def exam_table(
         "verdict": exam_verdict(pooled, upper),
         "label": "FS and paired tests measured; states and verdict written by code",
     }
+
+
+def exam_marked(directory: Path, name: str) -> bool:
+    """The system's completion marker (laptop `<name>.complete.json`, pod `<name>.manifest.json`)
+    names the sha256 of its ranking file (plan D9); otherwise the system is `not run`."""
+    ranking = directory / f"{name}.jsonl.gz"
+    sha256 = hashlib.sha256(ranking.read_bytes()).hexdigest()
+    for marker in (directory / f"{name}.complete.json", directory / f"{name}.manifest.json"):
+        if marker.exists() and json.loads(marker.read_text("utf-8")).get("sha256") == sha256:
+            return True
+    return False
+
+
+def exam_records(
+    directory: Path,
+    token_counts: Mapping[str, int],
+    gold: Mapping[str, Sequence[Sequence[str]]],
+    expected: int,
+) -> dict[str, dict[str, int] | None]:
+    """FS@2,048 per question for every ranking file in `directory`; `None` for an unmarked system
+    or one short of `expected` rankings (`exam_hits`)."""
+    records: dict[str, dict[str, int] | None] = {}
+    for path in sorted(directory.glob("*.jsonl.gz")) if directory.is_dir() else []:
+        name = path.name.removesuffix(".jsonl.gz")
+        marked = exam_marked(directory, name)
+        rankings = scoring.read_rankings(path) if marked else {}
+        records[name] = exam_hits(rankings, token_counts, gold, expected) if marked else None
+    return records
+
+
+def exam_score(
+    rankings_dir: Path,
+    gold: Mapping[str, Sequence[Sequence[str]]],
+    token_counts: Mapping[str, int],
+    expected: int = EXAM_QUESTIONS,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """The exam table from `<rankings_dir>/{pooled,within}`; every line-up system without a
+    marked file is listed `not run`. A dry run carries its heading into the JSON and the page."""
+    pooled = dict.fromkeys(EXAM_ORDER) | exam_records(
+        rankings_dir / "pooled", token_counts, gold, expected
+    )
+    within = exam_records(rankings_dir / "within", token_counts, gold, expected)
+    table = exam_table(pooled, within, gold, {}, {})
+    table["expected"] = expected
+    table["dry_run"] = EXAM_DRY_RUN if dry_run else None
+    return table
 
 
 def exam_verdict_lines(table: Mapping[str, Any]) -> list[str]:
@@ -2440,7 +2493,10 @@ def exam_verdict_lines(table: Mapping[str, Any]) -> list[str]:
 
 
 def exam_markdown(table: Mapping[str, Any]) -> str:
+    dry_run = table.get("dry_run")
     lines = [
+        *([f"# {dry_run}", "", f"**{dry_run}.** Nothing here is chosen from or reported as an "
+           "exam figure.", ""] if dry_run else []),  # fmt: skip
         "# Phase 07 - Exam on QASPER: results",
         "",
         f"In scope: {table['n']:,} questions ({table['n_single']:,} single-evidence, "
