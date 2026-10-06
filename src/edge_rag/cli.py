@@ -131,6 +131,9 @@ def main(argv: list[str] | None = None) -> int:
     exam.add_argument("--expected", type=int, default=1_451, help="questions per system (dev 1005)")
     exam.add_argument("--dry-run", action="store_true", help="always on for dev")
     exam.add_argument("--out", type=Path, help="dry-run folder; the exam writes its fixed paths")
+    exam.add_argument(
+        "--questions", type=Path, help="dry run on a sample: score only this questions.jsonl"
+    )
     args = parser.parse_args(argv)
     if args.command == "exam-score":
         from edge_rag import phase_results as pr
@@ -143,11 +146,15 @@ def main(argv: list[str] | None = None) -> int:
             if out is None or out == exam_dirs[0] or out.is_relative_to(exam_dirs[1]):
                 parser.error("a dry run needs --out outside the exam locations")
             json_path, md_path = out / "results.json", out / "results.md"
-        elif args.out:
-            parser.error("--out is for a dry run only")
+        elif args.out or args.questions:
+            parser.error("--out and --questions are for a dry run only")
         else:
             json_path, md_path = pr.EXAM_JSON, pr.EXAM_PAGE
         gold, tokens = qasper.read_gold(config.DATA_DIR / "phase07" / args.split)
+        if args.questions:  # a dev sample (task 6): its questions only, still from gold.json
+            lines = args.questions.read_text("utf-8").splitlines()
+            sample = {json.loads(line)["qid"] for line in lines if line.strip()}
+            gold = {qid: sets for qid, sets in gold.items() if qid in sample}
         table = pr.exam_score(args.rankings, gold, tokens, args.expected, dry_run)
         pr.write_pair(table, pr.exam_markdown, json_path, md_path)
         for line in pr.exam_verdict_lines(table):

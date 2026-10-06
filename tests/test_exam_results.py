@@ -187,6 +187,26 @@ def test_dev_dry_run_scores_end_to_end(tmp_path, monkeypatch):
         cli.main(argv)
 
 
+
+def test_dev_dry_run_on_a_sample_scores_only_its_questions(tmp_path, monkeypatch):
+    """Task 6: rankings for a dev sample, gold.json for all of dev; --questions keeps the sample."""
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path / "data")
+    rankings = scored_dir(tmp_path, 12)
+    gold = tmp_path / "data" / "phase07" / "dev" / "gold.json"
+    extra = json.loads(gold.read_text("utf-8")) | {"q-unranked": [["u-x"]]}
+    gold.write_text(json.dumps(extra), "utf-8")
+    sample = tmp_path / "questions.jsonl"
+    lines = [json.dumps({"qid": q}) + "\n" for q in extra if q != "q-unranked"]
+    sample.write_text("".join(lines), "utf-8")
+    out = tmp_path / "score"
+    argv = ["exam-score", "dev", "--rankings", str(rankings), "--expected", "12", "--out", str(out)]
+    with pytest.raises(KeyError):  # without it, a question with gold and no ranking
+        cli.main(argv)
+    assert cli.main([*argv, "--questions", str(sample)]) == 0
+    assert "| dense | component | 12 | 12 | 0 | 12 |" in (out / "results.md").read_text("utf-8")
+    with pytest.raises(SystemExit):  # never on the exam
+        cli.main(["exam-score", "test", "--rankings", str(rankings), "--questions", str(sample)])
+
 def test_system_short_of_the_expected_count_is_not_run(tmp_path):
     rankings = scored_dir(tmp_path, 12, short=("bm25",))
     gold, tokens = qasper.read_gold(tmp_path / "data" / "phase07" / "dev")

@@ -35,6 +35,12 @@ Increments 1-6 are local and cost nothing; the test archive is downloaded only a
 | 11 | Scoring: one call of the outcome code writes `data/phase07/results.json` and `docs/plans/fase-07-exam/results.md`; states and claims by code | C6 | increment 4 | the generated page, byte-equal on regeneration | pending | |
 | 12 | Close: closing balance at least 2 h after the last termination and the three money figures (time x rate, balance delta, invoice if the author copies it); `npm run check`; adversarial review; master plan row; candidate learnings; push and PR to `main` | C7, C8 | `sdd-delivery`, `sdd-review` skills | C7 readings here, `npm run check` exit 0, review findings closed, PR open | pending | |
 
+Change to increment 6 (2026-10-06, before the test download; reason: laptop CPU time).
+GLiNER, the entity systems (hop, `p14`, the `rrf4` inputs) and the pod script run on a fixed dev sample, the first 3 dev papers by id (315 units, 17 questions), not on the whole of dev.
+Dense, BM25, `p10-b` and within-paper Dense and BM25 run on the whole of dev (1,005 questions).
+GLiNER at about 0.9 units/s would take about 4.7 h on the 15,122 dev units, and the pod items exercise the same code at any size.
+On the laptop the pod script runs with `scripts/laptop_exam_items.sh`: items that need CUDA, vLLM or the G-L list are recorded `not run (laptop: <reason>)`, and the pod removal is only logged (`SIMULATE_DELETE=1`).
+
 ### Pod self-removal: what the docs say (2026-10-06, docs only, no spend)
 - RunPod's pod environment-variable reference lists `RUNPOD_POD_ID` and a `RUNPOD_API_KEY` described as limited in scope to the pod itself (docs.runpod.io/pods/references/environment-variables).
 - The runpodctl overview says every pod comes with `runpodctl` preinstalled and a Pod-scoped API key (docs.runpod.io/runpodctl/overview).

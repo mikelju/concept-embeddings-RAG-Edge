@@ -193,3 +193,45 @@ def test_stage_script_order_probe_skip_markers_and_laptop_fetch(tmp_path):
         assert f"FETCHED {item} " in fetch_log
     assert "FETCHED_NOT_RUN g-l" in fetch_log and (laptop / "g-l.not-run.json").exists()
     assert not (laptop / "g-r2").exists() and "FETCH_END" in fetch_log
+
+
+def test_laptop_switch_records_not_run_and_simulates_the_delete(tmp_path):
+    """Task 6 dry run: LAPTOP_NOT_RUN items are recorded `not run (laptop: ...)` unrun, and at
+    the cut SIMULATE_DELETE=1 logs the removal instead of calling runpodctl or the API."""
+    bash = find_bash()
+    pod = tmp_path / "pod"
+    items = tmp_path / "items.sh"
+    items.write_text(
+        STUB_ITEMS + 'item_gliner() { sleep 4; stub gliner "$1" "$2"; }\n', "utf-8", newline="\n"
+    )
+    log, calls = tmp_path / "pod.log", tmp_path / "calls.txt"
+    env = {
+        k: v for k, v in os.environ.items() if k not in ("RUNPOD_POD_ID", "RUNPOD_API_KEY")
+    } | {
+        "PYTHONPATH": str(ROOT / "src"),
+        "STAGE_PYTHON": posix(Path(sys.executable)),
+        "POD_COST_PER_HR": "3600",
+        "HARD_CUT_USD": "2",
+        "OUT": posix(pod),
+        "LOG": posix(log),
+        "SAMPLES": posix(tmp_path / "samples"),
+        "PROGRESS": posix(tmp_path / "progress"),
+        "ITEMS_LIB": posix(items),
+        "CALLS": posix(calls),
+        "WATCH_S": "1",
+        "SIMULATE_DELETE": "1",
+        "LAPTOP_NOT_RUN": "setup: no CUDA; g-l: no CUDA, Linux only",
+    }
+    done = subprocess.run(  # noqa: S603
+        [bash, "scripts/pod_exam.sh"], cwd=ROOT, env=env, capture_output=True, text=True,
+        timeout=300,
+    )  # fmt: skip
+    assert done.returncode == 0, done.stderr
+    text = log.read_text("utf-8")
+    for item, reason in (("setup", "no CUDA"), ("g-l", "no CUDA, Linux only")):
+        record = json.loads((pod / f"{item}.not-run.json").read_text("utf-8"))
+        assert record == {"item": item, "state": f"not run (laptop: {reason})"}
+        assert f"ITEM_NOT_RUN_LAPTOP {item} " in text and f"ITEM_START {item} " not in text
+    assert "ran setup" not in calls.read_text("utf-8")
+    assert "STOP_CUT" in text and "FLUSHED" in text and "TERMINATE_SIMULATED" in text
+    assert "TERMINATE_TRY" not in text and (pod / "sha256sums.txt").exists()

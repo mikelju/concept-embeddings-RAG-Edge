@@ -7,6 +7,7 @@
 # writes `FLUSHED`, and removes the pod: `runpodctl remove pod $RUNPOD_POD_ID`, else
 # `runpodctl pod delete` (newer runpodctl), else the GraphQL `podTerminate` with the pod's own
 # RUNPOD_API_KEY (never printed); each attempt is a `TERMINATE_TRY <how>` line in $LOG.
+# SIMULATE_DELETE=1 (laptop dry run only) replaces the removal with a `TERMINATE_SIMULATED` line.
 # Source it from a stage script that sets POD_COST_PER_HR, HARD_CUT_USD, LOG, SAMPLES, PROGRESS
 # and defines `stop_work` and `flush`, then call `watchdog_start` (it sets the EXIT trap: a normal
 # end stops the watchdog, a cut leaves it running until the pod is removed).
@@ -22,6 +23,10 @@ over_cut() {  # true once (SPENT_S + elapsed) x rate reaches HARD_CUT_USD; false
 }
 
 terminate_self() {  # runpodctl (old, then new syntax), then GraphQL podTerminate; first success wins
+  if [ "${SIMULATE_DELETE:-0}" = 1 ]; then
+    echo "TERMINATE_SIMULATED $(date -u +%FT%TZ) laptop dry run, no RunPod call" >> "$LOG"
+    return 0
+  fi
   local id=${RUNPOD_POD_ID:?set RUNPOD_POD_ID} response
   echo "TERMINATE_TRY runpodctl-remove $(date -u +%FT%TZ)" >> "$LOG"
   runpodctl remove pod "$id" >> "$LOG" 2>&1 && return 0

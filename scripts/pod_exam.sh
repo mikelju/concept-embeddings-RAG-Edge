@@ -13,6 +13,8 @@
 # stops the running item, flushes sha256sums.txt and removes the pod; no grace period.
 # Item commands come from $ITEMS_LIB (default scripts/pod_exam_items.sh): `item_<name> <limit>
 # <outdir>` (limit empty for the full run) and `item_total <name>` (units or questions).
+# LAPTOP_NOT_RUN (laptop dry run only, empty on the pod), "item: reason; item: reason", records
+# each named item as `not run (laptop: <reason>)` in `$OUT/<item>.not-run.json` without running it.
 # Run from the repository root at the frozen commit, e.g.
 #   POD=4090 POD_COST_PER_HR=0.74 HARD_CUT_USD=2.27 nohup bash scripts/pod_exam.sh \
 #     > /workspace/pod_exam.out 2>&1 &
@@ -61,6 +63,17 @@ run_item() {  # run_item <item> <limit> <outdir>: in the background, its pid whe
 
 # shellcheck source=scripts/pod_watchdog.sh
 source scripts/pod_watchdog.sh
+
+laptop_reason() {  # laptop_reason <item>: its LAPTOP_NOT_RUN reason, else exit 1
+  local entry entries
+  IFS=';' read -ra entries <<< "${LAPTOP_NOT_RUN:-}"
+  for entry in "${entries[@]}"; do
+    entry="${entry#"${entry%%[![:space:]]*}"}"
+    if [ "${entry%%:*}" = "$1" ]; then echo "${entry#*: }"; return 0; fi
+  done
+  return 1
+}
+
 # shellcheck disable=SC1090
 source "$ITEMS_LIB"
 mkdir -p "$OUT/probe"
@@ -69,6 +82,12 @@ watchdog_start
 for item in $(stage_py order --pod "$POD" | tr -d '\r'); do
   if stage_py check "$OUT" "$item"; then
     echo "ITEM_SKIP $item already complete" >> "$LOG"
+    continue
+  fi
+  if reason=$(laptop_reason "$item"); then
+    printf '{"item": "%s", "state": "not run (laptop: %s)"}
+' "$item" "$reason"       > "$OUT/$item.not-run.json"
+    echo "ITEM_NOT_RUN_LAPTOP $item $(date -u +%FT%TZ)" >> "$LOG"
     continue
   fi
   size=$(stage_py probe-size "$item" | tr -d '\r')

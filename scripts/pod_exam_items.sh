@@ -7,7 +7,7 @@
 # convert DeBERTa-v3's spm.model, else transformers 5.16.1 falls back to tiktoken and fails
 # (measured 2026-10-06 on the laptop; the old project's pod lock had protobuf 7.36.2).
 SPLIT="${SPLIT:-test}"
-SPLIT_DIR="data/phase07/$SPLIT"
+SPLIT_DIR="${SPLIT_DIR:-data/phase07/$SPLIT}"
 GLINER_MODEL_DIR="${GLINER_MODEL_DIR:-/workspace/gliner-model}"
 TORCH_INDEX="${TORCH_INDEX:-https://download.pytorch.org/whl/cu126}"
 
