@@ -1,10 +1,10 @@
 """Phase 06 G-R2 on the pod: Qwen3-Reranker-0.6B over the uploaded G-L top-100 pairs.
 
 The scorer is `rerank.QwenReranker` (model card prompt, default instruction, last-position
-`yes` against `no` logit, kept as log P(yes)) in bfloat16, batch 16, pairs in file order.
+`yes` against `no` logit, kept as log P(yes)) in float32, batch 16, pairs in file order.
 `--check` is spec C3, run once before any scoring, on the first 100 pairs in pair-file order
 of each of the three sets (300 pairs):
-- fidelity: the model card's reference code, verbatim and loaded as the card loads it, one
+- fidelity: the model card's reference code, verbatim except loaded in float32 (D7), one
   pair per call (no padding), against the batched scorer;
 - determinism: the same 300 pairs scored in reversed order (other batches, other padding).
 Both compare the card's score, P(yes), within 1e-3 absolute; log P(yes) differences are
@@ -44,7 +44,7 @@ from edge_rag.pod.rerank import (
 )
 
 config = common.config
-DTYPE = "bfloat16"
+DTYPE = "float32"
 SETS = ("musique", "multihop-rag", "hotpotqa-dev")
 PAIRS_DIR = config.PHASE06_PAIRS_DIR
 SCORES_DIR = config.PHASE06_SCORES_DIR
@@ -73,8 +73,8 @@ def first_pairs(rows: Sequence[dict], n: int) -> list[tuple[str, str]]:
 
 
 class CardReference:
-    """The model card's reference code, verbatim: default load, `format_instruction`,
-    `process_inputs`, `compute_logits`; called with one pair at a time."""
+    """The model card's reference code, verbatim except the float32 load (D7):
+    `format_instruction`, `process_inputs`, `compute_logits`; called with one pair at a time."""
 
     def __init__(self) -> None:
         import torch
@@ -84,7 +84,9 @@ class CardReference:
         self.tokenizer = AutoTokenizer.from_pretrained(
             QWEN_MODEL, revision=QWEN_REVISION, padding_side="left"
         )
-        model: Any = AutoModelForCausalLM.from_pretrained(QWEN_MODEL, revision=QWEN_REVISION)
+        model: Any = AutoModelForCausalLM.from_pretrained(
+            QWEN_MODEL, revision=QWEN_REVISION, dtype=getattr(torch, DTYPE)
+        )
         self.model = model.cuda().eval()
         self.token_false_id = self.tokenizer.convert_tokens_to_ids("no")
         self.token_true_id = self.tokenizer.convert_tokens_to_ids("yes")
