@@ -1,6 +1,6 @@
 # Phase 07 - Exam on QASPER: specification
 
-Status: draft, for the author's approval (not frozen); decisions D1-D7 resolved by the author in chat on 2026-10-06, except D6's 4.17 USD gate threshold; that threshold and D8 (pooled query names the paper) pending the author's approval at freeze; train/dev figures measured 2026-10-06
+Status: draft, for the author's approval (not frozen); decisions D1-D7 resolved by the author in chat on 2026-10-06 (D6's billing tail counted once for the phase, option A), except D6's 4.03 USD gate threshold; that threshold and D8 (pooled query names the paper) pending the author's approval at freeze; train/dev figures measured 2026-10-06
 Master plan: `../0_plan_maestro.md` (exam corpus decision of 2026-10-02; author decision D13 (c) of 2026-10-06 in `../fase-06-rivals/plan.md`).
 Starting point: Phase 06 `results.md` (literature bar on the terrain), Phase 02 to 06 plans for measured paces and costs.
 
@@ -135,23 +135,23 @@ G-A1 runs on an A100 80 GB, not an A40 (decided by the author, D2, 2026-10-06): 
 
 ### Total for the decided set against the cap
 Cap = 6.4847 USD balance (measured 2026-10-06T14:02:25Z) - 1.0 USD buffer = 5.48 USD (derived); it is re-fixed from the `clientBalance` read before the first pod.
-Billing tail: 0.14 USD beyond time x rate (measured gap, Phase 06 C8), counted once per pod in every worst case.
+Billing tail: 0.14 USD beyond time x rate (measured gap, Phase 06 C8), counted once for the whole phase in every worst case, not once per pod (decided by the author, D6 option A, 2026-10-06): Phase 06 measured that 0.140 USD for all five of its pods together.
 
-| Set | Projection | Margin at projection | Sum of hard cuts + tails | Margin at cuts |
+| Set | Projection | Margin at projection | Sum of hard cuts + tail | Margin at cuts |
 |---|---:|---:|---:|---:|
-| B. Decided (D1, D2): everything, G-A1 on A100 80 GB | 3.44 | 2.04 | 5.44 (2.27 + 2.89 + 2 x 0.14) | 0.04 |
+| B. Decided (D1, D2): everything, G-A1 on A100 80 GB | 3.44 | 2.04 | 5.30 (2.27 + 2.89 + 0.14) | 0.18 |
 | C. Gate not passed: 4090 pod only, G-A1 `not run (cost gate)` | 1.51 | 3.97 | 2.41 (2.27 + 0.14) | 3.07 |
 
 All figures derived from the item table.
-Set B's margin at the cuts is thin, 0.04 USD; the gate below is what keeps the worst case inside the cap.
-Stress case from Phase 06's failure modes (judges, G-R2 and G-A1's generation 2.7 times slower, as G-R2's pace was against its assumption in deviation 06.2; one out-of-memory restart repeating each pod's setup, as in 06.1 and 06.4; a 0.14 USD tail per pod): 4090 pod 3.04 USD, G-A1 3.63 USD, 6.68 USD in all (sum before rounding), 1.20 USD past the cap; without G-A1 3.04 USD, 2.44 USD under it (derived).
+Set B's margin at the cuts is thin, 0.18 USD; the gate below is what keeps the worst case inside the cap.
+Stress case from Phase 06's failure modes (judges, G-R2 and G-A1's generation 2.7 times slower, as G-R2's pace was against its assumption in deviation 06.2; one out-of-memory restart repeating each pod's setup, as in 06.1 and 06.4; the phase's single 0.14 USD tail, counted on the 4090 pod): 4090 pod 3.04 USD, G-A1 3.49 USD, 6.54 USD in all (sum before rounding), 1.06 USD past the cap; without G-A1 3.04 USD, 2.44 USD under it (derived).
 In that case the hard cuts stop each stage first (4090 at 2.27, G-A1 at 2.89), and the gate below keeps G-A1 out when the first stage overspends.
 
 ### Run order and the G-A1 gate (decided by the author, D6, 2026-10-06)
 The 4090 pod runs first; G-A1 runs last and only through this gate.
-After the 4090 pod is terminated, read `clientBalance`; G-A1 is launched only if that measured balance minus the 1.0 USD buffer, minus the 4090 pod's 0.14 USD billing tail (Phase 06 C8, which a reading taken right after termination may not yet show), minus G-A1's own 0.14 USD tail, covers G-A1's hard cut (1.5 x its projection, 2.89 USD at today's figures, re-projected before launch at the offered rate).
+After the 4090 pod is terminated, read `clientBalance`; G-A1 is launched only if that measured balance minus the 1.0 USD buffer, minus the phase's single 0.14 USD billing tail (Phase 06 C8, counted once for the phase per D6 option A; a reading taken right after termination may not yet show it), covers G-A1's hard cut (1.5 x its projection, 2.89 USD at today's figures, re-projected before launch at the offered rate).
 Otherwise G-A1 is recorded `not run (cost gate)` and class A's verdict is `not run` (verdict rule above).
-At today's figures the gate needs a balance of at least 4.17 USD (1.0 + 0.14 + 0.14 + 2.89; G-A1's own tail in this sum pending the author's confirmation at freeze), so a first stage of at most 2.31 USD balance delta from 6.4847 USD (derived); this is 0.04 USD above the 4090 pod's 2.27 USD cut, so a 4090 stage that bills past its cut by more than 0.04 USD keeps G-A1 out (derived).
+At today's figures the gate needs a balance of at least 4.03 USD (1.0 + 0.14 + 2.89; threshold pending the author's approval at freeze), so a first stage of at most 2.46 USD balance delta from 6.4847 USD (derived); this is 0.18 USD above the 4090 pod's 2.27 USD cut, so a 4090 stage that bills past its cut by more than 0.18 USD keeps G-A1 out (derived).
 
 ## Money and stopping rule
 - Authorization: the remaining balance, no top-up (D13 (c)); the exam runs only if the projection of the approved set fits with margin.
@@ -211,9 +211,10 @@ Frozen on approval.
 3. **D3 Gold rule**: any annotator's full evidence set, as recommended in the draft.
 4. **D4 Within-paper control**: BM25, Dense and J-strong over all of the paper's units, as recommended in the draft (0.07 USD base after the train/dev count).
 5. **D5 Claim rule**: "keeps its place" only on `win`, as recommended in the draft.
-6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer and the 4090 pod's 0.14 USD tail covering G-A1's hard cut (tail added by the author, 2026-10-06); otherwise `not run (cost gate)`; the 4.17 USD threshold is pending (below).
+6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer and the 0.14 USD billing tail covering G-A1's hard cut (tail added by the author, 2026-10-06); otherwise `not run (cost gate)`; the 4.03 USD threshold is pending (below).
+   Tail resolved by the author (option A, chat, 2026-10-06): 0.14 USD counted once for the whole phase, not per pod, because Phase 06 measured that 0.140 USD gap for all five of its pods together (Phase 06 C8: 7.630 USD balance delta minus 7.490 USD time x rate).
 7. **D7 Downloads**: train and dev authorized now and downloaded from the official AllenAI source on 2026-10-06 (10.8 MB archive, above); the test split only after the spec is frozen; nothing is downloaded, opened or computed on test before then.
 
 ## Decisions pending the author's approval at freeze
-- **D6 threshold**: G-A1's own 0.14 USD tail also subtracted in the gate, so a threshold of 4.17 USD (1.0 + 0.14 + 0.14 + 2.89) at today's figures (added after the adversarial review of f1c1895).
+- **D6 threshold**: 4.03 USD (1.0 buffer + 0.14 phase tail + 2.89 G-A1 cut) at today's figures; the tail is counted once per D6 option A, replacing the 4.17 USD with a second, per-pod tail proposed after the adversarial review of f1c1895.
 - **D8 Pooled query**: `<paper title>. <question>` in the pooled setting for every system, question alone in the within-paper control (proposed after the adversarial review of f1c1895; reason, hand check and rejected alternative under "Rules fixed before the exam opens").
