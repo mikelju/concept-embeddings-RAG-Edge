@@ -1769,7 +1769,7 @@ class Phase06(Phase05):
         "the spec's stop rule (abort an item without retry under other settings when it runs "
         "out of memory once) was not followed as written; the rerun changed only the "
         "retrieval-server memory margin, to reach E3's planned vLLM share 0.46, and the "
-        "author's ratification is pending (plan, deviation 06.4).",
+        "author ratified the deviation on 2026-10-06 (plan, deviation 06.4).",
     )
     # Per set, systems whose training data covers the set (research protocol, known traps;
     # plan, C1 record): a claim on that set is printed with them beside the verdict.
