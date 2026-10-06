@@ -1,11 +1,18 @@
 # Phase 07 - Exam on QASPER: specification
 
-Status: draft, for the author's approval (not frozen); decisions D1-D7 resolved by the author in chat on 2026-10-06 (D6's billing tail counted once for the phase, option A), except D6's 4.03 USD gate threshold; that threshold and D8 (pooled query names the paper) pending the author's approval at freeze; train/dev figures measured 2026-10-06
+Status: approved by the author in chat on 2026-10-06, modifiable until the test archive is downloaded (not frozen, the author's choice); decisions D1-D8 resolved, the D6 gate threshold of 4.03 USD included; train/dev figures measured 2026-10-06
 Master plan: `../0_plan_maestro.md` (exam corpus decision of 2026-10-02; author decision D13 (c) of 2026-10-06 in `../fase-06-rivals/plan.md`).
 Starting point: Phase 06 `results.md` (literature bar on the terrain), Phase 02 to 06 plans for measured paces and costs.
 
+## Change rule (decided by the author, 2026-10-06)
+The author approved this spec but chose not to freeze it: it stays modifiable until the test archive is downloaded.
+The research protocol and SDD Lite say an approved spec is frozen before the exam; "approved, modifiable until test download" is the author's choice for this phase, and the clean-exam guarantee starts at the test download, not at approval.
+Wherever this spec says "frozen" or "fixed before the exam opens", read "fixed from the test download on".
+- Before the test download: the agent may change this spec when needed (for example the C9 stub test fails, no A100 80 GB is offered, or a rate changes); each change goes in its own commit with its reason, and the author is told about any change to what is measured or how the verdict is decided.
+- After the test archive is opened: any change needs the author's prior permission in chat, is recorded as a numbered deviation (`07.M-name.md`), and every affected figure is labelled "not clean" in the results.
+
 ## Objective
-Run once, on a corpus nobody looked at while choosing, the project's best own systems and the literature ghosts, under a rule frozen before the corpus is opened.
+Run once, on a corpus nobody looked at while choosing, the project's best own systems and the literature ghosts, under a rule fixed before the corpus is opened (from the test download on, change rule above).
 This is the tournament's answer: does the best own system of each cost class keep its place against the strongest ghost of that class outside the terrain.
 Said first and plainly: no candidate of Phases 03-05 advanced, so no system enters on its own claim.
 The own systems below are named by the author from the terrain figures (Phase 06 `results.md`), which is choosing on the terrain, as the protocol allows; nothing is chosen from the exam.
@@ -59,7 +66,7 @@ Test figures are published figures, never computed by us; train and dev figures 
   Projected exam corpus: 58.71 x 416 test papers = 24,424 units (derived), replacing the draft's 62,400 (150 units per paper, a guess).
   Per question, the mean units of its own paper is 58.9 (measured, question-weighted), used for the within-paper control.
 - **Settings**: pooled, every question searched against all units of the 416 test papers, declared a new setting (QASPER is natively within one paper); within-paper control, every question searched only in its own paper's units, for BM25, Dense and J-strong over all of that paper's units (decided by the author, D4, 2026-10-06), reported beside the pooled figures, never deciding the verdict.
-- **Pooled query (D8, pending the author's approval at freeze)**: in the pooled setting every system's query is `<paper title>. <question>`, the same string for every system (G-A1 included), fixed before the exam opens; the within-paper control keeps the question alone.
+- **Pooled query (D8, approved by the author in chat, 2026-10-06)**: in the pooled setting every system's query is `<paper title>. <question>`, the same string for every system (G-A1 included), fixed before the exam opens; the within-paper control keeps the question alone.
   D8 makes the query the same only at the input: G-A1 writes its own search queries during its turns and may drop the title, so its retrieval queries can differ from the other systems' (interpretation).
   Reason: annotators saw only the title and abstract and wrote questions such as "What baselines do they use?", which name no paper; pooled over 416 papers such a question has no single right answer, every system may score near the floor and most pairs may tie.
   Naming the paper is the realistic setting of a user asking about a paper they know.
@@ -93,8 +100,8 @@ Contamination check before the archive is opened (C3), under the training rule a
 An upper-reference label never changes the bar, the pairing or the state, which code writes as for any system; it is printed beside every row and comparison that uses the labelled model.
 `bge-reranker-v2-m3` sits in G-R, `j-rrf3` and `j-rrf4`: if C3 labels it, all three carry the label, and the R and A comparisons that pair `j-rrf4` with G-R are marked "upper reference on both sides"; a `win` by a labelled entrant is written "keeps its place (upper reference: <model>)".
 
-## Locked single run and verdict rule (frozen on approval)
-- Before opening: spec frozen; train/dev counts and the QASPER loader tested on train/dev only; one frozen commit for every run, its hash in `plan.md`.
+## Locked single run and verdict rule (fixed from the test download on)
+- Before opening: spec approved (fixed from the test download on, change rule above); train/dev counts and the QASPER loader tested on train/dev only; one frozen commit for every run, its hash in `plan.md`.
 - Opening: download the test archive once, record its sha256; the loader writes units, questions and a separate gold file with their digests; no statistic is computed from the gold file until every ranking is written and digested.
 - Runs: laptop items, then the 4090 pod, then G-A1 if its gate passes (D6, money above).
   A technical rerun with identical settings is allowed only before scoring and only for a crash that wrote no ranking (Phase 06 deviation 06.4), recorded as a deviation; nothing is rerun after scoring.
@@ -151,7 +158,7 @@ In that case the hard cuts stop each stage first (4090 at 2.27, G-A1 at 2.89), a
 The 4090 pod runs first; G-A1 runs last and only through this gate.
 After the 4090 pod is terminated, read `clientBalance`; G-A1 is launched only if that measured balance minus the 1.0 USD buffer, minus the phase's single 0.14 USD billing tail (Phase 06 C8, counted once for the phase per D6 option A; a reading taken right after termination may not yet show it), covers G-A1's hard cut (1.5 x its projection, 2.89 USD at today's figures, re-projected before launch at the offered rate).
 Otherwise G-A1 is recorded `not run (cost gate)` and class A's verdict is `not run` (verdict rule above).
-At today's figures the gate needs a balance of at least 4.03 USD (1.0 + 0.14 + 2.89; threshold pending the author's approval at freeze), so a first stage of at most 2.46 USD balance delta from 6.4847 USD (derived); this is 0.18 USD above the 4090 pod's 2.27 USD cut, so a 4090 stage that bills past its cut by more than 0.18 USD keeps G-A1 out (derived).
+At today's figures the gate needs a balance of at least 4.03 USD (1.0 + 0.14 + 2.89; threshold approved by the author in chat, 2026-10-06), so a first stage of at most 2.46 USD balance delta from 6.4847 USD (derived); this is 0.18 USD above the 4090 pod's 2.27 USD cut, so a 4090 stage that bills past its cut by more than 0.18 USD keeps G-A1 out (derived).
 
 ## Money and stopping rule
 - Authorization: the remaining balance, no top-up (D13 (c)); the exam runs only if the projection of the approved set fits with margin.
@@ -177,16 +184,16 @@ In, in order: train/dev counts and rules (laptop); contamination check; QASPER l
 Out: any new candidate or setting; G-A2; `p14` or `p10-b` in the verdict (context rows only, D1); a reader or answer metric; numeric table content; any rerun after scoring.
 
 ## Acceptance criteria
-Frozen on approval.
+Approved 2026-10-06; changed only under the change rule above.
 
 | ID | Observable criterion | How it is checked |
 |---|---|---|
-| C1 | The paper figures above are checked against the paper text and corrected visibly before freezing (done 2026-10-06: Sections 3 and 4.1 quoted above, arXiv 2105.03011) | quotes with section in `plan.md` |
+| C1 | The paper figures above are checked against the paper text and corrected visibly before approval (done 2026-10-06: Sections 3 and 4.1 quoted above, arXiv 2105.03011) | quotes with section in `plan.md` |
 | C2 | Before the test archive is downloaded: mean units per paper, evidence match rate (within the question's own paper), annotator counts, in-scope counts and the single- versus multi-evidence breakdown (train 734 of 2,172, dev 210 of 901) measured on train and dev only with the tested loader, one single- and one multi-evidence example checked by hand, whether the terrain's token counts include the unit title recorded, and the cost projection re-fixed from them | `plan.md` record, its commit earlier than the test archive's download time |
 | C3 | Before opening: licence and QASPER training-data status of every system's models recorded with source and date; each labelled ghost, own or upper reference | `plan.md` |
 | C4 | The test archive is downloaded once; its sha256, the units, questions and gold files and their digests are recorded; no gold-derived figure exists before every ranking is digested | manifests and timestamps under `data/phase07/` |
-| C5 | Every system in the approved line-up has a depth-100 ranking (G-A1: evidence lists) for every one of the 1,451 test questions, written without reading the gold file, pooled (with the D8 query if approved), and the within-paper control for its systems, written once, with manifests pinning code commit, models and revisions, hardware, `costPerHr` and seconds | manifests, digests in `plan.md` |
-| C6 | `results.json` and `results.md`, written by code in one scoring call, give every metric of record with a label, offline and online cost per system, exact McNemar per comparison, the single- and multi-evidence breakdown, the in-scope filter applied only here, and the per-class verdict under the frozen rule | tests on hand-built examples for the verdict: a context row (`p14`, `p10-b` or `j-rrf3`) beating the entrant leaves the verdict unchanged; G-A1 not run gives class A `not run`; a bar tie resolved by the tie-break; an upper-reference label printed without changing the state; a system with fewer than 1,451 rankings is `not run` and never scored on its subset; an entrant `not run` and a needed ghost `not run` each give that class `not run`; the `j-rrf4` against `j-rrf3` state printed on the R and A verdict lines without changing them; the generated page |
+| C5 | Every system in the approved line-up has a depth-100 ranking (G-A1: evidence lists) for every one of the 1,451 test questions, written without reading the gold file, pooled (with the D8 query), and the within-paper control for its systems, written once, with manifests pinning code commit, models and revisions, hardware, `costPerHr` and seconds | manifests, digests in `plan.md` |
+| C6 | `results.json` and `results.md`, written by code in one scoring call, give every metric of record with a label, offline and online cost per system, exact McNemar per comparison, the single- and multi-evidence breakdown, the in-scope filter applied only here, and the per-class verdict under the fixed rule | tests on hand-built examples for the verdict: a context row (`p14`, `p10-b` or `j-rrf3`) beating the entrant leaves the verdict unchanged; G-A1 not run gives class A `not run`; a bar tie resolved by the tie-break; an upper-reference label printed without changing the state; a system with fewer than 1,451 rankings is `not run` and never scored on its subset; an entrant `not run` and a needed ghost `not run` each give that class `not run`; the `j-rrf4` against `j-rrf3` state printed on the R and A verdict lines without changing them; the generated page |
 | C7 | Money: spend at most the cap, no pod past its hard cut, `myself { pods }` empty at the close, three labelled spend figures | readings in `plan.md` |
 | C8 | `npm run check` passes | exit 0 |
 | C9 | Before any pod is launched: the in-pod self-termination (watchdog flushes outputs, then calls the remove command at its cut) and the laptop backup timer (calls `podTerminate` at its expiry) are both tested on a stub, with a short cut, a fake remove command and a fake API endpoint, no real pod and no spend | test output and commit in `plan.md`, earlier than the first pod's creation time |
@@ -211,10 +218,10 @@ Frozen on approval.
 3. **D3 Gold rule**: any annotator's full evidence set, as recommended in the draft.
 4. **D4 Within-paper control**: BM25, Dense and J-strong over all of the paper's units, as recommended in the draft (0.07 USD base after the train/dev count).
 5. **D5 Claim rule**: "keeps its place" only on `win`, as recommended in the draft.
-6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer and the 0.14 USD billing tail covering G-A1's hard cut (tail added by the author, 2026-10-06); otherwise `not run (cost gate)`; the 4.03 USD threshold is pending (below).
+6. **D6 Money order**: 4090 pod first, G-A1 last and gated on the measured balance after the first stage minus the 1.0 USD buffer and the 0.14 USD billing tail covering G-A1's hard cut (tail added by the author, 2026-10-06); otherwise `not run (cost gate)`; the 4.03 USD threshold is approved (D6 threshold below).
    Tail resolved by the author (option A, chat, 2026-10-06): 0.14 USD counted once for the whole phase, not per pod, because Phase 06 measured that 0.140 USD gap for all five of its pods together (Phase 06 C8: 7.630 USD balance delta minus 7.490 USD time x rate).
-7. **D7 Downloads**: train and dev authorized now and downloaded from the official AllenAI source on 2026-10-06 (10.8 MB archive, above); the test split only after the spec is frozen; nothing is downloaded, opened or computed on test before then.
+7. **D7 Downloads**: train and dev authorized now and downloaded from the official AllenAI source on 2026-10-06 (10.8 MB archive, above); the test split only after the spec is approved and every local task of `plan.md` passes; nothing is downloaded, opened or computed on test before then.
 
-## Decisions pending the author's approval at freeze
-- **D6 threshold**: 4.03 USD (1.0 buffer + 0.14 phase tail + 2.89 G-A1 cut) at today's figures; the tail is counted once per D6 option A, replacing the 4.17 USD with a second, per-pod tail proposed after the adversarial review of f1c1895.
-- **D8 Pooled query**: `<paper title>. <question>` in the pooled setting for every system, question alone in the within-paper control (proposed after the adversarial review of f1c1895; reason, hand check and rejected alternative under "Rules fixed before the exam opens").
+## Decisions resolved at approval (author, chat, 2026-10-06)
+8. **D6 threshold**: approved, 4.03 USD (1.0 buffer + 0.14 phase tail + 2.89 G-A1 cut) at today's figures, re-projected before launch; the tail is counted once per D6 option A, replacing the 4.17 USD with a second, per-pod tail proposed after the adversarial review of f1c1895.
+9. **D8 Pooled query**: approved, `<paper title>. <question>` in the pooled setting for every system, question alone in the within-paper control (proposed after the adversarial review of f1c1895; reason, hand check and rejected alternative under "Rules fixed before the exam opens").
