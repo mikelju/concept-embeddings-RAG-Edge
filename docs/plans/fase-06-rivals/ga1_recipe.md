@@ -26,6 +26,7 @@ Prepared on the laptop on 2026-10-06 (branch `ga1-prep`); no pod was rented and 
 - The HotpotQA index is 35 GB on disk (F9); the MuSiQue and MultiHop-RAG indexes beside which the driver's `GPU_MEMORY_UTILIZATION` 0.80 was set (D15) were small.
   On an 80 GB card, 0.80 asks vLLM for 64 GB while the server holds about 35-40 GB (projection), so vLLM would refuse to start.
 - The script therefore measures the server's GPU memory once it answers, and gives vLLM `min(0.80, (total - used - 6 GiB) / total)`, refusing below 0.30; with a 37 GB server that is about 0.46 (projection): 15 GB of bf16 weights and about 20 GB of KV cache.
+  Deviation 06.4 (`plan.md`): the idle server measured 21,105 MiB, so a 6 GiB margin gave 0.66 and the server's search ran out of GPU memory; the margin is now 23,000 MiB, which gives 0.46 as E3 intended.
   `ga1_subset` sets it through the driver's module constant, so the file is unchanged, and records both values; the conversion copies it into the manifest settings.
 - This is a memory setting, not a ghost setting (D15 and F6 of Phase 02 treat it as a run setting), but it changes vLLM's batch composition, which may move greedy outputs slightly; it was the author's call before the pod starts; taken as E3 in `plan.md` (1x A100 80 GB, the split above).
   Alternatives: a 2x A100 80 GB pod with the server on the second card (no setting changes; about 3.18 USD/h, projected 3.3 h is about 10.3 USD, past the 6.9 USD cut); or the server on the CPU (Phase 02 F6: too slow on MultiHop-RAG; not tried on a 5.2 M-unit index).

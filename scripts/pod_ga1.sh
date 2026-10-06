@@ -16,7 +16,8 @@ set -euo pipefail
 CUT_USD="${CUT_USD:-6.9}"                    # spec: hard cut for G-A1, 1.5 x its projection
 SPENT_S="${SPENT_S:-0}"                      # pod seconds used before this script started
 GL_SEARCH_QUESTIONS="${GL_SEARCH_QUESTIONS:-100}"  # the build's own search; empty = all 7,405
-UTIL_MARGIN_MIB="${UTIL_MARGIN_MIB:-6144}"   # GPU memory left free beside vLLM and the server
+# Deviation 06.4: 23000 covers the idle server (21,105 MiB) plus its search peak (7.27 GiB OOM at 6144).
+UTIL_MARGIN_MIB="${UTIL_MARGIN_MIB:-23000}"  # GPU memory left free beside vLLM and the server
 LOG="${LOG:-/workspace/pod_ga1.log}"
 PROGRESS="${PROGRESS:-/workspace/pod_ga1.progress}"
 SAMPLES="${SAMPLES:-/workspace/pod_ga1.samples}"
