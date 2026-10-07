@@ -11,6 +11,10 @@ Taken by the agent; any of them may change before the test download under the sp
 - D3. Money readings, pod creation and termination follow `.agents/skills/remote-gpu/SKILL.md`; `RUNPOD_API_KEY` and `HF_TOKEN` are checked for presence only and never printed.
 - D4. Every money step (marked **[money]**) stops for the author: a fresh cost estimate from the balance and rates read that day, then launch only on the author's yes in chat.
 - D5. One frozen commit for every test-split run, its hash recorded here before the test download; the dev dry run uses that same code.
+  Exam commit: `91797e5` (recorded 2026-10-07, before the test download).
+  The full-dev laptop pass was rerun on it (`data/phase07/dryrun/full2/`, 3,431 s, scored by `exam-score dev --expected 1005`, page headed DRY RUN); its Dense, BM25, p10-b and within-paper rankings are byte-identical to the earlier 92fff33 pass.
+  The entrant hop on the 23-paper dev sample also ran on it (`data/phase07/dryrun/hopdev2/`); the pod-script sample ran on 4c101ef, and no pod script changed between 4c101ef and 91797e5.
+  Later commits may change only docs and results; `git diff --name-only 91797e5 HEAD -- src scripts` must stay empty for every test-split run.
 - D6. Author's decision (chat, 2026-10-06): the old project's `src/concept_embeddings_rag/nodes/local_extraction.py` is copied into this repo for the GLiNER pass (increment 5), with a provenance note (source path, old commit and SHA-256 of the original); the original stays untouched and is only read.
 - D7. Author's decision (chat, 2026-10-06): while a pod runs, the agent may request keep-awake through the Claude desktop app; no Windows power settings are changed.
 - D9. Author's decision (chat, 2026-10-06; numbered D9 so it is not confused with the spec's D8 pooled query): the 12-increment plan is approved; the laptop downloads each system's outputs as soon as that system completes on the pod, with no grace period after the cut (a system cut mid-way is `not run` under the partial-run rule, so nothing usable is lost); the watchdog's flush at the cut keeps only the record of the cut system.
