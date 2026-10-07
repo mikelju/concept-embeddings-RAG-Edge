@@ -96,15 +96,20 @@ class Hops:
         self.vectors = vectors  # rows are the index rows, in order
         self._rows = {unit_id: row for row, unit_id in enumerate(index.unit_ids)}
 
-    def _rarity(self, first: Sequence[Hit]) -> tuple[np.ndarray, np.ndarray]:
-        """Rarity scores of every row, and the positive rows outside Dense's read set."""
+    def _rarity(self, first: Sequence[Hit], seed: str = "p1") -> tuple[np.ndarray, np.ndarray]:
+        """Rarity scores of every row, and the positive rows outside Dense's read set.
+        `seed="p1"` seeds from Dense's top unit (the inherited hop); `seed="first-entity"`
+        from Dense's first unit in the read set with an entity node (phase 07 spec,
+        pre-download change 3), with no seed, and so no hop, when none has one."""
         read = [self._rows[unit_id] for unit_id, _ in first[: config.READ_DEPTH]]
         if not read:
             raise ValueError("the dense list is empty")
         incidence = self.index.incidence
-        p1 = read[0]
-        p1_nodes = incidence.indices[incidence.indptr[p1] : incidence.indptr[p1 + 1]]
-        shared = np.sort(p1_nodes[self.columns.mask[p1_nodes]])
+        shared = self._entities(read[0])
+        if seed == "first-entity":
+            shared = next((nodes for nodes in map(self._entities, read) if nodes.size), shared[:0])
+        elif seed != "p1":
+            raise ValueError(f"unknown hop seed: {seed}")
         scores = np.zeros(incidence.shape[0])
         for node in shared:
             rows = self.columns.indices[self.columns.indptr[node] : self.columns.indptr[node + 1]]
@@ -113,8 +118,13 @@ class Hops:
         excluded[read] = True
         return scores, np.nonzero((scores > 0.0) & ~excluded)[0]
 
-    def entity_hop(self, first: Sequence[Hit], depth: int) -> list[Hit]:
-        scores, positive = self._rarity(first)
+    def _entities(self, row: int) -> np.ndarray:
+        incidence = self.index.incidence
+        nodes = incidence.indices[incidence.indptr[row] : incidence.indptr[row + 1]]
+        return np.sort(nodes[self.columns.mask[nodes]])
+
+    def entity_hop(self, first: Sequence[Hit], depth: int, seed: str = "p1") -> list[Hit]:
+        scores, positive = self._rarity(first, seed)
         kept = positive
         if positive.size > depth:
             values = scores[positive]

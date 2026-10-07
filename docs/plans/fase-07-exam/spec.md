@@ -11,6 +11,19 @@ Wherever this spec says "frozen" or "fixed before the exam opens", read "fixed f
 - Before the test download: the agent may change this spec when needed (for example the C9 stub test fails, no A100 80 GB is offered, or a rate changes); each change goes in its own commit with its reason, and the author is told about any change to what is measured or how the verdict is decided.
 - After the test archive is opened: any change needs the author's prior permission in chat, is recorded as a numbered deviation (`07.M-name.md`), and every affected figure is labelled "not clean" in the results.
 
+### Changes before the test download
+1. A text repeated inside one paper is one unit, at its first place (increment 2; rules section below).
+2. The laptop downloads each system's outputs as soon as that system completes, with no grace period after the cut (money and stopping rule below).
+3. Entrant hop seed (author, chat, 2026-10-07).
+   The entity hop fused into the entrants `rrf4` (class L) and `j-rrf4` (classes R and A) is seeded from Dense's first unit with at least one entity within Dense ranks 1-10, instead of always Dense's top unit P1.
+   If no unit in ranks 1-10 has an entity, the hop is empty, as before.
+   Everything else in the hop is unchanged: one hop, candidates outside Dense's top 10 sharing at least one entity with the seed, score the sum of log(1+N/(1+df)) over shared entities (`docs/refs/successor_project_handover.md`).
+   `p14` keeps the inherited P1-seeded hop, to stay faithful to the old project's best system; `p10-b` does not use the hop.
+   Reason: on the first 23 dev papers by sorted id (69 questions; counts in `data/phase07/dryrun/hopdev/hop_counts.txt`), the P1-seeded hop was empty for 47 of 69 questions (68%) and for 10 of 11 multi-evidence questions, because QASPER's top Dense unit rarely names an entity, so `rrf4` was close to `rrf3` and `j-rrf4` to `j-rrf3`.
+   With the new seed it is empty for 22 of 69 (32%).
+   Only counts were used to decide; no gold-based score was computed.
+   It is reported as a QASPER-adapted variant of the inherited hop, not as the inherited method.
+
 ## Objective
 Run once, on a corpus nobody looked at while choosing, the project's best own systems and the literature ghosts, under a rule fixed before the corpus is opened (from the test download on, change rule above).
 This is the tournament's answer: does the best own system of each cost class keep its place against the strongest ghost of that class outside the terrain.
@@ -45,7 +58,7 @@ Test figures are published figures, never computed by us; train and dev figures 
 - Answer types: extractive, abstractive, yes/no, unanswerable.
 
 ## What stays fixed
-- Code and settings of every system as run on the terrain (Phase 02 to 06 commits), with no constant changed: RRF k = 60, depth 100, J-strong `BAAI/bge-reranker-v2-m3` at the pinned revision and G-R settings, G-R2 `Qwen/Qwen3-Reranker-0.6B` at its pinned revision with the Phase 06 D10 memory fix, G-A1 with the Phase 02 driver, checkpoint, prompt and decoding, G-L `answerai-colbert-small-v1` with the Phase 02 D17 build settings, GLiNER and the entity hop as in Phase 04.
+- Code and settings of every system as run on the terrain (Phase 02 to 06 commits), with no constant changed: RRF k = 60, depth 100, J-strong `BAAI/bge-reranker-v2-m3` at the pinned revision and G-R settings, G-R2 `Qwen/Qwen3-Reranker-0.6B` at its pinned revision with the Phase 06 D10 memory fix, G-A1 with the Phase 02 driver, checkpoint, prompt and decoding, G-L `answerai-colbert-small-v1` with the Phase 02 D17 build settings, GLiNER and the entity hop as in Phase 04, except the entrants' hop seed (pre-download change 3).
 - Metrics as in Phases 02-06: FS @1,024 / @2,048 (of record) / @4,096, FS@2/5/20 units, gold share at 5; token counts with the terrain's tokenizer, in batches (known trap).
 - Paired test: exact McNemar on per-question FS@2,048, two-sided, alpha 0.05 per comparison, no correction (stated as a limitation).
 - Nothing is fitted on QASPER; no system, constant, unit rule or gold rule is changed after the test archive is opened.
@@ -84,11 +97,11 @@ Own entrants `j-rrf4` (R and A) and `rrf4` (L); control `j-rrf3`; ghosts G-L, G-
 
 | System | Role | Class | Terrain reason (Phase 06 `results.md`, measured) | Where it runs | Marginal cost (projection) |
 |---|---|---|---|---|---:|
-| `j-rrf4` | own entrant | R (and A by "or cheaper") | best own system on HotpotQA (5,950) and MuSiQue (831); its HotpotQA lead carries the in-domain caveat (BGE-small fine-tuned on HotpotQA train), and it lost to `j-rrf3` on MultiHop-RAG, the set most like pooled QASPER (843 against 873, 21 wins, 51 losses, p 0.00053, Phase 04) | laptop + 4090 | 0.11 USD judge + 0.03 USD GLiNER |
-| `rrf4` | own entrant | L | best own light system on HotpotQA (5,291); weight-free | laptop + 4090 (G-L, GLiNER shared) | 0 beyond shared |
+| `j-rrf4` | own entrant | R (and A by "or cheaper") | best own system on HotpotQA (5,950) and MuSiQue (831); its HotpotQA lead carries the in-domain caveat (BGE-small fine-tuned on HotpotQA train), and it lost to `j-rrf3` on MultiHop-RAG, the set most like pooled QASPER (843 against 873, 21 wins, 51 losses, p 0.00053, Phase 04); hop seeded as in pre-download change 3 | laptop + 4090 | 0.11 USD judge + 0.03 USD GLiNER |
+| `rrf4` | own entrant | L | best own light system on HotpotQA (5,291); weight-free; hop seeded as in pre-download change 3 | laptop + 4090 (G-L, GLiNER shared) | 0 beyond shared |
 | `j-rrf3` | literature control, own context | R | best own system on MultiHop-RAG (873) | laptop + 4090 | 0.11 USD |
 | `p10-b` | context | L | best own light system on MultiHop-RAG (587); 0.5 / 0.5 Dense and BM25 | laptop only | 0 |
-| `p14` | context (author's request) | L | relevance hop mixed with an alpha fitted on HotpotQA (Phase 04 DJ3) | laptop (hop and GLiNER entities shared) | about 0 |
+| `p14` | context (author's request) | L | relevance hop mixed with an alpha fitted on HotpotQA (Phase 04 DJ3); inherited P1 seed | laptop (hop and GLiNER entities shared) | about 0 |
 | G-L | ghost | L | class L bar on every set | 4090 | in the pod's fixed 0.30 USD |
 | G-R | ghost | R | class R bar on HotpotQA | 4090 | 0.11 USD |
 | G-R2 | ghost | R | class R bar on MuSiQue and MultiHop-RAG | 4090 | 0.49 USD |

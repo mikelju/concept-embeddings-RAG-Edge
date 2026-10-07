@@ -41,6 +41,10 @@ Dense, BM25, `p10-b` and within-paper Dense and BM25 run on the whole of dev (1,
 GLiNER at about 0.9 units/s would take about 4.7 h on the 15,122 dev units, and the pod items exercise the same code at any size.
 On the laptop the pod script runs with `scripts/laptop_exam_items.sh`: items that need CUDA, vLLM or the G-L list are recorded `not run (laptop: <reason>)`, and the pod removal is only logged (`SIMULATE_DELETE=1`).
 
+Change to increment 5 (2026-10-07, before the test download; spec pre-download change 3).
+`qasper-laptop` writes `pooled/hop.jsonl.gz`, the hop fused into `rrf4` and uploaded for `j-rrf4`, seeded from Dense's first unit with an entity in ranks 1-10 (`Hops.entity_hop(..., seed="first-entity")`); `p14` keeps the P1 seed.
+On the first 23 dev papers (`data/phase07/dryrun/hopdev2/`) the hop is empty for 22 of 69 questions, against 47 before, and `p14`, Dense, BM25 and `p10-b` are byte-identical to `data/phase07/dryrun/hopdev/`.
+
 ### Pod self-removal: what the docs say (2026-10-06, docs only, no spend)
 - RunPod's pod environment-variable reference lists `RUNPOD_POD_ID` and a `RUNPOD_API_KEY` described as limited in scope to the pod itself (docs.runpod.io/pods/references/environment-variables).
 - The runpodctl overview says every pod comes with `runpodctl` preinstalled and a Pod-scoped API key (docs.runpod.io/runpodctl/overview).

@@ -133,3 +133,17 @@ def test_run_without_records_skips_only_the_entity_systems(tmp_path):
         assert written == (name not in exam_laptop.ENTITY), name
     for name in exam_laptop.WITHIN:
         assert exam_laptop.is_complete(out / "within", name, 3)
+
+
+def test_entrant_hop_uses_first_entity_seed_and_p14_keeps_p1(tmp_path, monkeypatch):
+    seeds = []
+    rarity = exam_laptop.Hops._rarity
+
+    def spy(self, first, seed="p1"):
+        seeds.append(seed)
+        return rarity(self, first, seed)
+
+    monkeypatch.setattr(exam_laptop.Hops, "_rarity", spy)
+    exam_laptop.run(split(tmp_path), tmp_path / "r", records(), encode, say=lambda _: None)
+    # per question: the entrant hop (spec pre-download change 3), then p14's relevance hop
+    assert seeds == ["first-entity", "p1"] * len(QUESTIONS)

@@ -117,7 +117,7 @@ def pooled_rankings(
         if hops is None:
             continue
         tick = time.perf_counter()
-        hop = hops.entity_hop(first, depth)
+        hop = hops.entity_hop(first, depth, seed="first-entity")  # spec pre-download change 3
         seconds["hop"] += time.perf_counter() - tick
         tick = time.perf_counter()
         relevance = hops.relevance_hop(first, vector, depth, config.P14_ALPHA)
