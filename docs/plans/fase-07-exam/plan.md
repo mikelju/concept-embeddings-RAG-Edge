@@ -106,7 +106,17 @@ Open findings of round 1 in frozen code (src, scripts and tests stay unchanged a
 - 387 questions with mixed single and multi annotator sets are classed single.
 
 ## Results by criterion
-Filled at the close.
+- **C1 - met.** The paper figures were checked against arXiv 2105.03011 before approval (2026-10-06); the quotes from Sections 3 and 4.1 sit in `spec.md` "The exam corpus, from the paper only", not in this file as the criterion's evidence column says; spec approved in 849c920.
+- **C2 - met.** Task 2 row: counts measured on train and dev with the tested loader, examples checked by hand, title finding and re-fixed projection recorded; spec corrected in 5b41a1b and record committed in 3e24b2c (2026-10-06), both earlier than the test download (task 7, 2026-10-07 12:16:26Z).
+- **C3 - met.** Task 3 row and "Licence and QASPER training-data record (C3)", committed in c4c3375 before the test download; no model is an upper reference; review round 1 findings (c) and (d) fixed in the C3 text and table (c1cd1ae).
+- **C4 - met.** Task 7 row (b41efbe): archive downloaded once, sha256 and unit, question and gold digests recorded; gold was not opened on the laptop or the pods (tasks 8-10) and was read only by the scorer in task 11, after every ranking was digested.
+- **C5 - partially met, under deviations 07.1, 07.3 and 07.4.** Every line-up system has 1,451 rankings with manifests and digests (task 8; task 9, 702664e; task 10, 98086e9), assembled byte for byte under deviation 07.4; gap: the laptop-built `rrf4` marker records inputs and digests but no commit or seconds (review round 1 finding (e)); deviation 07.5 notes the commit is 91797e5 for every function it imports and that the fusion time was not recorded.
+- **C6 - partially met; completed under deviation 07.5.** Task 11 (c1448fa): one scoring call wrote `results.json` and `results.md`, byte-equal on regeneration, with FS@2,048, the single- and multi-evidence breakdown (1,337 in scope: 1,106 single, 231 multi), the in-scope filter, the verdict McNemar and the per-class verdict (L loss, R tie, A tie); the cost per system and the context McNemar were missing from the scored page (every cost cell `not recorded`, finding (a)) and are supplied by `annex.md` under deviation 07.5 (c1cd1ae); the upper-reference map is hard-coded empty (finding (b)), with no effect today because C3 labels no upper reference, and is listed under "Carried to next phase".
+- **C7 - met.** Task 12 row (a4a00e6): time x rate 1.464 USD, balance delta 1.4894290670 USD, invoice 1.489 USD (GPU 1.464 + storage 0.025), under the 5.30 USD cap; no pod past its hard cut, both backup timers never fired, `myself { pods }` empty at the close.
+- **C8 - met.** `npm run check` exit 0 at the close (task 12) and on this commit.
+- **C9 - met, under deviations 07.2 and 07.3.** Task 1 row: watchdog and backup timer tested on a stub in 35026a8 (2026-10-06), earlier than the first pod's creation (2026-10-08 07:27:11Z); on the real pods the watchdog ran with `SPENT_S` counting pre-stage time (07.2) and G-A1 ran without its probe under the same watchdog and timer (07.3).
+
+Open findings of review round 1 that stay in frozen code are listed under "Carried to next phase"; none changes an exam figure.
 
 ## Candidate learnings
 Only reusable lessons with a verbatim quote from the session.
