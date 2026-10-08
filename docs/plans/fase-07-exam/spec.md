@@ -203,7 +203,7 @@ Approved 2026-10-06; changed only under the change rule above.
 
 | ID | Observable criterion | How it is checked |
 |---|---|---|
-| C1 | The paper figures above are checked against the paper text and corrected visibly before approval (done 2026-10-06: Sections 3 and 4.1 quoted above, arXiv 2105.03011) | quotes with section in `plan.md` |
+| C1 | The paper figures above are checked against the paper text and corrected visibly before approval (done 2026-10-06: Sections 3 and 4.1 quoted above, arXiv 2105.03011) | quotes with section in this file, "The exam corpus, from the paper only" (pointer corrected from `plan.md` 2026-10-08) |
 | C2 | Before the test archive is downloaded: mean units per paper, evidence match rate (within the question's own paper), annotator counts, in-scope counts and the single- versus multi-evidence breakdown (train 733 of 2,172, dev 210 of 901) measured on train and dev only with the tested loader, one single- and one multi-evidence example checked by hand, whether the terrain's token counts include the unit title recorded, and the cost projection re-fixed from them | `plan.md` record, its commit earlier than the test archive's download time |
 | C3 | Before opening: licence and QASPER training-data status of every system's models recorded with source and date; each labelled ghost, own or upper reference | `plan.md` |
 | C4 | The test archive is downloaded once; its sha256, the units, questions and gold files and their digests are recorded; no gold-derived figure exists before every ranking is digested | manifests and timestamps under `data/phase07/` |

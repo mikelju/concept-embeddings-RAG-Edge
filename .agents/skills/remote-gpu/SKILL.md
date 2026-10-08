@@ -29,6 +29,7 @@ The laptop is Windows 11 ARM64, 12 cores, about 32 GB RAM, no GPU. That is a dev
   `myself { clientBalance pubKey }` (read-only check); `gpuTypes(input:{id:"NVIDIA GeForce RTX 4090"}) { securePrice }`;
   `podFindAndDeployOnDemand` with `cloudType: SECURE`, image `runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04`,
   ports `22/tcp,8888/http`, `startSsh: true`, `supportPublicIp: true`, volume and container disk sized for the job.
+- An SSH session on the pod does not see the pod's `RUNPOD_POD_ID` and `RUNPOD_API_KEY`; a self-terminating script reads them from `/proc/1/environ` (Phase 07 deviation 07.3).
 - Poll `pod(input:{podId}) { runtime { ports } }` for the public port 22; then `ssh -i ~/.ssh/runpod_ed25519 -p <port> root@<ip>`, `scp` for files.
 - End with `podTerminate` (**terminate, not stop**: a stopped pod bills its volume) and `myself { clientBalance pods { id } }` to confirm nothing is left.
 - Reference rate: 1x RTX 4090 Secure Cloud, 0.74 USD/h (2026-10-01). Record `costPerHr` at creation.
@@ -38,9 +39,11 @@ The laptop is Windows 11 ARM64, 12 cores, about 32 GB RAM, no GPU. That is a dev
 1. A phase that rents compute writes its own recipe, with its stop conditions and cost cap, before the pod is opened.
 2. Freeze and push the exact commit the pod will run; note its hash.
 3. On the pod: clone into `/workspace`, check out the frozen commit, `uv sync` with the groups the job needs.
+   The `runpod/pytorch` image ships no `uv`: `pip install uv` first in `pod_setup.sh` (Phase 07 tasks 9 and 10).
 4. Upload only frozen inputs the repo does not contain; check their SHA-256 on the pod.
 5. Verify CUDA with a real kernel, not only `torch.cuda.is_available()`.
 6. Probe a small sample before the full pass; for a corpus larger than any probed, project host RAM and time at its full scale before the pod opens (phase 02: HotpotQA's 5.23 M units failed on a 24 GB card and a 60 GB host in sessions 2-5, F3, F8, and fitted a 250 GB host in session 6, F9).
+   A probe at one size scaled linearly misprojects a system with a large fixed start-up cost: measure fixed and per-question cost apart, for example with two probe sizes (Phase 07 deviation 07.3, G-A1's 50-question probe was almost all fixed overhead).
 7. Write `pod_setup.sh` in the scratchpad, `scp` it, run it with `nohup`, wait with a background `until grep` loop.
    Subagents hit a wall-clock limit near 1,000 s: never brief one with a long stage plus its wait.
 8. On the pod, log progress lines and cgroup `memory.current`/`memory.peak` with a UTC timestamp to files every 30-60 s, and archive them with the outputs (phase 02: session 5's untimed `[INFO]` lines gave paces only to within the laptop's sampling, F8; session 6 measured paces and the RAM peak from such files, F9).
@@ -55,4 +58,5 @@ The laptop is Windows 11 ARM64, 12 cores, about 32 GB RAM, no GPU. That is a dev
 - PyPI `vllm` 0.30.0 is a CUDA 13 build against the pinned `torch==2.13.0+cu126`: pin `torchvision==0.28.0` and `torchaudio==2.11.0`
   to `pytorch-cu126` via `tool.uv.sources`, and add `<venv>/lib/python3.12/site-packages/nvidia/cu13/lib` to `LD_LIBRARY_PATH`.
 - `pkill -f <pattern>` kills the SSH session whose command line holds the pattern, even a bracketed one such as `[p]rogress` when the same command line also holds `progress`; use `pgrep -f` with a pattern absent from your own command, or kill by PID (vLLM serve, and the samplers of phase 02 session 6).
+- Git Bash on Windows has no `setsid`: start a detached laptop process (such as a backup terminate timer) with PowerShell `Start-Process` (Phase 07 tasks 9 and 10).
 - A float32 8 B model does not fit a 24 GB card.
