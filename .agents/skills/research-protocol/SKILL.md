@@ -14,6 +14,7 @@ Where a rule names a past phase, the record is in that repository's `docs/plans/
   Any figure on them may be looked at while choosing.
 - **Exam**: one fresh corpus, locked, run once, with the chosen candidates and the ghosts, under a rule frozen before it is opened.
   Nothing is chosen, fitted or rerun after it is opened.
+- Before any exam spend, dry-run the scorer on outputs shaped exactly like the pod's, so every file it reads is built by a plan step under the name it expects (Phase 07 deviation 07.4: no `rrf4` file, and lowercase pod names where `EXAM_ORDER` expects `G-L`, `G-R`, `G-R2`, `G-A1`).
 - A new terrain corpus records, before anything runs on it, whether a dev subset is carved or the whole set is open.
 - **No labels at use time**: a strategy may be chosen on open corpora, but it runs on a new corpus with nothing fitted to it.
   Fitted weights do not travel between kinds of text (old Phase 16); prefer rules with nothing fitted, or report a fitted figure as an upper bound.

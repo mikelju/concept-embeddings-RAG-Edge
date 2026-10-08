@@ -106,7 +106,7 @@ Open findings of round 1 in frozen code (src, scripts and tests stay unchanged a
 - 387 questions with mixed single and multi annotator sets are classed single.
 
 ## Results by criterion
-- **C1 - met.** The paper figures were checked against arXiv 2105.03011 before approval (2026-10-06); the quotes from Sections 3 and 4.1 sit in `spec.md` "The exam corpus, from the paper only", not in this file as the criterion's evidence column says; spec approved in 849c920.
+- **C1 - met.** The paper figures were checked against arXiv 2105.03011 before approval (2026-10-06); the quotes from Sections 3 and 4.1 sit in `spec.md` "The exam corpus, from the paper only"; the criterion's evidence column, which named `plan.md`, was corrected to point there after the close; spec approved in 849c920.
 - **C2 - met.** Task 2 row: counts measured on train and dev with the tested loader, examples checked by hand, title finding and re-fixed projection recorded; spec corrected in 5b41a1b and record committed in 3e24b2c (2026-10-06), both earlier than the test download (task 7, 2026-10-07 12:16:26Z).
 - **C3 - met.** Task 3 row and "Licence and QASPER training-data record (C3)", committed in c4c3375 before the test download; no model is an upper reference; review round 1 findings (c) and (d) fixed in the C3 text and table (c1cd1ae).
 - **C4 - met.** Task 7 row (b41efbe): archive downloaded once, sha256 and unit, question and gold digests recorded; gold was not opened on the laptop or the pods (tasks 8-10) and was read only by the scorer in task 11, after every ranking was digested.
@@ -122,6 +122,7 @@ Open findings of review round 1 that stay in frozen code are listed under "Carri
 Only reusable lessons with a verbatim quote from the session.
 For the author's approval at the close; none is applied to `AGENTS.md` or the skills yet.
 Each is seen in this phase only, so the sdd-lite rule of evidence from two sessions is not met yet; the quotes are from this plan where one exists.
+Approved by the author 2026-10-08 with one-session evidence, all five, and moved after the close: 1 to 4 to the `remote-gpu` skill, 5 to the `research-protocol` skill.
 
 1. RunPod SSH sessions do not see the pod's `RUNPOD_POD_ID` and `RUNPOD_API_KEY`; read them from `/proc/1/environ` before launching anything that self-terminates.
    Evidence: deviation 07.3, "the pod's `RUNPOD_POD_ID` and `RUNPOD_API_KEY` from `/proc/1/environ`".
