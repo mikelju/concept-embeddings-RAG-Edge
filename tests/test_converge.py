@@ -86,3 +86,33 @@ def test_four_list_rrf_with_an_empty_hop_ms_is_rrf_prf():
     assert fusion("mch", {**lists, "hop-ms": ["c"]}) == ["a", "b", "c"]
     # d: 1 / 61 > c: 1 / 62.
     assert fusion("rrf-1s", lists) == ["a", "b", "d", "c"]
+
+
+def _seed_case(top_rows):
+    """15 units, Dense order u00..u14; `top_rows` are the read set's rows (ranks 1-10),
+    u11 shares entity 0, u12 entity 1; node 2 is a concept."""
+    rows = [*top_rows, [], [0], [1], [], []]
+    hops = _hops(rows, ("entity", "entity", "concept"), tuple(f"u{i:02d}" for i in range(15)))
+    first = [(f"u{i:02d}", 1.0 - i / 100) for i in range(15)]
+    return hops, first
+
+
+def test_first_entity_seed_skips_dense_units_without_an_entity():
+    top = [[2], [], [0], [1], [], [], [], [], [], []]  # u00 concept only, u02 first entity
+    hops, first = _seed_case(top)
+    assert hops.entity_hop(first, 100) == []  # default P1 seed: u00 has no entity
+    assert [u for u, _ in hops.entity_hop(first, 100, seed="first-entity")] == ["u11"]
+
+
+def test_first_entity_seed_is_empty_when_no_read_unit_has_an_entity():
+    hops, first = _seed_case([[2]] + [[]] * 9)  # entities only at u11, u12 (rank 12, 13)
+    assert hops.entity_hop(first, 100, seed="first-entity") == []
+    with pytest.raises(ValueError):
+        hops.entity_hop(first, 100, seed="p2")
+
+
+def test_first_entity_seed_equals_p1_when_p1_has_an_entity():
+    hops, first = _seed_case([[1, 2], [0]] + [[]] * 8)
+    p1 = hops.entity_hop(first, 100)
+    assert [u for u, _ in p1] == ["u12"]
+    assert hops.entity_hop(first, 100, seed="first-entity") == p1

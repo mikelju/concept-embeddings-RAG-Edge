@@ -78,6 +78,8 @@ select = ["E", "F", "I", "UP", "B", "SIM", "S"]
 "src/edge_rag/config.py" = ["S105", "S106"]
 # Exact-match snippets of upstream HippoRAG source; its digest is recorded on the pod.
 "src/edge_rag/pod/ga2_openie_patch.py" = ["E501"]
+# Phase 07 deviation 07.4 script, kept byte for byte as it ran; its sha256 is in the plan.
+"docs/plans/fase-07-exam/tools/assemble.py" = ["ALL"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

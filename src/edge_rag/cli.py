@@ -111,7 +111,82 @@ def main(argv: list[str] | None = None) -> int:
     rivals_results.add_argument(
         "--out", type=Path, help="write results.json and results.md into this folder instead"
     )
+    commands.add_parser("qasper-c2", help="Phase 07 QASPER loader and C2 counts, train and dev")
+    laptop = commands.add_parser("qasper-laptop", help="Phase 07 laptop rankings on one split")
+    gliner = commands.add_parser("qasper-gliner", help="Phase 07 GLiNER records on one split")
+    for sub in (laptop, gliner):
+        sub.add_argument("split", choices=("dev", "test"))
+        sub.add_argument("--papers", type=int, help="only the first N papers (smoke run)")
+        sub.add_argument("--out", type=Path, required=True)
+    laptop.add_argument(
+        "--records",
+        type=Path,
+        help="GLiNER extraction folder; without it hop and p14 are not written",
+    )
+    gliner.add_argument("--model-dir", type=Path, required=True)
+    gliner.add_argument("--limit-units", type=int, help="only the first N units (pod probe)")
+    exam = commands.add_parser("exam-score", help="Phase 07 exam rows from rankings and gold")
+    exam.add_argument("split", choices=("dev", "test"))
+    exam.add_argument("--rankings", type=Path, required=True, help="folder with pooled/, within/")
+    exam.add_argument("--expected", type=int, default=1_451, help="questions per system (dev 1005)")
+    exam.add_argument("--dry-run", action="store_true", help="always on for dev")
+    exam.add_argument("--out", type=Path, help="dry-run folder; the exam writes its fixed paths")
+    exam.add_argument(
+        "--questions", type=Path, help="dry run on a sample: score only this questions.jsonl"
+    )
     args = parser.parse_args(argv)
+    if args.command == "exam-score":
+        from edge_rag import phase_results as pr
+        from edge_rag import qasper
+
+        dry_run = args.dry_run or args.split == "dev"
+        if dry_run:
+            exam_dirs = (pr.EXAM_JSON.parent.resolve(), pr.EXAM_PAGE.parent.resolve())
+            out = args.out.resolve() if args.out else None
+            if out is None or out == exam_dirs[0] or out.is_relative_to(exam_dirs[1]):
+                parser.error("a dry run needs --out outside the exam locations")
+            json_path, md_path = out / "results.json", out / "results.md"
+        elif args.out or args.questions:
+            parser.error("--out and --questions are for a dry run only")
+        else:
+            json_path, md_path = pr.EXAM_JSON, pr.EXAM_PAGE
+        gold, tokens = qasper.read_gold(config.DATA_DIR / "phase07" / args.split)
+        if args.questions:  # a dev sample (task 6): its questions only, still from gold.json
+            lines = args.questions.read_text("utf-8").splitlines()
+            sample = {json.loads(line)["qid"] for line in lines if line.strip()}
+            gold = {qid: sets for qid, sets in gold.items() if qid in sample}
+        table = pr.exam_score(args.rankings, gold, tokens, args.expected, dry_run)
+        pr.write_pair(table, pr.exam_markdown, json_path, md_path)
+        for line in pr.exam_verdict_lines(table):
+            _say(line)
+        _say(f"[OK] {md_path}" + (f" ({pr.EXAM_DRY_RUN})" if dry_run else ""))
+        return 0
+    if args.command in ("qasper-laptop", "qasper-gliner"):
+        from edge_rag import exam_laptop, local_extraction
+
+        split_dir = config.DATA_DIR / "phase07" / args.split
+        papers = exam_laptop.first_papers(split_dir, args.papers) if args.papers else None
+        if args.command == "qasper-gliner":
+            exam_laptop.gliner_pass(
+                split_dir,
+                args.out,
+                args.model_dir,
+                papers=papers,
+                limit_units=args.limit_units,
+                say=_say,
+            )
+            return 0
+        records = local_extraction.load_extraction(args.records)[0] if args.records else None
+        summary = exam_laptop.run(
+            split_dir, args.out, records, exam_laptop.bge_encoder(), papers=papers, say=_say
+        )
+        _say(json.dumps(summary, default=round))
+        return 0
+    if args.command == "qasper-c2":
+        from edge_rag import qasper
+
+        qasper.run_c2(config.DATA_DIR / "phase07" / "train-dev", say=_say)
+        return 0
     if args.command == "rivals-results":
         from edge_rag.phase_results import Phase06
 
