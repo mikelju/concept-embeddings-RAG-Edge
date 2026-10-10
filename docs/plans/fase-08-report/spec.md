@@ -53,8 +53,7 @@ Frozen at approval. Changing them needs a deviation approved by the author.
 
 ## Open decisions
 
-The agent's recommendation comes first in each.
-
-- D1. Commit `tournament.json` next to `report.md` (recommended: it is aggregate figures, no corpus text, like the committed Phase 00 `ledger.json`, and it is what Phase 09 reads) or keep it under `data/` only.
-- D2. Where the export code lives: a new `report` command in `src/edge_rag/` reusing `phase_results.py` readers (recommended: one source with the phase pages) or a script under the phase's `tools/`.
-- D3. Include the old project's systems (p10-a/b/c, p14, j-p10b, j-union) in the report's tables as context (recommended: yes, labelled context, as Phase 02 did) or only the tournament's own systems and ghosts.
+None. Resolved by the author on 2026-10-10, each on the agent's recommendation:
+- D1. `tournament.json` is committed next to `report.md`: aggregate figures, no corpus text, like the committed Phase 00 `ledger.json`; Phase 09 reads it.
+- D2. The export and the report tables are written by a new `report` command in `src/edge_rag/`, reusing the `phase_results.py` readers, with tests.
+- D3. The old project's systems (p10-a/b/c, p14, j-p10b, j-union) appear in the tables labelled context, as in Phase 02.
