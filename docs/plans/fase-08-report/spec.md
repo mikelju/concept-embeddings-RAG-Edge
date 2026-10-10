@@ -24,7 +24,7 @@ In:
 Out:
 - Any new measurement, rerun, refit or spend; filling a `not recorded` cost cell after the fact.
 - Editing any closed phase's frozen documents or run files.
-- The voice-to-order side studies (`data/side-v2o/`): not part of the tournament, publication not decided.
+- Side studies run outside the tournament: not part of it, publication not decided.
 - The game (dropped by the author) and any change to how a verdict is decided.
 
 ## Acceptance criteria
