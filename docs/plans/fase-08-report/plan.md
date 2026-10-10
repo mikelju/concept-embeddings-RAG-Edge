@@ -26,7 +26,7 @@ The checker fix of increment 2 corrects the committed code of increment 1 inside
 ## Adversarial review
 | Round | Backend | Range | Lenses | Findings | Status |
 |---|---|---|---|---|---|
-| 1 | coordinator | 8154bb1..HEAD | sdd-review | - | pending |
+| 1 | coordinator subagent | 8154bb1..e6c1880 | sdd-review, research-protocol | 0 blockers, 4 should-fix, 3 nits | should-fix fixed, nits 1-2 fixed, nit 3 left (column all `-` in the source) |
 
 ## Results
 By criterion in `results.md`.

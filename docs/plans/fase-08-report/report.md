@@ -20,8 +20,10 @@ Machine-readable figures: `tournament.json` next to this page, with the SHA-256 
 The question: does a cheap, fast retrieval strategy sit on the quality-cost frontier against the literature's best recipes (the ghosts) on the terrain, and keep its place on a locked exam corpus?
 
 The answer, as the outcome code wrote it, without promotion:
-- No strategy designed in this project (Phases 03-05) advanced to the exam; every verdict is in the first table below.
+- No phase from 03 to 05 sent an entrant to the exam under its own frozen rule; every one of those verdicts is in the first table below.
+- The exam entrants `rrf4` and `j-rrf4` were named by the author from the Phase 06 terrain figures; the exam verdict is in its own section.
 - On the terrain, the project's best own system wins 8 of 9 set-class cells against the strongest measured ghost and loses MuSiQue class A to G-A1 (Search-R1) (measured, Phase 06).
+- Not all of those wins belong to this tournament's designs (interpretation): 2 are by the predecessor's `p10-b` and `p14` (labelled context here), 2 by `j-rrf3`, whose own Phase 04 verdict is context only and which is the literature control on the exam, and of the 4 by `rrf4` and `j-rrf4`, 3 are on HotpotQA, the upper-bound set.
 - The HotpotQA wins are an upper bound (interpretation): the P10-C and P14 weights are in-sample there and BGE-small, inside the fused own systems, was fine-tuned on HotpotQA train.
 - The class A bar stands on G-A1 alone: G-A2 (HippoRAG 2) was not run (cost gate).
 - On the exam (QASPER), class L `rrf4` loses to G-L; classes R and A `j-rrf4` tie G-R, which is not losing and not a win (measured, Phase 07).
@@ -396,6 +398,8 @@ In scope: 1337 questions (1106 single-evidence, 231 multi-evidence); FS and pair
 | A | j-rrf4 | 1107 | G-R | G-A1: 591; G-L: 1058; G-R: 1102; G-R2: 1056 | 8 | 3 | 1326 | 0.227 | tie | tie | FS and paired test measured; strongest ghost and state written by code |
 <!-- END GENERATED -->
 
+The Cost column above is copied from the Phase 07 page, where every cell reads `not recorded` (measured); the exam's costs per system are in the next table, from the Phase 07 annex.
+
 Reading it (interpretation):
 - Class L: `rrf4` loses to G-L on the exam.
 - Classes R and A: `j-rrf4` ties G-R and ties the literature control `j-rrf3`; a tie is not losing, not a win.
@@ -440,6 +444,7 @@ Gaps, declared instead of estimated:
 - Phases 00 and 01 rented no pod.
 - Phase 03 has no clean balance delta (deviation 03.1, interpretation) [src: docs/plans/fase-03-fusion/plan.md]; the author's billing reading shows no charge inside it.
 - The Phase 06 invoice was pending when the phase closed, so the invoice total is not available.
+- The two balance totals differ because the sum of balance deltas leaves out Phase 03, whose closing balance read 14.4439 USD against 14.49 expected (measured, deviation 03.1) [src: docs/plans/fase-03-fusion/plan.md].
 
 This phase spent no money and measured nothing.
 
@@ -456,7 +461,7 @@ This phase spent no money and measured nothing.
 ## What the result shows and does not show
 
 It shows (interpretation):
-- On the terrain, fusions and a zero-shot judge over a pooled bag beat the measured ghosts of their class in every cell except MuSiQue class A.
+- On the terrain, fusions and a zero-shot judge over a pooled bag, the predecessor's fitted fusions included, beat the measured ghosts of their class in every cell except MuSiQue class A.
 - On the exam, the rerank-class system does not lose to its ghost or to the literature control; the light-class system loses to its ghost.
 
 It does not show:

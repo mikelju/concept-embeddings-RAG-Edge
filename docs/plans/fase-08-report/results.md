@@ -22,6 +22,7 @@ Measured on 2026-10-10 on branch `fase-08-report`, on this machine (the run file
 - `uv run edge-rag report --check`: exit 0, "tables equal to the export, every prose figure traced".
 - Planted figure: replacing `231` by `98,765` in the exam reading made `--check` exit 1 with `untraced figure 98,765`; the reverted page passes again (exit 0).
 - A first plant, `232`, passed the check because that integer is also a value elsewhere in the export: the checker traces a figure to any export value at its precision, not to the value the sentence means; this is a limit of the C3 guard, and the reading pass of C5 covers it.
+- The review found the same limit wider: single digits are exempt (so "8 of 9" is never checked) and a `[src:]` pointer accepts any substring of the cited page; its 15 manual spot-checks of prose and money figures found no wrong figure.
 - Checker defect found and fixed in this phase: the `048` of `FS@2,048` was read as a figure of its own; the number pattern now refuses a comma before a figure, with a regression assertion in `test_checker_passes_traced_figures_and_fails_a_planted_one` that fails on the old pattern.
 - Status: met.
 
@@ -34,8 +35,8 @@ Measured on 2026-10-10 on branch `fase-08-report`, on this machine (the run file
 ## C5 - the answer without promotion
 
 - The answer section of `report.md` states: no Phase 03-05 entrant; terrain bar 8 of 9 set-class cells won, MuSiQue class A lost to G-A1; HotpotQA wins an upper bound; G-A2 not run (cost gate); exam class L `rrf4` loses to G-L, classes R and A `j-rrf4` tie G-R (not losing, not a win); QASPER has few multi-evidence questions.
-- Adversarial review against the Phase 06 and 07 pages: pending (review by the coordinator).
-- Status: pending review.
+- Adversarial review against the Phase 06 and 07 pages (round 1, coordinator's reviewer on acdee2e..e6c1880): no blocker; two should-fix findings on the answer, both fixed: the 8 of 9 terrain wins now say 2 are by the predecessor's `p10-b` and `p14` and 2 by `j-rrf3`, and "no strategy advanced to the exam" now says no phase sent an entrant under its own rule while the author named `rrf4` and `j-rrf4` for the exam.
+- Status: met.
 
 ## C6 - money per phase and in total
 
@@ -54,8 +55,8 @@ Measured on 2026-10-10 on branch `fase-08-report`, on this machine (the run file
 
 - README: Status line says the project closed after Phase 08; a results section links to `report.md` and `tournament.json`.
 - `npm run check`: exit 0 (hooks test, pytest with one skip, ruff, mypy).
-- sdd-review adversarial pass: pending (review by the coordinator).
-- Status: pending review.
+- sdd-review adversarial pass, round 1: no blocker; should-fix findings fixed (answer wording, a balance-gap note, an exam cost-column note, the spec's out-of-scope line reworded to name no side project, a visible correction with no criterion change); the C3 checker limit is recorded under C3; nits on the exam table's omitted upper-reference column left as is (every cell of it is `-` on the Phase 07 page).
+- Status: met.
 
 ## Limits
 
