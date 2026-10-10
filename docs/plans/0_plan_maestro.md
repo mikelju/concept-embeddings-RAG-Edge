@@ -32,7 +32,7 @@ Starting brief: `docs/refs/successor_project_charter.md` (decisions) and `docs/r
 | 05 | Third candidate: multi-seed convergent hop with a refined query (charter candidate 2, light class) | 02 | integrated |
 | 06 | Rivals: measure on the terrain the literature ghosts never run (G-R2 Qwen3-Reranker-0.6B, G-A2 HippoRAG 2, G-A1 on the HotpotQA subsample) and fix by code the literature bar per set and cost class | 02-05 | integrated |
 | 07 | Exam: one locked run of the chosen candidates and the ghosts on the exam corpus, under a rule frozen before it opens | 03-06 | integrated |
-| 08 | Report: the tournament's answer in one committed write-up, every figure traced by code to the phase run files, plus a machine-readable export of them; no new measurement, no spend; the project closes after it | 07 | spec approved |
+| 08 | Report: the tournament's answer in one committed write-up, every figure traced by code to the phase run files, plus a machine-readable export of them; no new measurement, no spend; the project closes after it | 07 | ready locally |
 
 Statuses: pending, spec in review, spec approved, in progress, blocked, ready locally, integrated.
 Only the author adds, removes or reorders phases; the agent proposes.
