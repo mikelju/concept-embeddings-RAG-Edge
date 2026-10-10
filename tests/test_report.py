@@ -174,6 +174,7 @@ def test_checker_passes_traced_figures_and_fails_a_planted_one(inputs):
     assert planted == ["line 3: untraced figure 929"]
     unlabelled = report.check(_report("rrf4 reaches 928."), export)
     assert unlabelled == ["line 3: figures without a label"]
+    assert report.check(_report("The metric is FS@2,048 on every set."), export) == []
 
 
 def test_a_pointer_traces_a_figure_only_if_the_page_holds_it(inputs):

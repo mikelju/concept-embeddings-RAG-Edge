@@ -156,7 +156,7 @@ MONEY_LABELS = {
 LABELS = ("measured", "derived", "exploratory", "interpretation", "projection")
 BEGIN = re.compile(r"<!-- BEGIN GENERATED: ([a-z-]+) -->\n.*?<!-- END GENERATED -->", re.S)
 POINTER = re.compile(r"\[src: ([^\]\s]+)\]")
-NUMBER = re.compile(r"(?<![\w@./+-])\d(?:\d|,\d)*(?:\.\d+)?(?:e-?\d+)?(?![\w@/+-]|\.\d)")
+NUMBER = re.compile(r"(?<![\w@.,/+-])\d(?:\d|,\d)*(?:\.\d+)?(?:e-?\d+)?(?![\w@/+-]|\.\d)")
 
 
 def sha256(path: Path) -> str:
