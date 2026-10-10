@@ -1,15 +1,15 @@
 # Phase 08 - Report: specification
 
-Status: draft
-Approved by the author: -
+Status: approved (frozen)
+Approved by the author: 2026-10-10
 Master plan: `../0_plan_maestro.md`
 
 ## Objective
 
 One committed write-up, `report.md`, that answers the tournament's question with the figures Phases 00-07 already measured.
 The question, from the master plan: does a cheap, fast strategy sit on the quality-cost frontier against the literature's ghosts on the terrain, and keep its place on a locked exam corpus?
-The milestone "After 07" asks for this write-up and no phase owns it; the game (Phase 09) needs a measured-results export that does not exist yet (charter section 5: "The page reads a JSON exported from the measured artifacts").
-Both are built here, from one source, so the report and the game cannot disagree.
+The milestone "After 07" asks for this write-up and no phase owns it.
+The project closes after this phase (author, 2026-10-10; the game is dropped), so the report is the project's last word and its figures are also left machine-readable in `tournament.json`, built from the same source as the report's tables.
 
 ## Scope
 
@@ -17,7 +17,7 @@ In:
 - `tournament.json`, written by code from the phase run files (`data/phase02/results.json` to `data/phase07/results.json` and `data/phase07/annex.json`), with the SHA-256 of every input.
   It holds, per set and system, the figures of record (FS@2,048 and the other metrics each phase reports), the verdict states and the paired-test counts as the outcome code wrote them, the cost cells with their labels (`not recorded` kept as such), and the money per phase from the master plan's decisions table.
 - `report.md`: hand-written prose around tables generated from `tournament.json` by the same code, in this order:
-  question and answer first; setup (terrain, exam, metric, reading budget, cost classes, ghosts); each candidate phase (03-05) with its verdict and cost; the literature bar (06); the exam (07); money spent; limits and biases; what the result does and does not show; what would come next.
+  question and answer first; setup (terrain, exam, metric, reading budget, cost classes, ghosts); each candidate phase (03-05) with its verdict and cost; the literature bar (06); the exam (07); money spent; limits and biases; what the result does and does not show; what a successor could try.
 - A number checker: every figure in the hand-written prose matches a value in `tournament.json` or carries a pointer to the committed page it is read from; untraced figures fail the check.
 - README: the Status line and a short results section linking to `report.md`.
 
@@ -25,7 +25,7 @@ Out:
 - Any new measurement, rerun, refit or spend; filling a `not recorded` cost cell after the fact.
 - Editing any closed phase's frozen documents or run files.
 - The voice-to-order side studies (`data/side-v2o/`): not part of the tournament, publication not decided.
-- The game itself (Phase 09) and any change to how a verdict is decided.
+- The game (dropped by the author) and any change to how a verdict is decided.
 
 ## Acceptance criteria
 
@@ -54,6 +54,6 @@ Frozen at approval. Changing them needs a deviation approved by the author.
 ## Open decisions
 
 None. Resolved by the author on 2026-10-10, each on the agent's recommendation:
-- D1. `tournament.json` is committed next to `report.md`: aggregate figures, no corpus text, like the committed Phase 00 `ledger.json`; Phase 09 reads it.
+- D1. `tournament.json` is committed next to `report.md`: aggregate figures, no corpus text, like the committed Phase 00 `ledger.json`.
 - D2. The export and the report tables are written by a new `report` command in `src/edge_rag/`, reusing the `phase_results.py` readers, with tests.
 - D3. The old project's systems (p10-a/b/c, p14, j-p10b, j-union) appear in the tables labelled context, as in Phase 02.
