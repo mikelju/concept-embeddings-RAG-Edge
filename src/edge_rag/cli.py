@@ -134,7 +134,15 @@ def main(argv: list[str] | None = None) -> int:
     exam.add_argument(
         "--questions", type=Path, help="dry run on a sample: score only this questions.jsonl"
     )
+    report_cmd = commands.add_parser("report", help="Phase 08 tournament.json and report tables")
+    report_cmd.add_argument(
+        "--check", action="store_true", help="only check the tables and the prose figures"
+    )
     args = parser.parse_args(argv)
+    if args.command == "report":
+        from edge_rag import report
+
+        return report.run(not args.check, _say)
     if args.command == "exam-score":
         from edge_rag import phase_results as pr
         from edge_rag import qasper
