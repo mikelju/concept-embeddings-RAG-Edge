@@ -10,8 +10,15 @@ Strategies are chosen on open corpora (the terrain) and tested once on a locked 
 
 ## Status
 
-Starting.
-The plan is in [docs/plans/0_plan_maestro.md](docs/plans/0_plan_maestro.md); Phase 00 maps the state of the art before anything is measured.
+Closed after Phase 08 (the report); no further phase is planned.
+The plan and every phase's status are in [docs/plans/0_plan_maestro.md](docs/plans/0_plan_maestro.md).
+
+## Results
+
+The tournament's answer, with every figure traced by code to the phase run files, is in [docs/plans/fase-08-report/report.md](docs/plans/fase-08-report/report.md); the same figures are machine-readable in [tournament.json](docs/plans/fase-08-report/tournament.json).
+In short: no strategy designed here advanced to the exam on its own claim.
+On the terrain, the best own systems beat the measured literature ghosts in every set and cost class but one (MuSiQue, LLM class), with the HotpotQA wins an upper bound.
+On the locked exam (QASPER), the light-class system loses to its ghost and the rerank-class system ties its ghost: not losing, not a win.
 
 ## Where it comes from
 
