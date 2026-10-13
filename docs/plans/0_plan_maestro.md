@@ -1,6 +1,6 @@
 # Master plan - concept-embeddings-RAG-Edge
 
-Status: approved
+Status: approved; project closed 2026-10-11
 Approved by the author: 2026-10-02
 
 ## Vision
@@ -32,7 +32,7 @@ Starting brief: `docs/refs/successor_project_charter.md` (decisions) and `docs/r
 | 05 | Third candidate: multi-seed convergent hop with a refined query (charter candidate 2, light class) | 02 | integrated |
 | 06 | Rivals: measure on the terrain the literature ghosts never run (G-R2 Qwen3-Reranker-0.6B, G-A2 HippoRAG 2, G-A1 on the HotpotQA subsample) and fix by code the literature bar per set and cost class | 02-05 | integrated |
 | 07 | Exam: one locked run of the chosen candidates and the ghosts on the exam corpus, under a rule frozen before it opens | 03-06 | integrated |
-| 08 | Report: the tournament's answer in one committed write-up, every figure traced by code to the phase run files, plus a machine-readable export of them; no new measurement, no spend; the project closes after it | 07 | ready locally |
+| 08 | Report: the tournament's answer in one committed write-up, every figure traced by code to the phase run files, plus a machine-readable export of them; no new measurement, no spend; the project closes after it | 07 | integrated |
 
 Statuses: pending, spec in review, spec approved, in progress, blocked, ready locally, integrated.
 Only the author adds, removes or reorders phases; the agent proposes.
@@ -89,6 +89,7 @@ Phases 03-05 are placeholders: their number and content are decided after Phase 
 | 2026-10-06 | Phase 07 spec approved by the author (`fase-07-exam/spec.md`), D1-D8 resolved (pooled query `<paper title>. <question>`, G-A1 gate threshold 4.03 USD); the spec is not frozen but modifiable until the test archive is downloaded: before then the agent may change it in its own commit with the reason and tells the author of any change to what is measured or how the verdict is decided; after the download a change needs the author's prior permission, is a numbered deviation and labels the affected figures "not clean"; the clean-exam guarantee starts at the test download | taken by the author in chat | freezing the spec at approval as the protocol says |
 | 2026-10-08 | Phase 07 exam result on QASPER test (written by code; figures, states and tests only in `fase-07-exam/results.md`, cost and context tests in `fase-07-exam/annex.md`): class L `rrf4` **loses** to G-L; classes R and A `j-rrf4` **ties** G-R (not losing, not a win) and ties the literature control `j-rrf3` (report only); caveats: the multi-evidence share QASPER offers is low (counts in `results.md`), so the exam says little about the multi-evidence case the project targets; the entity hop is empty on a share of the test questions (count and method in `annex.md`); `rrf4` was rebuilt on the laptop with the frozen code (deviation 07.4, script kept under deviation 07.5); deviations 07.1-07.5 and money in the phase plan; money: balance delta 1.489 USD (closing `clientBalance` 4.995 USD read 2026-10-08T11:51:11Z), time x rate 1.464 USD, invoice 1.489 USD (GPU 1.464 + storage 0.025), under the 5.30 USD cap | the states and verdict are written by the outcome code from the run files, under the Phase 07 spec and the logged deviations | reporting the class R and A tie as a win, or the exam as evidence on multi-evidence questions |
 | 2026-10-10 | A report phase enters as Phase 08 in place of the game; the game is dropped and the project closes after Phase 08; earlier frozen documents that say "Phase 08" for the game are not edited | taken by the author: the milestone "After 07" asks for a write-up no phase owned, and the tournament's answer is reached | building the game; continuing the tournament |
+| 2026-10-11 | Phase 08 merged by the author (PR #14, merge b2ea693); the project is closed and no further phase or change of results is planned | taken by the author: the report is the project's last word | keeping the line open |
 
 ## Open decisions (after Phase 00)
 

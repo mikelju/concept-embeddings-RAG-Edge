@@ -10,7 +10,7 @@ Strategies are chosen on open corpora (the terrain) and tested once on a locked 
 
 ## Status
 
-Closed after Phase 08 (the report); no further phase is planned.
+Closed on 2026-10-11, after Phase 08 (the report) was merged; no further phase is planned.
 The plan and every phase's status are in [docs/plans/0_plan_maestro.md](docs/plans/0_plan_maestro.md).
 
 ## Results
